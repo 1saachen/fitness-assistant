@@ -168,6 +168,12 @@ def test_complete_confirm_correct_flow(client, profile_data):
     assert advised["trace"] == {
         "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
         "issues": ["short_sleep", "training_fatigue", "diet_adherence"],
+        "profile_goal": "fat_loss",
+        "issue_goal_context": [
+            {"issue": "short_sleep", "terms": ["减脂"], "collections": ["fat_loss"]},
+            {"issue": "training_fatigue", "terms": ["减脂"], "collections": ["fat_loss"]},
+            {"issue": "diet_adherence", "terms": ["减脂"], "collections": ["fat_loss"]},
+        ],
         "knowledge_query_terms": [
             "睡眠",
             "睡眠时长",
@@ -230,10 +236,33 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
     assert advised["trace"] == {
         "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
         "issues": [],
+        "profile_goal": "fat_loss",
+        "issue_goal_context": [],
         "knowledge_query_terms": [],
         "knowledge_item_ids": [],
         "knowledge_status": "unavailable",
     }
+
+
+def test_advice_trace_keeps_generation_goal_after_profile_changes(client, profile_data):
+    row = confirmed_feedback(client, profile_data)
+    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"}).json()
+    assert advised["trace"]["profile_goal"] == "fat_loss"
+    assert advised["trace"]["issue_goal_context"] == [
+        {"issue": "short_sleep", "terms": ["减脂"], "collections": ["fat_loss"]},
+    ]
+
+    changed_profile = deepcopy(profile_data)
+    changed_profile["goals"]["primary"] = "general_health"
+    assert client.put(
+        "/api/profile", json={"profile": changed_profile, "expected_version": 1},
+    ).status_code == 200
+
+    state = client.get("/api/state").json()
+    persisted = next(item for item in state["feedback"] if item["id"] == row["id"])
+    assert state["profile"]["goals"]["primary"] == "general_health"
+    assert persisted["trace"] == advised["trace"]
+    assert persisted["trace"]["profile_goal"] == "fat_loss"
 
 
 def test_plan_trace_reports_only_context_that_fit_persistence_limits(client, profile_data, monkeypatch):

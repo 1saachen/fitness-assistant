@@ -274,6 +274,57 @@ def test_multi_issue_retrieval_is_per_issue_and_merges_shared_cards(tmp_path, pr
     assert service.for_feedback(profile, feedback(sleep_hours=5, fatigue="疲惫", food_summary="食堂"), "", []) == result
 
 
+@pytest.mark.parametrize("goal,goal_terms,expected_first", [
+    ("fat_loss", ("减脂",), "fat-loss-choice"),
+    ("muscle_gain", ("增肌", "蛋白质"), "muscle-gain-choice"),
+    ("general_health", ("饮食结构",), "general-health-choice"),
+])
+def test_feedback_goal_context_is_an_auditable_tiebreaker(
+    tmp_path, profile_data, goal, goal_terms, expected_first,
+):
+    root = write_library(tmp_path, [
+        {"id": "fat-loss-choice", "title": "饮食记录与减脂", "collection": "fat_loss"},
+        {"id": "muscle-gain-choice", "title": "饮食记录与增肌", "collection": "fat_loss"},
+        {"id": "general-health-choice", "title": "饮食记录与饮食结构", "collection": "fat_loss"},
+        {"id": "generic-choice", "title": "饮食记录与日常", "collection": "fat_loss"},
+    ])
+    profile_data["goals"]["primary"] = goal
+
+    result = make_service(root).for_feedback(
+        Profile.model_validate(profile_data), feedback(food_summary="食堂饮食没记录"), "", [],
+    )
+
+    assert [issue.id for issue in result.issues] == ["diet_adherence"]
+    issue = result.issues[0]
+    assert issue.goal_terms == goal_terms
+    assert not set(goal_terms) - {"蛋白质"} & set(result.query_terms)
+    assert issue.knowledge_item_ids[0] == expected_first
+
+
+def test_real_feedback_prioritizes_each_issue_collection(profile_data):
+    profile = Profile.model_validate(profile_data)
+    result = make_service().for_feedback(
+        profile,
+        feedback(sleep_hours=5.5, fatigue="今天训练很累", food_summary="食堂饮食也没记录"),
+        "昨晚只睡了5.5小时，今天训练很累，食堂饮食也没记录",
+        [],
+    )
+    citations = {citation.id: citation for citation in result.citations}
+    issues = {issue.id: issue for issue in result.issues}
+
+    assert set(issues) == {"short_sleep", "training_fatigue", "diet_adherence"}
+    assert all(3 <= len(issue.knowledge_item_ids) <= 5 for issue in issues.values())
+    short_sleep = [citations[item_id].collection for item_id in issues["short_sleep"].knowledge_item_ids[:3]]
+    training_fatigue = [
+        citations[item_id].collection for item_id in issues["training_fatigue"].knowledge_item_ids[:3]
+    ]
+    diet_adherence = [citations[item_id].collection for item_id in issues["diet_adherence"].knowledge_item_ids[:3]]
+    assert short_sleep == ["sleep_recovery"] * 3
+    assert training_fatigue[0] == "training"
+    assert set(training_fatigue) <= {"training", "sleep_recovery"}
+    assert diet_adherence == ["fat_loss"] * 3
+
+
 @pytest.mark.parametrize("failure", ["missing_root", "file_root", "empty_root", "invalid_items", "missing_source", "duplicate_source", "duplicate_item", "missing_strategy", "invalid_json", "invalid_utf8", "list", "version", "bool_version", "no_reference_only", "null_reference_only", "invalid_strategy", "coverage", "applicability"])
 def test_invalid_context_degrades_without_partial_results(tmp_path, profile_data, failure):
     root = write_library(tmp_path / "knowledge", [{"title": "睡眠"}])
@@ -495,7 +546,21 @@ def test_scoring_is_case_insensitive_and_prioritizes_title_matches(tmp_path, pro
         {"id": "irrelevant", "collection": "supplements"},
     ])
     result = make_service(root).for_feedback(Profile.model_validate(profile_data), feedback(), "CREATINE", [])
-    assert result.issues[0].knowledge_item_ids == ("z-title", "b-substring", "a-body")
+    assert result.issues[0].knowledge_item_ids == ("z-title", "a-body", "b-substring")
+
+
+def test_exact_title_match_precedes_preferred_collection_body_match(tmp_path, profile_data):
+    root = write_library(tmp_path, [
+        {"id": "preferred-body", "title": "训练恢复建议", "claim": "疲劳", "collection": "training"},
+        {"id": "nonpreferred-exact", "title": "疲劳", "collection": "supplements"},
+    ])
+
+    result = make_service(root).for_feedback(
+        Profile.model_validate(profile_data), feedback(fatigue="今天很累"), "", [],
+    )
+
+    assert result.issues[0].id == "training_fatigue"
+    assert result.issues[0].knowledge_item_ids[0] == "nonpreferred-exact"
 
 
 @pytest.mark.parametrize("raw_text", ["今天吃得多", "食堂", "外卖", "饮食情况"])

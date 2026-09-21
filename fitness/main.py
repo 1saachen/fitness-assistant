@@ -169,6 +169,15 @@ def advice(ident: str, req: ModeRequest):
         advice_trace = {
             "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
             "issues": [issue.id for issue in context.issues],
+            "profile_goal": profile_data.goals.primary,
+            "issue_goal_context": [
+                {
+                    "issue": issue.id,
+                    "terms": list(issue.goal_terms),
+                    "collections": list(issue.goal_collections),
+                }
+                for issue in context.issues
+            ],
             "knowledge_query_terms": list(context.query_terms),
             "knowledge_item_ids": a["source_ids"],
             "knowledge_status": context.status,

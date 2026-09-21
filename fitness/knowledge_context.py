@@ -173,6 +173,8 @@ class RetrievalIssue:
     terms: tuple[str, ...]
     collections: tuple[str, ...]
     knowledge_item_ids: tuple[str, ...] = ()
+    goal_terms: tuple[str, ...] = ()
+    goal_collections: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -262,6 +264,27 @@ def _extract_issues(feedback: FeedbackData, raw_text: str, history: list[dict],
     return tuple(issues)
 
 
+def _apply_goal_context(issue: RetrievalIssue, goal: str) -> RetrievalIssue:
+    if goal == "fat_loss":
+        return replace(issue, goal_terms=("减脂",), goal_collections=("fat_loss",))
+    if goal == "muscle_gain":
+        terms = ("增肌", "蛋白质") if issue.id == "diet_adherence" else ("增肌",)
+        return replace(issue, goal_terms=terms, goal_collections=("training", "fat_loss"))
+    general_health_terms = {
+        "short_sleep": ("睡眠健康",),
+        "training_fatigue": ("日常活动",),
+        "diet_adherence": ("饮食结构",),
+        "weight_trend": ("日常活动",),
+        "weight_plateau": ("日常活动",),
+        "supplement_question": ("基础饮食",),
+    }
+    return replace(
+        issue,
+        goal_terms=general_health_terms[issue.id],
+        goal_collections=("sleep_recovery", "training", "fat_loss"),
+    )
+
+
 def _retrieve_issue(issue: RetrievalIssue, manifest: list[dict]) -> RetrievalIssue:
     scored = []
     for row in manifest:
@@ -273,22 +296,32 @@ def _retrieve_issue(issue: RetrievalIssue, manifest: list[dict]) -> RetrievalIss
             12 * (term.casefold() == title) + 4 * title.count(term.casefold()) + body.count(term.casefold())
             for term in matched
         )
-        if row["collection"] in issue.collections:
-            score += 2
-        scored.append((score, row["id"], matched))
-    scored.sort(key=lambda candidate: (-candidate[0], candidate[1]))
+        goal_score = sum(
+            4 * title.count(term.casefold()) + body.count(term.casefold())
+            for term in issue.goal_terms
+        )
+        exact_title_priority = 0 if any(term.casefold() == title for term in matched) else 1
+        collection = row["collection"]
+        if collection in issue.collections:
+            collection_priority = (0, issue.collections.index(collection))
+        elif collection in issue.goal_collections:
+            collection_priority = (1, issue.goal_collections.index(collection))
+        else:
+            collection_priority = (2, 0)
+        scored.append((exact_title_priority, collection_priority, score, goal_score, row["id"], matched))
+    scored.sort(key=lambda candidate: (candidate[0], *candidate[1], -candidate[2], -candidate[3], candidate[4]))
     selected = scored[:3]
-    matched_terms = set().union(*(entry[2] for entry in scored))
-    covered = set().union(*(entry[2] for entry in selected))
+    matched_terms = set().union(*(entry[5] for entry in scored))
+    covered = set().union(*(entry[5] for entry in selected))
     if len(matched_terms) >= 3 and covered != matched_terms:
         for candidate in scored[3:]:
-            if not candidate[2] - covered:
+            if not candidate[5] - covered:
                 continue
             selected.append(candidate)
-            covered.update(candidate[2])
+            covered.update(candidate[5])
             if len(selected) == 5 or covered == matched_terms:
                 break
-    return replace(issue, knowledge_item_ids=tuple(entry[1] for entry in selected))
+    return replace(issue, knowledge_item_ids=tuple(entry[4] for entry in selected))
 
 
 class KnowledgeContextService:
@@ -360,7 +393,10 @@ class KnowledgeContextService:
         try:
             manifest, _ = self._load()
             issues = tuple(_retrieve_issue(issue, manifest)
-                           for issue in _extract_issues(feedback, raw_text, history, manifest))
+                           for issue in (
+                               _apply_goal_context(issue, profile.goals.primary)
+                               for issue in _extract_issues(feedback, raw_text, history, manifest)
+                           ))
             matches: dict[str, list[str]] = {}
             for issue in issues:
                 for item_id in issue.knowledge_item_ids:
