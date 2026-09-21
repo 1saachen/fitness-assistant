@@ -5,6 +5,7 @@ from .models import PlanData
 STRATEGY_TITLE_PREVIEW_LENGTH = 40
 MAX_STRATEGY_SNAPSHOTS = 20
 MAX_CITATION_SNAPSHOTS = 100
+CAPACITY_EXCEEDED_STATUS = "capacity_exceeded"
 
 
 def _strategy_title_preview(title):
@@ -13,11 +14,21 @@ def _strategy_title_preview(title):
     return f"{title[: STRATEGY_TITLE_PREVIEW_LENGTH - 1]}…"
 
 
-def persistent_context_snapshots(context):
-    if (
+def _context_exceeds_persistence_capacity(context):
+    return (
         len(context.strategies) > MAX_STRATEGY_SNAPSHOTS
         or len(context.citations) > MAX_CITATION_SNAPSHOTS
-    ):
+    )
+
+
+def context_persistence_status(context):
+    if context.status == "ok" and _context_exceeds_persistence_capacity(context):
+        return CAPACITY_EXCEEDED_STATUS
+    return context.status
+
+
+def persistent_context_snapshots(context):
+    if _context_exceeds_persistence_capacity(context):
         return [], []
     return list(context.strategies), list(context.citations)
 

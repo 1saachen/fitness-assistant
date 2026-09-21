@@ -296,7 +296,60 @@ def test_plan_trace_reports_only_context_that_fit_persistence_limits(client, pro
     assert plan["data"]["source_ids"] == []
     assert plan["trace"]["strategy_ids"] == []
     assert plan["trace"]["knowledge_item_ids"] == []
-    assert plan["trace"]["knowledge_status"] == "ok"
+    assert plan["trace"]["knowledge_status"] == "capacity_exceeded"
+
+
+def test_advice_trace_reports_atomic_capacity_degradation(client, profile_data, monkeypatch):
+    citations = tuple(
+        KnowledgeCitation(
+            id=f"oversized-{index:03d}",
+            title=f"Oversized {index}",
+            excerpt="Creator claim",
+            creator_name="Test creator",
+            collection="training",
+        )
+        for index in range(101)
+    )
+
+    class OversizedService:
+        def for_feedback(self, profile, feedback, raw_text, history):
+            return KnowledgeContextResult(citations=citations)
+
+    monkeypatch.setattr(main, "knowledge_context_service", OversizedService())
+    row = confirmed_feedback(client, profile_data)
+    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"}).json()
+
+    assert advised["advice"]["knowledge_context"] == []
+    assert advised["advice"]["source_ids"] == []
+    assert advised["advice"]["suggestions"] == [
+        "保持训练动作质量和逐步增加重量",
+        "优先保证规律睡眠与蛋白质来源",
+    ]
+    assert advised["trace"]["knowledge_item_ids"] == []
+    assert advised["trace"]["knowledge_status"] == "capacity_exceeded"
+
+
+def test_unavailable_plan_trace_takes_precedence_over_capacity(client, profile_data, monkeypatch):
+    strategies = tuple(
+        StrategySnapshot(
+            id=f"unavailable-strategy-{index:02d}",
+            title=f"Unavailable strategy {index}",
+            summary="Unavailable context",
+        )
+        for index in range(21)
+    )
+
+    class OversizedService:
+        def for_plan(self, profile):
+            return KnowledgeContextResult(status="unavailable", strategies=strategies)
+
+    monkeypatch.setattr(main, "knowledge_context_service", OversizedService())
+    client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
+    plan = client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "demo"}).json()
+
+    assert plan["data"]["strategy_context"] == []
+    assert plan["trace"]["strategy_ids"] == []
+    assert plan["trace"]["knowledge_status"] == "unavailable"
 
 
 def test_unexpected_context_programming_error_is_not_hidden(client, profile_data, monkeypatch):

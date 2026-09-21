@@ -1,5 +1,6 @@
 from datetime import date
 
+from fitness import planning
 from fitness.agent import DemoAgent
 from fitness.knowledge_context import KnowledgeContextResult, RetrievalIssue
 from fitness.models import FeedbackData, KnowledgeCitation, Profile, StrategySnapshot
@@ -301,3 +302,45 @@ def test_oversized_context_degrades_as_a_whole_without_blocking_core_rules(profi
     assert strategy_plan.strategy_context == []
     assert strategy_plan.knowledge_context == []
     assert strategy_plan.source_ids == []
+
+
+def test_context_persistence_status_distinguishes_capacity_from_valid_empty_context():
+    strategies_at_limit = tuple(
+        StrategySnapshot(id=f"strategy-{index}", title=f"Strategy {index}", summary="Summary")
+        for index in range(20)
+    )
+    citations_at_limit = tuple(citation(index) for index in range(100))
+
+    assert planning.context_persistence_status(KnowledgeContextResult()) == "ok"
+    assert planning.context_persistence_status(
+        KnowledgeContextResult(strategies=strategies_at_limit, citations=citations_at_limit)
+    ) == "ok"
+    assert planning.context_persistence_status(
+        KnowledgeContextResult(
+            strategies=(
+                *strategies_at_limit,
+                StrategySnapshot(id="strategy-20", title="Strategy 20", summary="Summary"),
+            )
+        )
+    ) == "capacity_exceeded"
+    assert planning.context_persistence_status(
+        KnowledgeContextResult(citations=(*citations_at_limit, citation(100)))
+    ) == "capacity_exceeded"
+    assert planning.context_persistence_status(
+        KnowledgeContextResult(status="unavailable")
+    ) == "unavailable"
+    assert planning.context_persistence_status(
+        KnowledgeContextResult(
+            status="unavailable",
+            strategies=(
+                *strategies_at_limit,
+                StrategySnapshot(id="strategy-20", title="Strategy 20", summary="Summary"),
+            ),
+        )
+    ) == "unavailable"
+    assert planning.context_persistence_status(
+        KnowledgeContextResult(
+            status="unavailable",
+            citations=(*citations_at_limit, citation(100)),
+        )
+    ) == "unavailable"

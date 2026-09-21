@@ -21,6 +21,7 @@ from .models import (
     Profile,
     ProfileSave,
 )
+from .planning import context_persistence_status
 from .review import ReviewNotFound, ReviewService
 from .storage import Conflict, NotFound, Store
 
@@ -108,7 +109,7 @@ def plan(req: PlanRequest):
         "steps": ["baseline_strategy_selection", "planner"],
         "strategy_ids": [strategy["id"] for strategy in data["strategy_context"]],
         "knowledge_item_ids": data["source_ids"],
-        "knowledge_status": context.status,
+        "knowledge_status": context_persistence_status(context),
     }
     return store.create_plan(data, p["version"], req.start_date.isoformat(), req.mode, trace)
 
@@ -180,7 +181,7 @@ def advice(ident: str, req: ModeRequest):
             ],
             "knowledge_query_terms": list(context.query_terms),
             "knowledge_item_ids": a["source_ids"],
-            "knowledge_status": context.status,
+            "knowledge_status": context_persistence_status(context),
         }
         return store.save_advice(
             ident,
