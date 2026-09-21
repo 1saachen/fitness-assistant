@@ -10,7 +10,7 @@ Use the complete approved local knowledge base in two main user workflows: compr
 - Generate a comprehensive weekly plan from every baseline strategy module relevant to the saved profile.
 - Retrieve focused approved knowledge separately for each issue detected in daily feedback.
 - Store the strategy and citation snapshots used for every generated plan or advice.
-- Show plan foundations, adjustment reasons, and Bilibili source links in the existing plan and feedback views.
+- Show plan foundations, adjustment reasons, and source video links in the existing plan and feedback views.
 - Keep the standalone knowledge search and review workflows.
 
 This iteration does not add embeddings, a vector database, an external model, individualized supplement dosages, diagnosis, or automatic medical decisions.
@@ -119,7 +119,7 @@ Add shared models:
 
 ```text
 KnowledgeVideo
-  bvid
+  bvid (optional for legacy non-Bilibili sources)
   title
   url
   published_at
