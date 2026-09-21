@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>循序 · 健身助手</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/review.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <aside class="sidebar">
+    <a class="brand" href="#overview" aria-label="循序，返回概览"><span class="brand-mark" aria-hidden="true">循</span><span>循序<small>你的日常健身助手</small></span></a>
+    <div class="nav-caption">每一步，都算数</div>
+    <nav aria-label="主要导航">
+      <button type="button" data-view="overview" class="nav-button active" aria-current="page"><span aria-hidden="true">◫</span>概览</button>
+      <button type="button" data-view="profile" class="nav-button"><span aria-hidden="true">◎</span>我的档案</button>
+      <button type="button" data-view="plan" class="nav-button"><span aria-hidden="true">▤</span>本周计划</button>
+      <button type="button" data-view="feedback" class="nav-button"><span aria-hidden="true">✎</span>每日反馈</button>
+      <button type="button" data-view="knowledge" class="nav-button"><span aria-hidden="true">✓</span>知识审核</button>
+    </nav>
+    <div class="sidebar-footer"><span class="status-dot" aria-hidden="true"></span>本地 · 单人使用<p>从了解自己开始，<br>把健康融入日常。</p></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><span id="today-label">日常，也有进步</span><div class="mode-control"><label for="mode">生成模式</label><select id="mode"><option value="demo">演示模式</option><option value="live" disabled>在线模型（尚未接入）</option></select></div></header>
+    <main id="main" tabindex="-1">
+      <div id="notice" role="status" aria-live="polite" hidden></div>
+      <div id="error" role="alert" hidden></div>
+      <p id="mode-note" class="mode-note">正在连接本地服务…</p>
+      <section id="view-overview" class="view" aria-labelledby="overview-title">
+        <div class="page-heading"><div><p class="eyebrow">YOUR EVERYDAY PROGRESS</p><h1 id="overview-title">循序渐进，找到自己的节奏。</h1><p class="subtitle">了解身体，安排训练，记录每天的真实感受。</p></div></div>
+        <div class="hero-card"><div><span class="pill light">从今天开始</span><h2 id="hero-title">一份适合你的计划，<br>从你的档案开始。</h2><p id="hero-copy">告诉我们你的目标、可用时间与饮食偏好。</p><button type="button" class="button cream" data-go="profile" id="hero-action">完善我的档案 <span aria-hidden="true">↗</span></button></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><span>一步一步<br>更接近自己</span></div></div>
+        <div id="overview-stats" class="stat-grid"></div>
+        <div class="two-columns"><section class="card"><div class="card-heading"><h2>接下来的一步</h2><span class="tiny-label">你的节奏</span></div><div id="next-steps"></div></section><section class="card"><div class="card-heading"><h2>最近记录</h2><button class="text-button" type="button" data-go="feedback">查看全部 →</button></div><div id="recent-feedback"></div></section></div>
+      </section>
+      <section id="view-profile" class="view" aria-labelledby="profile-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">KNOW YOURSELF</p><h1 id="profile-title">我的档案</h1><p class="subtitle">按真实情况填写。暂时不确定的内容可以留空。</p></div><button id="import-profile" class="button secondary" type="button">导入本地示例</button></div>
+        <form id="profile-form"><div id="profile-fields"></div><div class="form-footer"><span id="profile-save-state">尚未保存档案</span><button class="button" id="save-profile" type="submit">保存档案</button></div></form>
+      </section>
+      <section id="view-plan" class="view" aria-labelledby="plan-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">MAKE ROOM FOR MOVEMENT</p><h1 id="plan-title">本周计划</h1><p class="subtitle">根据已保存的档案生成草案，确认后再开始执行。</p></div></div>
+        <form id="plan-form" class="card inline-form"><label for="plan-date">计划开始日期<input id="plan-date" type="date" required></label><button class="button" type="submit" id="generate-plan">生成计划草案</button><p class="muted">每次生成都会保留为独立记录。</p></form>
+        <div id="plan-history" class="history-selector"></div><div id="plan-content"></div>
+      </section>
+      <section id="view-feedback" class="view" aria-labelledby="feedback-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">LISTEN TO YOUR BODY</p><h1 id="feedback-title">每日反馈</h1><p class="subtitle">写下训练、饮食与恢复情况，核对后保存，再获取建议。</p></div></div>
+        <div class="feedback-layout"><div><form id="parse-form" class="card"><div class="card-heading"><h2>今天过得怎么样？</h2><span class="pill">第一步 · 记录</span></div><label for="feedback-date">记录日期<input id="feedback-date" type="date" required></label><label for="feedback-text">用自己的话说说<textarea id="feedback-text" rows="5" maxlength="4000" placeholder="例如：今天完成了训练，午餐在食堂吃。昨晚睡得不太好，下午有点累。" required></textarea></label><p class="field-hint">只有明确提供的信息才会记录；解析结果需要你确认。</p><button class="button" type="submit" id="parse-feedback">整理为反馈草稿</button></form><div id="feedback-editor"></div></div><aside class="card feedback-history"><div class="card-heading"><h2>反馈历史</h2><button type="button" class="text-button" id="refresh-history">刷新</button></div><div id="feedback-list"></div></aside></div>
+      </section>
+      <section id="view-knowledge" class="view" aria-labelledby="knowledge-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">REVIEW BEFORE RETRIEVAL</p><h1 id="knowledge-title">知识审核</h1><p class="subtitle">逐条核对视频观点、来源与安全边界。只有批准并发布的卡片才会进入 RAG。</p></div><button id="publish-knowledge" class="button" type="button">发布已批准卡片</button></div>
+        <div id="knowledge-stats" class="knowledge-stats" aria-label="审核统计"></div>
+        <div class="knowledge-toolbar">
+          <label for="knowledge-collection">分类<select id="knowledge-collection"><option value="all">全部分类</option><option value="supplements">补剂</option><option value="diet_fat_loss">饮食与减脂</option><option value="training">训练</option><option value="sleep_recovery">睡眠与恢复</option></select></label>
+          <label for="knowledge-status">状态<select id="knowledge-status"><option value="all">全部状态</option><option value="pending">待审核</option><option value="approved">已批准</option><option value="rejected">已拒绝</option></select></label>
+          <label class="knowledge-search" for="knowledge-query">搜索<input id="knowledge-query" type="search" placeholder="标题或视频观点"></label>
+          <button id="refresh-knowledge" class="button secondary" type="button">刷新</button>
+          <span id="knowledge-result-count" class="muted">0 张卡片</span>
+        </div>
+        <div class="knowledge-layout">
+          <aside id="knowledge-list" class="knowledge-list" aria-label="候选知识卡"></aside>
+          <div id="knowledge-detail" class="knowledge-detail"></div>
+        </div>
+      </section>
+      <footer class="main-footer"><span>循序 · 为真实的每一天</span><span>训练建议用于日常参考；身体不适时及时停止并咨询专业人员。</span></footer>
+    </main>
+  </div>
+</body>
+</html>
+

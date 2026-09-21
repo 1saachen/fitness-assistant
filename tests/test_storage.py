@@ -206,4 +206,3 @@ def test_failed_advice_without_trace_replaces_old_retrieval_trace(tmp_path):
     assert failed["advice"] is None
     assert failed["advice_error"] == "模型暂时不可用"
     assert failed["trace"] == {"steps": ["advisor"], "status": "failed"}
-

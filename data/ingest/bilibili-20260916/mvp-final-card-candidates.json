@@ -1,0 +1,2104 @@
+{
+  "version": "mvp-final-card-candidates-20260920",
+  "policy": "video_first; creator_statement is copied from input creator_summary; merge only when the same user retrieval intent is preserved; creator-only candidate layer.",
+  "review_status": "pending",
+  "target_counts": {
+    "supplements": {
+      "min": 25,
+      "max": 30,
+      "selected": 28
+    },
+    "diet_fat_loss": {
+      "min": 15,
+      "max": 20,
+      "selected": 18
+    },
+    "training": {
+      "min": 10,
+      "max": 15,
+      "selected": 13
+    },
+    "sleep_recovery": {
+      "min": 5,
+      "max": 10,
+      "selected": 7
+    },
+    "total": {
+      "min": 60,
+      "max": 75,
+      "selected": 66
+    }
+  },
+  "cards": [
+    {
+      "id": "supplements-001",
+      "collection": "supplements",
+      "title": "维生素B1",
+      "creator_statement": [
+        {
+          "statement": "作者认为长期吃精米精面、碳水较高且属于运动人群的人，可能有必要补B1，因为精制谷物会去掉外层麸皮，而B1参与能量代谢。（适用条件：长期不吃全谷、吃精米精面，碳水摄入高且为运动人群。；不确定性：ASR将维生素B1多处转写为“为数数B1”。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:4"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-002",
+      "collection": "supplements",
+      "title": "叶酸",
+      "creator_statement": [
+        {
+          "statement": "作者认为叶酸和维生素B族销量排名第一合理；叶酸对怀孕期DNA分裂调控重要，并对保护婴儿神经系统有好处。（适用条件：怀孕期人群。；作者排序：销量排名第一（与维生素B族并列）；不确定性：ASR将叶酸转写为“夜酸”，将维生素B族转写为“卫生素B足”。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:6"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:6"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-003",
+      "collection": "supplements",
+      "title": "维生素B族",
+      "creator_statement": [
+        {
+          "statement": "作者认为维生素B族排名第一合理，缺乏会影响运动表现和能量产生；中国饮食结构中缺乏B族相对严重。食物种类丰富、每周食物种类达到约40种且热量吃够的人可能不需要额外补充。（适用条件：食物种类丰富、每周约40种且热量吃够的人可能不用额外补充；其余情况需按饮食判断。；作者排序：销量排名第一（与叶酸并列）；不确定性：ASR将维生素B族转写为“B足为生素”。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:7"
+          ]
+        },
+        {
+          "statement": "营养缺乏性脱发时B7可能有用，但更倾向复合B。（不确定性：相关补剂名称和机制词存在ASR误识别，保留原始字幕）",
+          "source_claim_ids": [
+            "bili:BV1mau2zJE2P:5"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:7",
+        "bili:BV1mau2zJE2P:5"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD",
+        "BV1mau2zJE2P"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-004",
+      "collection": "supplements",
+      "title": "益生菌",
+      "creator_statement": [
+        {
+          "statement": "作者认为益生菌相关影响机制复杂、很多机制尚不明确；可以选择国家批准的菌种，而最新明星菌或只有体外实验支持的产品是否有效难以确定。（适用条件：选择国家批准的菌种或医院、酸奶等正规来源。；视频风险：作者提醒，未获明确批准的明星菌和只有体外实验支持的菌种无法据此证明人体有效。；不确定性：ASR将“益生菌”转写为“异生军/异生园”。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:9"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:9"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-005",
+      "collection": "supplements",
+      "title": "钙",
+      "creator_statement": [
+        {
+          "statement": "作者说钙缺乏在健身人群、年长者和部分女性中较普遍，与肌肉收缩、骨骼及骨质疏松有关；应优先从牛奶、绿色蔬菜、南北豆腐等食物获得并按人群针对性判断。（适用条件：年纪大、开始骨质疏松、部分女性或运动人群。；不确定性：字幕多处将钙转写为“盖”；排名段前部有长段重复“不吃”，具体名次无法确认。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:11"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:11"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-006",
+      "collection": "supplements",
+      "title": "维生素D",
+      "creator_statement": [
+        {
+          "statement": "作者认为缺维生素D会使补钙无效；无法晒太阳、长期室内工作、难从饮食获得或过度遮挡日晒的人可能需要补充，也可通过适度暴露皮肤晒太阳获得。（适用条件：无法晒太阳、长期室内工作、难从饮食获得或过度遮挡日晒。；作者排序：作者说若只能选一种补剂，自己可能选维生素D。；视频剂量：字幕提到晒太阳约15分钟、暴露约20%-40%皮肤可能接近补充量，但未给口服剂量。；不确定性：ASR将维生素D转写为“为地”；字幕关于晒太阳条件和比例断句混乱。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:12"
+          ]
+        },
+        {
+          "statement": "若只能给女性选一种补剂，作者首选维生素D，认为重视防晒的中国女性普遍缺乏；他称约40%的皮肤每天晒15分钟可能足够，日晒充足者不必按此建议补充，但过度日晒的UVA可能损害胶原蛋白。（适用条件：日晒不足、重视防晒的中国女性；日晒充足者不在此建议内；作者排序：女性补剂第1名；视频剂量：日晒替代条件为约40%的皮肤每天晒15分钟左右；补剂剂量未给出；视频风险：过度日晒时UVA可能导致胶原蛋白断裂；不确定性：作者对日晒使用“可能是够的”表述，未说明季节、地区或其他条件。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:9"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:12",
+        "bili:BV1zNyYBPELb:9"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD",
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-007",
+      "collection": "supplements",
+      "title": "复合维生素",
+      "creator_statement": [
+        {
+          "statement": "作者认为复合维生素对食物种类少、饮食很糟糕的年轻人有一定存在必要，但要核对其他补剂和保健品的标签，避免维生素和矿物质剂量叠加。（适用条件：饮食质量差、食物品种少的年轻人。；视频风险：其他保健品中已有的维生素和矿物质量会与复合维生素叠加，需看清标签。；不确定性：ASR将复合维生素转写为“附合维生素”。）",
+          "source_claim_ids": [
+            "bili:BV18umpBaEqD:18"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18umpBaEqD:18"
+      ],
+      "source_bvids": [
+        "BV18umpBaEqD"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-008",
+      "collection": "supplements",
+      "title": "辅酶Q10",
+      "creator_statement": [
+        {
+          "statement": "作者认为辅酶Q10的循证研究和安全性比前述多数补剂好得多，建议根据具体作用针对性使用；作者还称临床上某些人使用一种转写不清的药物后可能需要补充辅酶Q10。（适用条件：按具体作用针对性使用；某些人使用转写不清的药物之后；作者排序：A；不确定性：ASR中的“腐煤Q10/腐煤Q时”按名称判断为辅酶Q10；“巡政”按语境理解为循证；约845秒处药物名仅转写为“踏拼”，无法确认具体药名）",
+          "source_claim_ids": [
+            "bili:BV1jdmHB3E9x:11"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1jdmHB3E9x:11"
+      ],
+      "source_bvids": [
+        "BV1jdmHB3E9x"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-009",
+      "collection": "supplements",
+      "title": "鱼油（Omega-3）",
+      "creator_statement": [
+        {
+          "statement": "作者把药用鱼油与辅酶Q10并列为临床上可能有较高证据等级的补充物，并认为两者相较前面讨论的补剂很不错。（适用条件：药用鱼油及其临床证据等级比较；作者排序：A；不确定性：ASR中的“鱼油Omicron”含义不清，按明确出现的“药用的鱼油”仅标准化为鱼油，未强行对应具体脂肪酸或制剂）",
+          "source_claim_ids": [
+            "bili:BV1jdmHB3E9x:12"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1jdmHB3E9x:12"
+      ],
+      "source_bvids": [
+        "BV1jdmHB3E9x"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-010",
+      "collection": "supplements",
+      "title": "PQQ",
+      "creator_statement": [
+        {
+          "statement": "作者说PQQ可以进入线粒体，并将其作用概括为在线粒体内保护线粒体。（适用条件：围绕线粒体保护的机制讨论；作者排序：B；不确定性：ASR把“线粒体”转写为“限定体”；PQQ的中文全称多次失真，因此只保留明确缩写）",
+          "source_claim_ids": [
+            "bili:BV1jdmHB3E9x:15"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1jdmHB3E9x:15"
+      ],
+      "source_bvids": [
+        "BV1jdmHB3E9x"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-011",
+      "collection": "supplements",
+      "title": "女性专用补剂的适用性",
+      "creator_statement": [
+        {
+          "statement": "作者认为有些补剂只是更适合女性，并以铁为典型例子。（不确定性：字幕中的“补计”按上下文理解为“补剂”。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:1"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:1"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-012",
+      "collection": "supplements",
+      "title": "女性阴道益生菌",
+      "creator_statement": [
+        {
+          "statement": "作者认为女性阴道益生菌失调可能与瘙痒、霉菌性问题有关，女性专用益生菌对此有用。（适用条件：作者所说的阴道益生菌失调及相关妇科问题；不确定性：字幕中的“一生军”“惨道”按上下文理解为“益生菌”“阴道”。；具体菌株和适用症在视频中未说明。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:4"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-013",
+      "collection": "supplements",
+      "title": "铁",
+      "creator_statement": [
+        {
+          "statement": "作者认为女性因月经和进食较少更容易缺铁，把铁列为女性补剂第三位；但建议优先从猪肝、红肉或动物血获取，通常只有吃不下红肉时才用铁补剂。（适用条件：有月经且铁摄入不足的女性；不能通过红肉等食物摄入时再考虑补剂；作者排序：女性补剂第3名，按情况使用；视频剂量：猪肝一周两次；不确定性：字幕中的“铁合计”“缺帖性凭血”按上下文分别理解为“铁补剂”“缺铁性贫血”。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:5"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:5"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-014",
+      "collection": "supplements",
+      "title": "胶原蛋白肽",
+      "creator_statement": [
+        {
+          "statement": "作者称胶原蛋白肽可改善皮肤弹性和光泽，这种需求不限于女性；年轻时通常不缺，40岁以上时可以考虑补充。（适用条件：希望改善皮肤弹性和光泽，尤其是40岁以上者；作者排序：作者列在前四项之后的可选项；不确定性：“教育代表态”疑为“胶原蛋白肽”，依据皮肤弹性、光泽及40岁以上人群的上下文判断。；“维决定系”所指具体生理表述无法确认，未纳入结论。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:6"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:6"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-015",
+      "collection": "supplements",
+      "title": "花青素与姜黄素",
+      "creator_statement": [
+        {
+          "statement": "作者认为花青素和姜黄素的证据等级相对较高；日晒、吸烟、油烟与天然食物摄入不足等坏习惯叠加时可以考虑使用，经常接触油烟或常吃高温烹调食物时也不反对尝试姜黄素。他还称姜黄粉与专门的姜黄素产品不同、其中姜黄素不好吸收。（适用条件：日晒、吸烟、油烟与天然食物摄入不足等坏习惯叠加；或经常接触油烟、常吃高温烹调食物时；不确定性：字幕中的“花青树”“姜黄树”“江黄树”按发音和上下文理解为“花青素”“姜黄素”。；字幕中的“火灾”在相关上下文按“炎症”理解。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:7"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-016",
+      "collection": "supplements",
+      "title": "维生素C",
+      "creator_statement": [
+        {
+          "statement": "作者称维生素C的美白效果存在饱和量，仅摄入不足者可能受益，超过该量继续吃不会更白；他反对高剂量或多种含维生素C产品叠加，称过量可能引起反向氧化、加重炎症并伤肝。（适用条件：维生素C摄入不足时补至作者所说的饱和量；避免高剂量及多产品叠加；视频剂量：达到作者所说的饱和量即可，未给具体数值；视频风险：过量可能反向氧化、加重炎症并伤肝；不确定性：视频没有说明饱和量或“超高量”的具体数值。；字幕将“摄入量”“函数关系”识别为近音词，但上下文含义明确。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:8"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-017",
+      "collection": "supplements",
+      "title": "Omega-3",
+      "creator_statement": [
+        {
+          "statement": "作者把Omega-3列为维生素D之后的第二选择，尤其建议减脂期和较大基数肥胖者使用，并称其可帮助降低肝脏炎症。（适用条件：尤其是减脂期、作者所说的较大基数肥胖人群或肝脏炎症场景；作者排序：女性补剂第2名；不确定性：引文中“围地”“第二个维D”是ASR错误；结合前后文，含义为Omega-3排在维生素D之后的第二位。；字幕中的“帮小火”按上下文理解为“帮助消炎”。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:10"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:10"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-018",
+      "collection": "supplements",
+      "title": "镁",
+      "creator_statement": [
+        {
+          "statement": "作者把镁列为女性补剂第四位，并称一些女性经前心情低落、身体酸痛和便秘与镁关系很大。（适用条件：作者所说的经前综合征，包括经前心情低落、身体酸痛和便秘；作者排序：女性补剂第4名；不确定性：字幕中的“美”按上下文理解为“镁”。；“必补”是作者原有强度，视频未提供剂量或检测条件。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:14"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:14"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-019",
+      "collection": "supplements",
+      "title": "肠道益生菌补剂与发酵食物",
+      "creator_statement": [
+        {
+          "statement": "作者称肠道益生菌种类很多，需要找到适合自己的具体种类，多数益生菌补剂较贵且证据等级不高；他建议先从酸奶、开菲尔、康普茶和发酵味噌等食物入手改善肠道问题。（适用条件：肠道菌群或消化系统有问题并考虑使用益生菌时；作者排序：先尝试发酵食物，再考虑益生菌补剂；视频风险：补剂花费高，盲目选菌可能没有必要；不确定性：字幕中的“医生军”按上下文理解为“益生菌”，但视频没有给出菌株选择标准。；字幕“开飞而”疑为“开菲尔”；原字幕在“开飞而康普茶”之间没有清楚停顿，按列举语境拆为两种食物。）",
+          "source_claim_ids": [
+            "bili:BV1zNyYBPELb:16"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1zNyYBPELb:16"
+      ],
+      "source_bvids": [
+        "BV1zNyYBPELb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-020",
+      "collection": "supplements",
+      "title": "维生素B族与能量代谢和减脂",
+      "creator_statement": [
+        {
+          "statement": "作者称维生素B族参与能量产生和脂肪进入线粒体燃烧的过程，缺乏会不利于能量产生和减脂。（适用条件：减脂或关注能量代谢时；视频风险：缺乏时不利于能量产生和减脂；不确定性：字幕中的“臂足”“限力体”“陈先生”按整集上下文分别疑为“B族”“线粒体”“产生”，但保留原转写作为引文。）",
+          "source_claim_ids": [
+            "bili:BV18MewzsEmZ:1"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18MewzsEmZ:1"
+      ],
+      "source_bvids": [
+        "BV18MewzsEmZ"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-021",
+      "collection": "supplements",
+      "title": "需要考虑B族补剂的人群",
+      "creator_statement": [
+        {
+          "statement": "作者不反对常吃加工食品、饮食中几乎没有粗粮、肉类很少并主要依靠蛋白粉的人使用B族补剂，并称这类人应该补充。（适用条件：常吃加工食品、几乎不吃粗粮、肉类摄入少且主要依靠蛋白粉时；不确定性：“吃加工食物尝试”疑为“常吃加工食物”，“不存在出两”疑为“没有粗粮”；依据相邻饮食讨论判断。）",
+          "source_claim_ids": [
+            "bili:BV18MewzsEmZ:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18MewzsEmZ:8"
+      ],
+      "source_bvids": [
+        "BV18MewzsEmZ"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-022",
+      "collection": "supplements",
+      "title": "维生素B12与训练后神经疲劳",
+      "creator_statement": [
+        {
+          "statement": "作者回应力量训练后补充B12相关产品的说法，称其对神经系统重要，但不是越多越好，达到足量即可；他还称B12没有太大毒性。（适用条件：力量训练后讨论中枢疲劳和神经功能时；视频剂量：吃够即可，未给具体数值；视频风险：作者称B12没有太大毒性；不确定性：“假肝”所指B12相关制剂名称无法可靠恢复；“编辑效应”疑指某种达到足量后的边际或阈值效应，但不作标准化。；“信号B12”按上下文理解为“维生素B12”。）",
+          "source_claim_ids": [
+            "bili:BV18MewzsEmZ:11"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV18MewzsEmZ:11"
+      ],
+      "source_bvids": [
+        "BV18MewzsEmZ"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-023",
+      "collection": "supplements",
+      "title": "维生素D3的免疫与骨骼作用",
+      "creator_statement": [
+        {
+          "statement": "作者区分D2和D3，认为日常更常缺D3；他称D3参与免疫、促进钙吸收和骨矿化，支持骨骼健康并可能帮助训练损伤后的炎症反应。（适用条件：关注免疫、骨骼健康或运动损伤防御时。；不确定性：D2/D3化学名、钙和免疫排序存在ASR误写。）",
+          "source_claim_ids": [
+            "bili:BV1bau2znE6Y:2"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1bau2znE6Y:2"
+      ],
+      "source_bvids": [
+        "BV1bau2znE6Y"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-024",
+      "collection": "supplements",
+      "title": "维生素D3剂量与检测后补充",
+      "creator_statement": [
+        {
+          "statement": "作者建议先检测25-羟基维生素D；一般补充400-2500单位，严重缺乏时可能在专业意见下使用5000-10000单位。（适用条件：先检测；严重缺乏时遵循专业人员建议。；视频剂量：一般400-2500单位/日；严重缺乏时作者提到5000-10000单位。；视频风险：高剂量需先检测并咨询专业人士。；不确定性：剂量单位未明示为IU；“第三”疑似D3，“白大块”疑似专业医生。）",
+          "source_claim_ids": [
+            "bili:BV1bau2znE6Y:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1bau2znE6Y:4"
+      ],
+      "source_bvids": [
+        "BV1bau2znE6Y"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-025",
+      "collection": "supplements",
+      "title": "维生素D、镁与K2协同及食补",
+      "creator_statement": [
+        {
+          "statement": "作者称脂肪有助D3利用，镁可激活相关代谢，维生素D促进钙吸收；平时吃坚果者不必额外大量补K2，并建议补D时每周吃一次动物肝脏补维生素A。（适用条件：补D3并评估脂肪、镁、K2和维生素A摄入时。；视频剂量：每周一次动物类肝脏（视频原词转写不清）。；视频风险：作者称维生素K过量有毒。；不确定性：“美”疑似镁，“第三”疑似D3，“动物类干藏”疑似动物肝脏；K2机制句不完整。）",
+          "source_claim_ids": [
+            "bili:BV1bau2znE6Y:5"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1bau2znE6Y:5"
+      ],
+      "source_bvids": [
+        "BV1bau2znE6Y"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-026",
+      "collection": "supplements",
+      "title": "鱼油与Omega-3",
+      "creator_statement": [
+        {
+          "statement": "作者把鱼油称为食物衍生物，并说其中的Omega-3是人体无法自身合成的必需营养素。（不确定性：ASR将鱼油转写为“鱼柔”，将“不饱和脂肪酸”疑似转写为“脱布饱盒脂肪酸”。）",
+          "source_claim_ids": [
+            "bili:BV1fLVz6kEJp:2"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1fLVz6kEJp:2"
+      ],
+      "source_bvids": [
+        "BV1fLVz6kEJp"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-027",
+      "collection": "supplements",
+      "title": "鱼油的纯度与形式",
+      "creator_statement": [
+        {
+          "statement": "作者把纯度和形式列为首要选择因素，排除低纯度产品；视频称三种形式中，某“ 一形”含量高但利用率低，TG型利用率高但含量低，RTG型兼具较高含量与利用率但造价更高。（视频风险：作者说海产品类产品需要注意疑似重金属问题，并反对纯度太低的产品。；不确定性：ASR将第一种形式转写为“一形”，无法确认标准名称；“纯度越高，含量就越低”与上下文矛盾，未采纳该因果句；“更金虎”疑似重金属。）",
+          "source_claim_ids": [
+            "bili:BV1fLVz6kEJp:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1fLVz6kEJp:4"
+      ],
+      "source_bvids": [
+        "BV1fLVz6kEJp"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "supplements-028",
+      "collection": "supplements",
+      "title": "晚上有氧时不建议BCAA",
+      "creator_statement": [
+        {
+          "statement": "作者不建议晚上做有氧时喝BCAA；蛋白质吃得多时体内不缺，且BCAA抑制中枢疲劳，消耗不足可能影响休息。 条件：晚上有氧；蛋白质摄入充足时需求更低。 作者排序：不建议晚上使用。 原文风险：可能影响休息。 原始不确定性：标题和正文中的BCA疑似BCAA。",
+          "source_claim_ids": [
+            "bili:BV1Aru2z5EmF:1"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1Aru2z5EmF:1"
+      ],
+      "source_bvids": [
+        "BV1Aru2z5EmF"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-001",
+      "collection": "diet_fat_loss",
+      "title": "出汗、饮水与减脂误区",
+      "creator_statement": [
+        {
+          "statement": "作者称水分波动不代表是否变瘦，汗主要是水分，出汗后的体重下降可只是脱水。",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:1"
+          ]
+        },
+        {
+          "statement": "作者列举高温、情绪、辛辣和疼痛等都能出汗，认为出汗本身不能证明减脂。",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:2"
+          ]
+        },
+        {
+          "statement": "作者称大量出汗会带走水、电解质和部分水溶性维生素，穿爆汗服疯狂出汗存在危险。（视频风险：作者警告大量出汗可能脱水、抽搐、晕厥，风险高。）",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:3"
+          ]
+        },
+        {
+          "statement": "作者称水没有热量，因此喝水不会直接让人变胖，消耗水也不会直接让人变瘦。",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:4"
+          ]
+        },
+        {
+          "statement": "作者称脂肪经过生理过程变成水和二氧化碳排出，不是凭空消失；出汗只是表现而不是结果。（ASR/视频不确定性：“三缩酸循环”“带泻”等词疑似 ASR 误写。）",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:5"
+          ]
+        },
+        {
+          "statement": "作者给出每天饮水量约为体重的3%-4%，并称自己因运动量大可能达到5%-6%。（视频剂量/数字：视频原话为体重的3%-4%；单位在 ASR 中未说明，需复核。）",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:6"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV17LofBiEVK:1",
+        "bili:BV17LofBiEVK:2",
+        "bili:BV17LofBiEVK:3",
+        "bili:BV17LofBiEVK:4",
+        "bili:BV17LofBiEVK:5",
+        "bili:BV17LofBiEVK:6"
+      ],
+      "source_bvids": [
+        "BV17LofBiEVK"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-002",
+      "collection": "diet_fat_loss",
+      "title": "体重变化与减脂评估",
+      "creator_statement": [
+        {
+          "statement": "作者认为体重越低消耗量越低，减脂期间不应让体重“玩命下降”，可通过健康状态、增肌和多动提高消耗。",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:7"
+          ]
+        },
+        {
+          "statement": "作者建议每周拍照、观察记录调整，认为管理期间体重维持得越好越好，因为体重还包含肌肉和糖元。",
+          "source_claim_ids": [
+            "bili:BV17LofBiEVK:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV17LofBiEVK:7",
+        "bili:BV17LofBiEVK:8"
+      ],
+      "source_bvids": [
+        "BV17LofBiEVK"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-003",
+      "collection": "diet_fat_loss",
+      "title": "恢复周、低摄入与减脂",
+      "creator_statement": [
+        {
+          "statement": "作者用学生案例称长期低于1400大卡导致其所称的“结实性营养不良”，并描述体检中低密度脂蛋白和尿酸尿素偏高。（视频剂量/数字：案例数字为低于1400大卡；“涉入”“结实性”等词有 ASR 不确定性。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:1"
+          ]
+        },
+        {
+          "statement": "作者称为案例设置每天2000大卡，通过吃够和恢复周调节身体机能、帮助减脂。（视频剂量/数字：案例设置为每天2000大卡，不代表对所有人的建议。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:2"
+          ]
+        },
+        {
+          "statement": "作者认为吃得太少可能让身体进入节能状态，恢复周通过提高摄入帮助调整。",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:3"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1doTezoEmx:1",
+        "bili:BV1doTezoEmx:2",
+        "bili:BV1doTezoEmx:3"
+      ],
+      "source_bvids": [
+        "BV1doTezoEmx"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-004",
+      "collection": "diet_fat_loss",
+      "title": "热量估算与个体差异",
+      "creator_statement": [
+        {
+          "statement": "作者把每日消耗量称为“TD1E”，说法是基础代谢乘以每日活动系数，并介绍按肌肉量选择不同基础代谢方法。（ASR/视频不确定性：“TD1E”疑似“TDEE”ASR 误写；公式及25.2数字未在本条扩展。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1doTezoEmx:4"
+      ],
+      "source_bvids": [
+        "BV1doTezoEmx"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-005",
+      "collection": "diet_fat_loss",
+      "title": "减脂热量缺口与目标",
+      "creator_statement": [
+        {
+          "statement": "作者建议减脂初期摄入尽量接近或略高于估算值，起点过低会导致后期越吃越少、进入节能状态并放弃。",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:5"
+          ]
+        },
+        {
+          "statement": "作者用80公斤、18%体脂到12%体脂的例子，称需要减约6公斤脂肪；若12周完成，每周约3500大卡、每天约500大卡缺口。（视频剂量/数字：案例：80公斤、18%到12%，约减6公斤脂肪；每周3500/每天500大卡是视频举例。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:6"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1doTezoEmx:5",
+        "bili:BV1doTezoEmx:6"
+      ],
+      "source_bvids": [
+        "BV1doTezoEmx"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-006",
+      "collection": "diet_fat_loss",
+      "title": "膳食结构、宏量营养与蛋白质",
+      "creator_statement": [
+        {
+          "statement": "作者在自定义营养素时称脂肪绝对不应低于20%，碳水尽量选全谷物并避免添加糖。（视频剂量/数字：视频给出脂肪占比不低于20%，具体计算口径未说明。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:7"
+          ]
+        },
+        {
+          "statement": "作者称健身人群蛋白质不要超过体重两倍，训练量较小者不要超过1.5倍，并把植物和肉类蛋白都计入。（视频剂量/数字：视频未明确“倍”对应每公斤体重还是其他口径。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:8"
+          ]
+        },
+        {
+          "statement": "作者建议每天水果约250-300克、蔬菜500克，剩余热量给碳水。（视频剂量/数字：视频给出水果250-300克、蔬菜500克；原文“果肉类”可能为 ASR 词。）",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:9"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1doTezoEmx:7",
+        "bili:BV1doTezoEmx:8",
+        "bili:BV1doTezoEmx:9"
+      ],
+      "source_bvids": [
+        "BV1doTezoEmx"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-007",
+      "collection": "diet_fat_loss",
+      "title": "隐藏热量与外食记录",
+      "creator_statement": [
+        {
+          "statement": "作者提醒外卖及饭店中看不见的隐藏油脂可能带来额外热量。",
+          "source_claim_ids": [
+            "bili:BV1doTezoEmx:10"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1doTezoEmx:10"
+      ],
+      "source_bvids": [
+        "BV1doTezoEmx"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-008",
+      "collection": "diet_fat_loss",
+      "title": "16+8轻断食与体重管理",
+      "creator_statement": [
+        {
+          "statement": "作者称16+8只有在创造热量缺口时才对减肥有用，进食窗口内吃多了仍然无效。",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:1"
+          ]
+        },
+        {
+          "statement": "作者称健康人采用轻断食目前没有实锤问题；情况复杂者应先询问医生并先做筛查。（视频风险：作者建议复杂情况先征求医生意见。）",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:2"
+          ]
+        },
+        {
+          "statement": "作者称正常减肥不应每周减重超过体重1%-2%，减得过快反而不好，并称快速下降多为水重和瘦体重。（视频剂量/数字：视频原话为一周体重不应超过1%-2%，语义和单位需结合上下文复核。）",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:3"
+          ]
+        },
+        {
+          "statement": "作者称16小时不进食可让其所称的“遗线/遗述”休息，并可能出现“细胞自识”、吞噬老化部分；这些均是视频中的可能性表述。（ASR/视频不确定性：“遗线”“遗述”“细胞自识”是 ASR 词，未按背景知识改写。）",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:4"
+          ]
+        },
+        {
+          "statement": "作者认为平台期可能因减重后消耗下降而来；如果状态良好，可通过多训练拉高消耗。（ASR/视频不确定性：“平仅期”疑似“平台期”的 ASR 误写。）",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:5"
+          ]
+        },
+        {
+          "statement": "作者称体重波动可能与前一天吃咸、储水有关。",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:6"
+          ]
+        },
+        {
+          "statement": "作者认为任何饮食方案都应配合运动，因为运动有独立好处。",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:7"
+          ]
+        },
+        {
+          "statement": "作者引用一篇研究的说法，称20点后进食可能使其所述效果较差，理论上第一顿最晚不晚于中午12点；并强调能否坚持。（ASR/视频不确定性：研究与“改善移数”等词为视频/ASR表述，未外部核验。）",
+          "source_claim_ids": [
+            "bili:BV1iuyYBhEZW:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1iuyYBhEZW:1",
+        "bili:BV1iuyYBhEZW:2",
+        "bili:BV1iuyYBhEZW:3",
+        "bili:BV1iuyYBhEZW:4",
+        "bili:BV1iuyYBhEZW:5",
+        "bili:BV1iuyYBhEZW:6",
+        "bili:BV1iuyYBhEZW:7",
+        "bili:BV1iuyYBhEZW:8"
+      ],
+      "source_bvids": [
+        "BV1iuyYBhEZW"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-009",
+      "collection": "diet_fat_loss",
+      "title": "训练前后营养时机",
+      "creator_statement": [
+        {
+          "statement": "作者称力量训练以糖为主，健身初学者练前可适当吃东西，主要是防止低血糖；低强度有氧则相对不必强制进食。（ASR/视频不确定性：“练琴”疑似“练前”的 ASR 误写。）",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:1"
+          ]
+        },
+        {
+          "statement": "作者给出减脂期为防低血糖可按每公斤体重摄入0.5到1克碳水，并称每克碳水4大卡。（视频剂量/数字：视频称每公斤体重0.5-1克；后续单位在 ASR 中断裂。）",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:2"
+          ]
+        },
+        {
+          "statement": "作者称力量训练消耗糖原，练后补充碳水有助于恢复；“必须半小时内吃”被作者认为是把增肌与减脂概念混淆。（ASR/视频不确定性：“糖圆”“鸡糖圆”“干糖圆”均为 ASR 误写，可能对应糖原词。）",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:3"
+          ]
+        },
+        {
+          "statement": "作者建议减脂期蛋白质稍多一些以保留瘦体重，认为长期低碳并利用蛋白质供能会拉低瘦体重和消耗。（ASR/视频不确定性：“受体重”疑似“瘦体重”ASR 误写。）",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:4"
+          ]
+        },
+        {
+          "statement": "作者称练后不一定非要立即吃蛋白质，全天蛋白质总量更重要，练前补充也有意义。",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:5"
+          ]
+        },
+        {
+          "statement": "作者给出的减脂练前方案是蛋白质稍充足、碳水按0.5到1克/公斤体重，在总热量缺口保持的情况下执行。（视频剂量/数字：碳水0.5-1克/公斤体重；蛋白质只说“稍微充足”，没有具体克数。）",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:6"
+          ]
+        },
+        {
+          "statement": "作者认为练后吃什么相对随意，只要控制热量缺口；为减脂建议练后吃干净些、尽量避开脂肪，全天蛋白更重要。",
+          "source_claim_ids": [
+            "bili:BV1KooZBSE94:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1KooZBSE94:1",
+        "bili:BV1KooZBSE94:2",
+        "bili:BV1KooZBSE94:3",
+        "bili:BV1KooZBSE94:4",
+        "bili:BV1KooZBSE94:5",
+        "bili:BV1KooZBSE94:6",
+        "bili:BV1KooZBSE94:7"
+      ],
+      "source_bvids": [
+        "BV1KooZBSE94"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-010",
+      "collection": "diet_fat_loss",
+      "title": "体重组成与长期减脂评估",
+      "creator_statement": [
+        {
+          "statement": "作者认为减脂/减肥和单纯减重不是同一件事，快速减重可能反弹，体重管理应当作为长期过程。（ASR/视频不确定性：“减肥”在语音中可能是“减脂”的泛称。）",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:1"
+          ]
+        },
+        {
+          "statement": "作者把体重比作由脂肪、水分、糖元和其他瘦体重组成的总数。（ASR/视频不确定性：“糖元”“油汤四个组成”存在 ASR 误写，按原文保留。）",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:2"
+          ]
+        },
+        {
+          "statement": "作者提醒水分会显著影响体重，因此短期称重变化不能直接等同于脂肪变化。",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:4"
+          ]
+        },
+        {
+          "statement": "作者把不属于脂肪的骨骼、肌肉等部分统称为瘦体重/去脂体重。（ASR/视频不确定性：该段此前“骨骼”等词有 ASR 省略或误写。）",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:5"
+          ]
+        },
+        {
+          "statement": "作者建议在固定时间和位置拍照对比，并记录腰围等指标来判断是否在减脂，而不是只看体重秤。",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:6"
+          ]
+        },
+        {
+          "statement": "作者建议每周观察、记录、调整并复盘，把体重管理当成长期工作，不追求一两天完成。（ASR/视频不确定性：转写将三个连续短句拆成独立片段；引文按转写中的连续文本保留换行。）",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LFZFBiEEA:1",
+        "bili:BV1LFZFBiEEA:2",
+        "bili:BV1LFZFBiEEA:4",
+        "bili:BV1LFZFBiEEA:5",
+        "bili:BV1LFZFBiEEA:6",
+        "bili:BV1LFZFBiEEA:7"
+      ],
+      "source_bvids": [
+        "BV1LFZFBiEEA"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-011",
+      "collection": "diet_fat_loss",
+      "title": "减脂期脂肪摄入与体重组成",
+      "creator_statement": [
+        {
+          "statement": "作者称摄入脂肪与激素、内分泌、皮肤状态和正常生理功能相关；减脂期应吃脂肪，但不能多吃，也不能过少。（视频风险：作者称完全不吃脂肪会严重影响健康。）",
+          "source_claim_ids": [
+            "bili:BV1LFZFBiEEA:3"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LFZFBiEEA:3"
+      ],
+      "source_bvids": [
+        "BV1LFZFBiEEA"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-012",
+      "collection": "diet_fat_loss",
+      "title": "热量缺口大小与节食风险",
+      "creator_statement": [
+        {
+          "statement": "作者把摄入2000、消耗2500时的500称为热量缺口，把摄入2500、消耗2000时的500称为热量盈余。（视频剂量/数字：视频举例缺口/盈余均为500大卡；“涉入”“赢鱼”是 ASR 词形。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:1"
+          ]
+        },
+        {
+          "statement": "作者反对把热量缺口做到1000或2000，认为吃得过少会使身体进入节能状态并增强饥饿。（视频风险：作者称过大缺口会增加饥饿并使减脂失败风险上升。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:2"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LnofBAEET:1",
+        "bili:BV1LnofBAEET:2"
+      ],
+      "source_bvids": [
+        "BV1LnofBAEET"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-013",
+      "collection": "diet_fat_loss",
+      "title": "过度节食与健康风险",
+      "creator_statement": [
+        {
+          "statement": "作者把过大热量缺口、激素紊乱和控制不住进食联系起来，称可能出现神经性暴食并反弹。（ASR/视频不确定性：“饱食”“激素稳乱”等词有 ASR 误写，保留原文概念。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:3"
+          ]
+        },
+        {
+          "statement": "作者称过大缺口会影响心情、行为、经期和日常活动，饥饿时人会不想动。（视频风险：作者描述的风险包括心情、行为和日常活动下降。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LnofBAEET:3",
+        "bili:BV1LnofBAEET:4"
+      ],
+      "source_bvids": [
+        "BV1LnofBAEET"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-014",
+      "collection": "diet_fat_loss",
+      "title": "热量估算与食品标签",
+      "creator_statement": [
+        {
+          "statement": "作者称情绪、健康/亚健康和生理状态会影响基础代谢及食物消化吸收，网上公式不能准确适用于每个人。（ASR/视频不确定性：“新晨代谢”“腹胶感”等为明显 ASR 误写，未按医学术语修正。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:5"
+          ]
+        },
+        {
+          "statement": "作者称热量表标示值存在上下浮动，视频中给出的允许幅度是20%。（视频剂量/数字：视频称热量标示上下浮动20%允许；未提供法规来源。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:6"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LnofBAEET:5",
+        "bili:BV1LnofBAEET:6"
+      ],
+      "source_bvids": [
+        "BV1LnofBAEET"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-015",
+      "collection": "diet_fat_loss",
+      "title": "饮食记录与调整",
+      "creator_statement": [
+        {
+          "statement": "作者建议饮食尽量便于观察、记录和调整，可在减脂前期适当单一化，后期再增加多样性。（适用条件：作者称这是阶段性的做法。）",
+          "source_claim_ids": [
+            "bili:BV1LnofBAEET:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LnofBAEET:7"
+      ],
+      "source_bvids": [
+        "BV1LnofBAEET"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-016",
+      "collection": "diet_fat_loss",
+      "title": "隐藏热量与总摄入",
+      "creator_statement": [
+        {
+          "statement": "作者称所谓干净食物并不等于没有热量；蘸料、汤汁和菜里的油脂可能形成“隐形热量”。（ASR/视频不确定性：“隐形瘦肉”等为 ASR 误写，原意应与隐藏热量相关但未替换。）",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:1"
+          ]
+        },
+        {
+          "statement": "作者用转写中的数字比较米饭和“卖片”，说明同样重量的食物热量密度可能不同，吃得干净也可能因吃多而摄入超标。（视频剂量/数字：视频称每100克米饭约116大卡、每100克“卖片”232大卡；“卖片”名称存在 ASR 不确定性。）",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:2"
+          ]
+        },
+        {
+          "statement": "作者认为判断少吃是否有效要看全天总热量，而不是主观感觉一顿吃得少或食物看起来干净。（ASR/视频不确定性：“实际上你没有少吃”与前句之间有 ASR 口语省略。）",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:3"
+          ]
+        },
+        {
+          "statement": "作者举例称健身房消耗可能被回家后少动抵消，导致日常消耗从2000变成1800；单看健身房热量并不能决定结果。（视频剂量/数字：视频举例数字为每日消耗2000与1800大卡；“消耗量也就1”原文不清。）",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:5"
+          ]
+        },
+        {
+          "statement": "作者的核心结论是瘦不瘦取决于吃和练两件事，需要消耗量大于摄入量。（适用条件：作者在视频中将其作为热量角度的核心结论。）",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:6"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1YsofB8EG2:1",
+        "bili:BV1YsofB8EG2:2",
+        "bili:BV1YsofB8EG2:3",
+        "bili:BV1YsofB8EG2:5",
+        "bili:BV1YsofB8EG2:6"
+      ],
+      "source_bvids": [
+        "BV1YsofB8EG2"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-017",
+      "collection": "diet_fat_loss",
+      "title": "日常活动量与减脂",
+      "creator_statement": [
+        {
+          "statement": "作者把健身房训练称为结构化运动，把走路、家务等日常活动称为非结构化运动，二者相加才是当天总活动量。",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:4"
+          ]
+        },
+        {
+          "statement": "作者不希望强迫极端运动，建议从能让人动起来的活动开始，例如站着看电视、把屁股从凳子上挪开。",
+          "source_claim_ids": [
+            "bili:BV1YsofB8EG2:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1YsofB8EG2:4",
+        "bili:BV1YsofB8EG2:7"
+      ],
+      "source_bvids": [
+        "BV1YsofB8EG2"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "diet_fat_loss-018",
+      "collection": "diet_fat_loss",
+      "title": "脂肪摄入、必需脂肪酸与减脂",
+      "creator_statement": [
+        {
+          "statement": "作者认为不是吃某一种脂肪就必然在对应部位长脂肪，而是任何能量物质吃多都可能增加脂肪。（ASR/视频不确定性：“凤是共能物”等营养素词被 ASR 误写。）",
+          "source_claim_ids": [
+            "bili:BV1YWofBcEYM:1"
+          ]
+        },
+        {
+          "statement": "作者称脂肪约9大卡/克，碳水和蛋白约4大卡/克，并认为数字差异容易让人害怕脂肪。（视频剂量/数字：视频给出脂肪9大卡、碳水蛋白4大卡的说法。）",
+          "source_claim_ids": [
+            "bili:BV1YWofBcEYM:2"
+          ]
+        },
+        {
+          "statement": "作者明确表示减脂期间不允许完全不吃脂肪，并称其客户中有人因不吃脂肪而减脂失败。（视频风险：作者把完全不吃脂肪描述为减脂失败风险。）",
+          "source_claim_ids": [
+            "bili:BV1YWofBcEYM:3"
+          ]
+        },
+        {
+          "statement": "作者称人体有两种必需脂肪酸，不能自身合成，需要通过食物摄入，并举鱼和坚果为例。（ASR/视频不确定性：“Omg6”“Omg3”及“脂肪食物”均按 ASR 原文保留。）",
+          "source_claim_ids": [
+            "bili:BV1YWofBcEYM:6"
+          ]
+        },
+        {
+          "statement": "作者的总结是单独吃脂肪不等于必然发胖，体重增加取决于各种能量物质叠加后的总量。",
+          "source_claim_ids": [
+            "bili:BV1YWofBcEYM:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1YWofBcEYM:1",
+        "bili:BV1YWofBcEYM:2",
+        "bili:BV1YWofBcEYM:3",
+        "bili:BV1YWofBcEYM:6",
+        "bili:BV1YWofBcEYM:7"
+      ],
+      "source_bvids": [
+        "BV1YWofBcEYM"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-001",
+      "collection": "training",
+      "title": "减脂运动选择与热量消耗",
+      "creator_statement": [
+        {
+          "statement": "作者认为减脂最终取决于制造热量缺口，力量或有氧只要带来足够消耗都可以。（ASR/视频不确定性：ASR将“减脂”大量写成“简直”。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:1"
+          ]
+        },
+        {
+          "statement": "作者区分运动时糖脂供能比例和总消耗：低强度脂肪比例较高不代表总消耗更高，减脂主要看总消耗。（ASR/视频不确定性：“供能”及相关代谢词被ASR写成“功能/功能物质”。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:2"
+          ]
+        },
+        {
+          "statement": "作者认为力量和有氧没有绝对优劣，应按个人时间、能力和单位时间消耗选择；只要消耗大于摄入就能减脂。（适用条件：取决于个人时间安排和训练能力；ASR/视频不确定性：ASR将“摄入”写成“射入”。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:3"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1CAofByEua:1",
+        "bili:BV1CAofByEua:2",
+        "bili:BV1CAofByEua:3"
+      ],
+      "source_bvids": [
+        "BV1CAofByEua"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-002",
+      "collection": "training",
+      "title": "EPOC后燃效应",
+      "creator_statement": [
+        {
+          "statement": "作者称力量/健身性训练或HIIT后存在后燃效应，接下来约48小时代谢会被拉高约10%。（适用条件：作者将该说法用于力量训练、健身性训练和HIIT；视频剂量/数字：约48小时；约10%；ASR/视频不确定性：“你的代谢”中间一词被ASR写成“你的带”。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1CAofByEua:4"
+      ],
+      "source_bvids": [
+        "BV1CAofByEua"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-003",
+      "collection": "training",
+      "title": "运动强度与糖脂供能",
+      "creator_statement": [
+        {
+          "statement": "作者把有氧/无氧与最大摄氧量和运动强度联系起来，并给出粗略判断：越喘通常代表强度越高。（适用条件：这是作者给出的简单经验判断，不是精确测量；ASR/视频不确定性：“心率/最大摄氧量”等术语多处被ASR误写。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:5"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1CAofByEua:5"
+      ],
+      "source_bvids": [
+        "BV1CAofByEua"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-004",
+      "collection": "training",
+      "title": "减脂期抗阻训练与有氧安排",
+      "creator_statement": [
+        {
+          "statement": "作者建议热量缺口约300到500时合理做力量或抗阻训练，称其有助于避免体重下降时身体素质和体型变差。（适用条件：作者举例为热量缺口300到500；视频剂量/数字：热量缺口300-500（原话）；ASR/视频不确定性：“体重”被ASR写成“受体重”。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:6"
+          ]
+        },
+        {
+          "statement": "作者建议时间有限时把训练强度拉高，并在其余时间尽可能多活动；散步等低强度有氧即使没有明显感觉也有消耗。（适用条件：适用于训练时间有限的情境；ASR/视频不确定性：“溜弯”按转写保留，语义可能是散步。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:7"
+          ]
+        },
+        {
+          "statement": "作者称先力量还是先有氧取决于个人水平和哪项能让单位时间消耗更多；没有必须力量后立刻做有氧的规则，错开半小时、一小时或半天也一样。（适用条件：按个人状态、能力和时间安排调整；视频剂量/数字：可间隔半小时、一小时或半天（原话）；ASR/视频不确定性：“身体状态立即”所在句不完整，未据此扩展结论。）",
+          "source_claim_ids": [
+            "bili:BV1CAofByEua:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1CAofByEua:6",
+        "bili:BV1CAofByEua:7",
+        "bili:BV1CAofByEua:8"
+      ],
+      "source_bvids": [
+        "BV1CAofByEua"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-005",
+      "collection": "training",
+      "title": "全身哑铃训练负重选择",
+      "creator_statement": [
+        {
+          "statement": "作者介绍本集为负重全身训练，建议女生选择偏小训练重量，男生按能力选择。（适用条件：按个人能力和性别示例选择重量；ASR/视频不确定性：“哑铃”在转写中多写成“雅灵/眼灵/雅玲”。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:1"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1pTg3zCEjX:1"
+      ],
+      "source_bvids": [
+        "BV1pTg3zCEjX"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-006",
+      "collection": "training",
+      "title": "全身哑铃动作要点",
+      "creator_statement": [
+        {
+          "statement": "作者示范地板卧推：哑铃平行于地面，腿可稳定支撑，呼气推起、吸气慢慢下放，并提醒不要损伤肩部。（适用条件：胸部训练动作；保持肩胛稳定；视频风险：作者提醒动作不要损肩；ASR/视频不确定性：“哑铃地板卧推”被ASR写成“雅灵的地板卧推/握吹”。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:2"
+          ]
+        },
+        {
+          "statement": "作者要求俯身哑铃划船时用肘关节带动、尽可能用背部发力，动作幅度不必过高。（适用条件：俯身背部训练动作；ASR/视频不确定性：“俯身、哑铃划船、肘关节”有ASR误写。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:3"
+          ]
+        },
+        {
+          "statement": "作者示范从身体前侧提拉哑铃、翻转到肩部位置后推举过头顶，回程沿原轨迹并尽量贴近身体。（适用条件：站姿复合动作；注意肩膀安全；视频风险：作者提醒注意肩膀安全、不要让哑铃向两侧偏离；ASR/视频不确定性：“哑铃”及“推举”个别词被ASR误写。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:4"
+          ]
+        },
+        {
+          "statement": "作者示范将哑铃放在胸前做深蹲，站距略宽、挺胸、膝盖打开，并保持下蹲动作。（适用条件：下肢训练动作；ASR/视频不确定性：“高脚杯”被ASR写成“高脚背”。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:5"
+          ]
+        },
+        {
+          "statement": "作者示范仰卧哑铃夹胸：哑铃置于胸前，肘关节带动并画弧靠近，提醒不要直接直臂打开以免肩关节压力过大。（适用条件：胸部动作；肘关节控制轨迹；视频风险：作者称直臂打开会让肩膀关节压力太大；ASR/视频不确定性：“夹胸/肘关节”有ASR误写。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:6"
+          ]
+        },
+        {
+          "statement": "作者称俯身哑铃提拉主要训练上背部和三角肌后束，要求肘关节打开、背部发力，哑铃不必拉得过高。（适用条件：上背部和三角肌后束动作；ASR/视频不确定性：“三角肌后束”被ASR写成“三手机后处”。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:7"
+          ]
+        },
+        {
+          "statement": "作者安排侧平举后接前平举；女生可各做一次，男生可连续侧平举再转前平举。（适用条件：肩部训练；按能力调整重复方式；ASR/视频不确定性：动作名“侧平举/前平举”及“哑铃”被ASR写成近音词。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:8"
+          ]
+        },
+        {
+          "statement": "作者示范哑铃硬拉，要求锁膝、站距髋宽并保持髋部主导，不要把动作做成深蹲。（适用条件：下肢和后链训练；ASR/视频不确定性：“髋宽/髋部”被ASR写成“深宽/躯宽”。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:9"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1pTg3zCEjX:2",
+        "bili:BV1pTg3zCEjX:3",
+        "bili:BV1pTg3zCEjX:4",
+        "bili:BV1pTg3zCEjX:5",
+        "bili:BV1pTg3zCEjX:6",
+        "bili:BV1pTg3zCEjX:7",
+        "bili:BV1pTg3zCEjX:8",
+        "bili:BV1pTg3zCEjX:9"
+      ],
+      "source_bvids": [
+        "BV1pTg3zCEjX"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-007",
+      "collection": "training",
+      "title": "训练重量、间歇与补水",
+      "creator_statement": [
+        {
+          "statement": "作者称重量越大训练强度越高，可按不同部位力量准备不同重量；训练中补水重要，但应少量多次饮用。（适用条件：跟练时按个人部位能力调整重量；视频剂量/数字：少量多次（原话）；视频风险：一次大量饮水可能不适；ASR/视频不确定性：训练计时段落中“50秒/40秒做20秒休息”等安排出现，但未作为所有动作的统一处方。）",
+          "source_claim_ids": [
+            "bili:BV1pTg3zCEjX:10"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1pTg3zCEjX:10"
+      ],
+      "source_bvids": [
+        "BV1pTg3zCEjX"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-008",
+      "collection": "training",
+      "title": "下肢跟练计划与负重选择",
+      "creator_statement": [
+        {
+          "statement": "作者介绍本集为下肢训练，共八个动作；可以自重，也可以把哑铃放在胸前负重，难度按个人情况选择。（适用条件：按个人情况选择自重或负重；ASR/视频不确定性：“哑铃”多被ASR写成“雅玲/雅灵”。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:1"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1yAg3zjEeb:1"
+      ],
+      "source_bvids": [
+        "BV1yAg3zjEeb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-009",
+      "collection": "training",
+      "title": "下肢训练动作要点",
+      "creator_statement": [
+        {
+          "statement": "作者示范深蹲：双脚略宽于髋宽，手肘可打开，上肢微微挺直并保持髋部主导。（适用条件：下肢训练；ASR/视频不确定性：“髋宽/髋息”被ASR写成“躯宽躯息”。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:2"
+          ]
+        },
+        {
+          "statement": "作者示范原地蹲步：向外迈出并蹲一次，再回到原位重复另一侧。（适用条件：下肢训练；视频未清晰说明动作的标准名称；ASR/视频不确定性：动作名因ASR不清，未将其规范化为具体弓步/侧蹲名称。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:3"
+          ]
+        },
+        {
+          "statement": "作者要求臀桥时保持自然腰曲、双脚踩实或脚跟点地，呼气向上挺臀、吸气下降。（适用条件：臀部和后链训练。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:4"
+          ]
+        },
+        {
+          "statement": "作者示范哈萨克深蹲：双脚尽量打开，向一侧侧蹲，膝盖沿脚尖方向，骨盆不要偏移；可双手抱胸或负重。（适用条件：功能性下肢训练；ASR/视频不确定性：“哈萨克深蹲”基本可由上下文确认，但个别指导词有ASR误写。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:5"
+          ]
+        },
+        {
+          "statement": "作者安排双膝跪地、双手抱胸后坐到腿上再呼气顶髋，作为下肢训练动作。（适用条件：动作标准名称在ASR中不清；ASR/视频不确定性：“顶髋”仅为上下文解释，原ASR名称为“顶宽/柜子顶宽”，需人工复核。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:6"
+          ]
+        },
+        {
+          "statement": "作者示范单腿硬拉：一条腿支撑，另一条腿向下延伸，并在训练中换腿。（适用条件：单腿后链训练；ASR/视频不确定性：动作讲解较短，未补充视频未表达的平衡或负重要求。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:7"
+          ]
+        },
+        {
+          "statement": "作者示范深蹲跳：从深蹲底部跳起并重新蹲下，强调爆发力和尽可能蹲到底。（适用条件：下肢爆发训练；视频剂量/数字：最后一个动作一般一分钟；中间两分钟休息（原话）；视频风险：动作对下肢冲击较大，视频仅提醒按能力完成。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1yAg3zjEeb:2",
+        "bili:BV1yAg3zjEeb:3",
+        "bili:BV1yAg3zjEeb:4",
+        "bili:BV1yAg3zjEeb:5",
+        "bili:BV1yAg3zjEeb:6",
+        "bili:BV1yAg3zjEeb:7",
+        "bili:BV1yAg3zjEeb:8"
+      ],
+      "source_bvids": [
+        "BV1yAg3zjEeb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-010",
+      "collection": "training",
+      "title": "下肢热身、间歇与训练后恢复",
+      "creator_statement": [
+        {
+          "statement": "作者要求练前以动态形式热身，练后可做静态拉伸，并示范髋部、髂腰肌、腘绳肌和大腿内收等区域的活动。（适用条件：练前动态、练后静态；ASR/视频不确定性：“髂腰肌、腘绳肌”被ASR写成“铲腰肌、伯承筋”等；未标准化具体肌群。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:9"
+          ]
+        },
+        {
+          "statement": "作者在本集沿用30秒训练30秒休息的节奏，最后一轮为40秒训练20秒休息，并建议训练后复习呼吸技巧让心率放松。（适用条件：本视频跟练安排；视频剂量/数字：30秒做/30秒休息；40秒做/20秒休息；ASR/视频不确定性：“练后的3-72小时免疫力急急下降”原句语义和ASR均不清，仅保留为未解析片段，不据此扩展风险。）",
+          "source_claim_ids": [
+            "bili:BV1yAg3zjEeb:10"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1yAg3zjEeb:9",
+        "bili:BV1yAg3zjEeb:10"
+      ],
+      "source_bvids": [
+        "BV1yAg3zjEeb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-011",
+      "collection": "training",
+      "title": "基础代谢、体重与个体差异",
+      "creator_statement": [
+        {
+          "statement": "作者称基础代谢约占TDEE的50%-70%，是在静息时由内脏及身体正常代谢活动产生。（适用条件：作者讨论的是静息状态；视频剂量/数字：TDEE的50%-70%（原话）；ASR/视频不确定性：TDEE被ASR写成“TDE”，“内脏”等解释句有缺字。）",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:1"
+          ]
+        },
+        {
+          "statement": "作者认为肌肉量增加真的不一定让基础代谢升高，但肌肉较重、与基础代谢存在一定关联。",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:2"
+          ]
+        },
+        {
+          "statement": "作者称体重下降和长期吃得更少会使代谢逐渐降低，讨论中把体表面积和体重视为影响因素。（适用条件：发生在持续减重、摄入减少的情境；视频风险：作者将持续吃得少与后期代谢越来越低联系起来；ASR/视频不确定性：“代谢/体表面/减脂”多处被ASR误写，未恢复具体术语。）",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:3"
+          ]
+        },
+        {
+          "statement": "作者称年龄每年可能使代谢下降约1%-2%，同体重身高和肌肉量时男性比女性高约10%-12%，体重和体表面积也会影响消耗。（适用条件：视频中为作者的概括性说法；视频剂量/数字：年龄每年下降1%-2%；男性高10%-12%（原话）；ASR/视频不确定性：“基础代谢”被写成“技术代谢”；性别差异和百分比需后续证据复核。）",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1ywofBLEsL:1",
+        "bili:BV1ywofBLEsL:2",
+        "bili:BV1ywofBLEsL:3",
+        "bili:BV1ywofBLEsL:8"
+      ],
+      "source_bvids": [
+        "BV1ywofBLEsL"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-012",
+      "collection": "training",
+      "title": "运动适应与活动量",
+      "creator_statement": [
+        {
+          "statement": "作者称随着身体适应并掌握某种运动，该运动的消耗量会下降；可通过提高坡度、提高速度或更换跑步机、椭圆机、自行车等运动调整。（适用条件：适用于身体已经适应该运动的情况；ASR/视频不确定性：器械名称“跑步机、椭圆机”等部分被ASR写成近音词。）",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:4"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1ywofBLEsL:4"
+      ],
+      "source_bvids": [
+        "BV1ywofBLEsL"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "training-013",
+      "collection": "training",
+      "title": "热量缺口与代谢管理",
+      "creator_statement": [
+        {
+          "statement": "作者反对过大的热量缺口，称其可能使皮质醇升高并影响内分泌、瘦素和食欲调节。（适用条件：作者将其放在减脂和长期体重管理语境；视频风险：作者称过大热量缺口可能扰乱内分泌和减脂进展；ASR/视频不确定性：“皮质醇、内分泌”被ASR写成“皮脂醇、内分米”；原话未给出具体阈值。）",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:6"
+          ]
+        },
+        {
+          "statement": "作者建议不要让体重下降太快或缺口过大，保持饮水、轮换结构性运动、增加日常活动、适量蛋白质和蔬菜，并好好睡觉吃饭。（适用条件：作者给出的减脂过程建议；视频剂量/数字：蛋白质“多出一点点”（原话）；ASR/视频不确定性：“基础代谢”大量被ASR写成“技术代谢”；“蔬菜”建议来自后续问答。）",
+          "source_claim_ids": [
+            "bili:BV1ywofBLEsL:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1ywofBLEsL:6",
+        "bili:BV1ywofBLEsL:7"
+      ],
+      "source_bvids": [
+        "BV1ywofBLEsL"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-001",
+      "collection": "sleep_recovery",
+      "title": "睡眠干扰因素与入睡",
+      "creator_statement": [
+        {
+          "statement": "作者称晚间运动过度、情绪压力焦虑以及夜间刷屏会使神经兴奋；屏幕蓝光会让身体接收到类似白天的信号并影响节律。（适用条件：晚间高兴奋、压力或持续屏幕使用时；视频风险：可能导致入睡困难和休息变差；ASR/视频不确定性：“昼夜节律”被ASR写成“截律”；运动与焦虑的因果为作者观点。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:1"
+          ]
+        },
+        {
+          "statement": "作者称临睡前吃大量或重油重脂食物会增加消化负担，可能使入睡时间越推越晚。（适用条件：晚间大量进食、重油重脂或饮水较多时；视频风险：消化负担和入睡延迟；ASR/视频不确定性：“睡眠状态”被ASR写成“睡眠的手队状态”。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:2"
+          ]
+        },
+        {
+          "statement": "作者认为减脂期过大的热量缺口、过早停止进食或带着饥饿入睡，可能引发兴奋、睡不着和状态下降，形成恶性循环。（适用条件：减脂期、摄入不足或晚间明显饥饿时；视频剂量/数字：视频提到下午4-6点后不吃东西的16-8做法；视频风险：饥饿、兴奋、入睡困难、睡眠变差和减脂难以持续；ASR/视频不确定性：“16-8断食”被ASR写成“16-8钻石”；未判断该方法是否科学。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:3"
+          ]
+        },
+        {
+          "statement": "作者分享减脂期间睡前放下手机看书约一小时，个人体验是更容易犯困，并建议观众尝试舒缓的睡前活动。（适用条件：个人经验；适用于睡前容易刷手机者；视频剂量/数字：作者个人约一小时看书；ASR/视频不确定性：“犯困”被ASR写成“腾破”；为个人体验，不扩展为保证性效果。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:4"
+          ]
+        },
+        {
+          "statement": "作者称生活节律、饮食或训练影响可能使皮质醇高峰从早晨移到凌晨2-3点，从而出现固定时间早醒；睡眠不规律和训练过度也可能相关。（适用条件：反复在凌晨2-3点早醒时；视频观点；视频剂量/数字：正常高峰6-8点；视频举例错位到2-3点；视频风险：可能造成凌晨早醒和睡眠节律紊乱；ASR/视频不确定性：“皮质醇”被ASR写成“皮肤醇”；“早醒”被写成“叠醒”。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:5"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LrePz6ENc:1",
+        "bili:BV1LrePz6ENc:2",
+        "bili:BV1LrePz6ENc:3",
+        "bili:BV1LrePz6ENc:4",
+        "bili:BV1LrePz6ENc:5"
+      ],
+      "source_bvids": [
+        "BV1LrePz6ENc"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-002",
+      "collection": "sleep_recovery",
+      "title": "夜间排尿与泌尿相关体验",
+      "creator_statement": [
+        {
+          "statement": "作者称运动人群摄入某种“大白质”后有脱水倾向，集中饮水可能较多排出，建议小口饮；食物和水果也贡献水分。（适用条件：运动人群；原词和机制需复核；视频剂量/数字：集中饮水后约35%水被尿出；食物水分约50%（原话）；视频风险：饮水方式可能影响夜间排尿和体验；ASR/视频不确定性：“大白质”具体指代不明；35%和50%数字及“维生素C排水”说法均需后续审核。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:6"
+          ]
+        },
+        {
+          "statement": "作者称长期憋尿会使膀胱感受变化，少量尿也可能产生尿意并导致尿频；如果出现尿流分岔等现象，视频建议留意。（适用条件：视频中的健康讨论，未作诊断；视频风险：尿频或排尿异常；ASR/视频不确定性：“感觉器/尿流分叉”均有ASR误写，未给出医疗建议。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:7"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LrePz6ENc:6",
+        "bili:BV1LrePz6ENc:7"
+      ],
+      "source_bvids": [
+        "BV1LrePz6ENc"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-003",
+      "collection": "sleep_recovery",
+      "title": "可穿戴设备睡眠数据",
+      "creator_statement": [
+        {
+          "statement": "作者认为手表用体温、心率、HRV和睡眠活动综合估算深睡，存在差异和商业数据限制，但长期佩戴误差可能较小，可作为辅助参考。（适用条件：可穿戴设备估算；不能替代直接观察或医疗判断；视频风险：被设备数据弄焦虑可能反而增加困扰；ASR/视频不确定性：“手表”被ASR写成“手标”；HRV保留原文。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LrePz6ENc:8"
+      ],
+      "source_bvids": [
+        "BV1LrePz6ENc"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-004",
+      "collection": "sleep_recovery",
+      "title": "睡眠环境、仪式与行为",
+      "creator_statement": [
+        {
+          "statement": "作者建议早起拉开窗帘接触早晨光线，睡前使用遮光窗帘、遮蔽光源、少看手机，并形成洗脚、饮用牛奶或吃坚果等睡前仪式。（适用条件：入睡困难时的行为建议；ASR/视频不确定性：“拉开窗帘”被ASR写成“打来”；牛奶/坚果作用是作者可能性表述。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:9"
+          ]
+        },
+        {
+          "statement": "作者转述研究称睡前2-3小时做5分钟抗阻训练可能增加深睡并缩短入睡时间，也建议睡前30分钟听冥想引导放松。（适用条件：视频转述的研究和建议；训练时长限定为5分钟；视频剂量/数字：睡前2-3小时5分钟抗阻；睡前30分钟冥想（原话）；ASR/视频不确定性：“抗阻训练”被ASR写成“抗肚庆炼”；研究出处未给出。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:10"
+          ]
+        },
+        {
+          "statement": "作者称睡眠环境与深睡相关，给出约15-23度的温度范围，并转述七斤以上棉被的压迫/包裹感可能帮助深睡。（适用条件：视频提到的环境建议和研究转述；视频剂量/数字：15-23度；七斤以上棉被（原话）；ASR/视频不确定性：温度和重量为视频转述，未提供研究来源；“棉被”重量单位保留原话。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:11"
+          ]
+        },
+        {
+          "statement": "作者建议除了睡觉尽量不要在床上吃饭、玩等，让身体形成躺到床上就睡觉的反馈，从而帮助睡眠时长和质量。（适用条件：睡眠行为习惯建议；ASR/视频不确定性：“床上干别的事情”被ASR写成“船上干敌的事情”。）",
+          "source_claim_ids": [
+            "bili:BV1LrePz6ENc:12"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1LrePz6ENc:9",
+        "bili:BV1LrePz6ENc:10",
+        "bili:BV1LrePz6ENc:11",
+        "bili:BV1LrePz6ENc:12"
+      ],
+      "source_bvids": [
+        "BV1LrePz6ENc"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-005",
+      "collection": "sleep_recovery",
+      "title": "睡眠时长、质量与效率",
+      "creator_statement": [
+        {
+          "statement": "作者称18至64岁人群通常建议每天睡7到9小时，但个体可能因身体消耗和恢复需求不同而不同。（适用条件：18至64岁；个体差异存在；视频剂量/数字：每天7-9小时（原话）；ASR/视频不确定性：“符合”被ASR写成“否和”，具体指南来源未在视频中说明。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:1"
+          ]
+        },
+        {
+          "statement": "作者把睡眠管理拆成时长、质量/睡眠周期、每天时间一致性和符合个人昼夜节律的入睡时间四点。（ASR/视频不确定性：“昼夜节律”被ASR写成“晝夜节率”。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:2"
+          ]
+        },
+        {
+          "statement": "作者称睡眠效率看实际睡着时间是否占在床时间的90%左右，并将半小时内入睡视为相对较好。（适用条件：视频中的概略判断；视频剂量/数字：约90%；半小时内入睡（原话）；ASR/视频不确定性：“睡着时间/占比”部分有ASR错字，保留作者的90%与30分钟数字。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:3"
+          ]
+        },
+        {
+          "statement": "作者建议只在睡觉时待在床上，睡前避免手机等屏幕；个人经验中听课或定时看书可帮助在半小时内入睡。（适用条件：针对入睡困难者的行为建议；视频剂量/数字：定时半小时（个人经验）；ASR/视频不确定性：“阅读/听课”是个人经验，不应视为普遍疗效。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:4"
+          ]
+        },
+        {
+          "statement": "作者认为起床后的主观精神状态是评价睡眠的重要指标；过去长期少睡形成的睡眠债即使周末多睡也不能完全补回原有损害。（适用条件：评价睡眠质量和长期睡眠不足时；视频风险：作者称睡眠债造成的原有伤害无法完全通过补觉恢复；ASR/视频不确定性：“神清气爽”被ASR写成“神聪气爽”；睡眠债机制未给出处。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:5"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1S3mpBcEwb:1",
+        "bili:BV1S3mpBcEwb:2",
+        "bili:BV1S3mpBcEwb:3",
+        "bili:BV1S3mpBcEwb:4",
+        "bili:BV1S3mpBcEwb:5"
+      ],
+      "source_bvids": [
+        "BV1S3mpBcEwb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-006",
+      "collection": "sleep_recovery",
+      "title": "睡眠中断、酒精咖啡因与饮食",
+      "creator_statement": [
+        {
+          "statement": "作者认为成年人的睡眠不应经常被分段，睡前正常进食通常足够支撑一夜，不应需要醒来吃东西；夜间喝水可能与前一晚饮水和空气湿度有关。（适用条件：成年人；视频观点；视频风险：夜间频繁醒来会破坏睡眠连续性；ASR/视频不确定性：“前一天晚上是不是盐分多”一句有ASR错字，未提炼具体饮水阈值。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:6"
+          ]
+        },
+        {
+          "statement": "作者称酒精可能让人更快入睡，却会损害睡眠质量和周期，减少深睡或快速眼动并增加夜间醒来。（适用条件：睡前或晚间饮酒情境；视频风险：睡眠周期受损、夜间醒来增加、次日状态差；ASR/视频不确定性：“快速眼动睡眠”相关词被ASR写成“快速点动睡眠”。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:7"
+          ]
+        },
+        {
+          "statement": "作者称咖啡因半衰期约5-6小时；视频举例400毫克在6小时后仍约剩200毫克，可能使睡眠时间减少41分钟，并建议睡前12小时不喝咖啡。（适用条件：咖啡因代谢因人而异；为视频中的建议；视频剂量/数字：半衰期5-6小时；400 mg示例；减少41分钟；睡前12小时不喝（原话）；视频风险：可能减少睡眠时间和高质量睡眠；ASR/视频不确定性：400毫克与41分钟为视频举例，未转化为普遍剂量规则。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:8"
+          ]
+        },
+        {
+          "statement": "作者称吸烟可能通过影响呼吸系统和血氧间接影响睡眠，即使主观上感觉睡得还可以。（适用条件：吸烟人群；视频为间接影响的说法；视频风险：呼吸系统影响和血氧饱和度下降可能影响睡眠循环；ASR/视频不确定性：“血氧饱和度”被ASR写成“血氧饱喝度”。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:9"
+          ]
+        },
+        {
+          "statement": "作者称有些人睡前1-2小时进食不受影响，有些人需提前3-4小时；减脂期睡前约2小时少量碳水可能帮助睡眠，最终应结合个人体感测试。（适用条件：个体差异明显；减脂期语境；视频剂量/数字：睡前1-2小时或3-4小时；约2小时少量碳水（原话）；视频风险：过晚、过多或个人不耐受的食物可能影响休息；ASR/视频不确定性：食物名称和“精制碳水/脂肪”句段有ASR误写，仅保留个体化原则。）",
+          "source_claim_ids": [
+            "bili:BV1S3mpBcEwb:10"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1S3mpBcEwb:6",
+        "bili:BV1S3mpBcEwb:7",
+        "bili:BV1S3mpBcEwb:8",
+        "bili:BV1S3mpBcEwb:9",
+        "bili:BV1S3mpBcEwb:10"
+      ],
+      "source_bvids": [
+        "BV1S3mpBcEwb"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    },
+    {
+      "id": "sleep_recovery-007",
+      "collection": "sleep_recovery",
+      "title": "睡姿、呼吸与身体舒适度",
+      "creator_statement": [
+        {
+          "statement": "作者认为成年人长时间俯卧可能让胸廓扩张受限、呼吸不放松，也可能因枕头和姿势让脖子或腰不舒服；仰卧时胸廓扩张更自如。（适用条件：成人长时间俯卧；个体差异存在；视频风险：呼吸不放松、腰颈不适；ASR/视频不确定性：“胸廓”被ASR写成“胸扩”，“仰卧”等词也有误写。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:1"
+          ]
+        },
+        {
+          "statement": "作者说动物实验中侧睡与脑脊液流动或垃圾清理有关，但尚未在人类实验中发现同样规律；视频还提到侧睡可能提高相关环节效率。（适用条件：动物实验结果；人类证据在视频中被明确说为不足；ASR/视频不确定性：“侧睡/脑脊液”被ASR写成“测睡/脑脊也”；视频未给研究细节。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:2"
+          ]
+        },
+        {
+          "statement": "作者认为没有一个对所有人都最佳的睡姿，正常睡着后会翻身换姿势，以缓解局部受压和血液循环问题。（适用条件：一般成人睡眠；视频剂量/数字：一夜可能换二三十回（原话）；ASR/视频不确定性：“血液不流畅/体液排放”所在句有ASR错字，未扩展为具体机制。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:3"
+          ]
+        },
+        {
+          "statement": "作者称体重较大、舌头较厚并有打鼾或呼吸暂停的人，仰卧可能加重气道阻塞，因此可能不适合仰睡。（适用条件：存在打鼾、呼吸暂停或气道阻塞风险时；视频风险：仰卧可能加重呼吸暂停；ASR/视频不确定性：“打鼾、气道、仰睡”被ASR写成“打葫芦、肌道、养睡”；未作医学诊断扩展。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:4"
+          ]
+        },
+        {
+          "statement": "作者认为有反酸或烧心的人可能更适合侧睡，尤其左侧睡，以减少胃内容物向上反流。（适用条件：存在反酸、胃酸相关不适时；ASR/视频不确定性：“侧卧”被ASR写成“侧握”，“左侧睡”的建议是视频观点。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:5"
+          ]
+        },
+        {
+          "statement": "作者建议睡姿应让脊柱处于中立位；腰不适时可在膝盖窝下或两腿之间放枕头，以减少扭转并给腰部减压。（适用条件：腰部不适或侧睡时按体态调整；ASR/视频不确定性：“髋部/腿部中立”部分被ASR写成“股腿”等，按连续原文保留。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:6"
+          ]
+        },
+        {
+          "statement": "作者认为很多人偏好的睡姿可能是既有身体结构让其更舒服，并建议把床视为值得投资的支撑物，让肌肉放松。（适用条件：按个人身体结构和舒适度选择；ASR/视频不确定性：“床垫/支撑物”是上下文概括，原文使用“床边”等不完整表达。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:7"
+          ]
+        },
+        {
+          "statement": "在综合比较后，作者称俯卧没有发现明显好处，更容易造成胳膊麻或受压，因此认为它是最差的睡姿。（适用条件：视频中的综合评价；视频风险：胳膊麻、受压和呼吸不适；ASR/视频不确定性：“压迫/麻木”相关词有ASR误写，未将其扩展为医学风险。）",
+          "source_claim_ids": [
+            "bili:BV1xqmHBWEzV:8"
+          ]
+        }
+      ],
+      "source_claim_ids": [
+        "bili:BV1xqmHBWEzV:1",
+        "bili:BV1xqmHBWEzV:2",
+        "bili:BV1xqmHBWEzV:3",
+        "bili:BV1xqmHBWEzV:4",
+        "bili:BV1xqmHBWEzV:5",
+        "bili:BV1xqmHBWEzV:6",
+        "bili:BV1xqmHBWEzV:7",
+        "bili:BV1xqmHBWEzV:8"
+      ],
+      "source_bvids": [
+        "BV1xqmHBWEzV"
+      ],
+      "uncertainty": "保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。",
+      "safety_boundary": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+      "review_status": "pending"
+    }
+  ]
+}

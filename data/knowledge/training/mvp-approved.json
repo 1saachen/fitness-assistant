@@ -1,0 +1,223 @@
+[
+  {
+    "id": "mvp-training-001",
+    "collection": "training",
+    "title": "减脂运动选择与热量消耗",
+    "claim": "作者认为减脂最终取决于制造热量缺口，力量或有氧只要带来足够消耗都可以。（ASR/视频不确定性：ASR将“减脂”大量写成“简直”。）\n作者区分运动时糖脂供能比例和总消耗：低强度脂肪比例较高不代表总消耗更高，减脂主要看总消耗。（ASR/视频不确定性：“供能”及相关代谢词被ASR写成“功能/功能物质”。）\n作者认为力量和有氧没有绝对优劣，应按个人时间、能力和单位时间消耗选择；只要消耗大于摄入就能减脂。（适用条件：取决于个人时间安排和训练能力；ASR/视频不确定性：ASR将“摄入”写成“射入”。）",
+    "explanation": "来源观点：bili:BV1CAofByEua:1；bili:BV1CAofByEua:2；bili:BV1CAofByEua:3\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-001",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "减脂运动选择与热量消耗",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-002",
+    "collection": "training",
+    "title": "EPOC后燃效应",
+    "claim": "作者称力量/健身性训练或HIIT后存在后燃效应，接下来约48小时代谢会被拉高约10%。（适用条件：作者将该说法用于力量训练、健身性训练和HIIT；视频剂量/数字：约48小时；约10%；ASR/视频不确定性：“你的代谢”中间一词被ASR写成“你的带”。）",
+    "explanation": "来源观点：bili:BV1CAofByEua:4\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-002",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "EPOC后燃效应",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-003",
+    "collection": "training",
+    "title": "运动强度与糖脂供能",
+    "claim": "作者把有氧/无氧与最大摄氧量和运动强度联系起来，并给出粗略判断：越喘通常代表强度越高。（适用条件：这是作者给出的简单经验判断，不是精确测量；ASR/视频不确定性：“心率/最大摄氧量”等术语多处被ASR误写。）",
+    "explanation": "来源观点：bili:BV1CAofByEua:5\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-003",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "运动强度与糖脂供能",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-004",
+    "collection": "training",
+    "title": "减脂期抗阻训练与有氧安排",
+    "claim": "作者建议热量缺口约300到500时合理做力量或抗阻训练，称其有助于避免体重下降时身体素质和体型变差。（适用条件：作者举例为热量缺口300到500；视频剂量/数字：热量缺口300-500（原话）；ASR/视频不确定性：“体重”被ASR写成“受体重”。）\n作者建议时间有限时把训练强度拉高，并在其余时间尽可能多活动；散步等低强度有氧即使没有明显感觉也有消耗。（适用条件：适用于训练时间有限的情境；ASR/视频不确定性：“溜弯”按转写保留，语义可能是散步。）\n作者称先力量还是先有氧取决于个人水平和哪项能让单位时间消耗更多；没有必须力量后立刻做有氧的规则，错开半小时、一小时或半天也一样。（适用条件：按个人状态、能力和时间安排调整；视频剂量/数字：可间隔半小时、一小时或半天（原话）；ASR/视频不确定性：“身体状态立即”所在句不完整，未据此扩展结论。）",
+    "explanation": "来源观点：bili:BV1CAofByEua:6；bili:BV1CAofByEua:7；bili:BV1CAofByEua:8\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-004",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "减脂期抗阻训练与有氧安排",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-005",
+    "collection": "training",
+    "title": "全身哑铃训练负重选择",
+    "claim": "作者介绍本集为负重全身训练，建议女生选择偏小训练重量，男生按能力选择。（适用条件：按个人能力和性别示例选择重量；ASR/视频不确定性：“哑铃”在转写中多写成“雅灵/眼灵/雅玲”。）",
+    "explanation": "来源观点：bili:BV1pTg3zCEjX:1\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-005",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "全身哑铃训练负重选择",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-006",
+    "collection": "training",
+    "title": "全身哑铃动作要点",
+    "claim": "作者示范地板卧推：哑铃平行于地面，腿可稳定支撑，呼气推起、吸气慢慢下放，并提醒不要损伤肩部。（适用条件：胸部训练动作；保持肩胛稳定；视频风险：作者提醒动作不要损肩；ASR/视频不确定性：“哑铃地板卧推”被ASR写成“雅灵的地板卧推/握吹”。）\n作者要求俯身哑铃划船时用肘关节带动、尽可能用背部发力，动作幅度不必过高。（适用条件：俯身背部训练动作；ASR/视频不确定性：“俯身、哑铃划船、肘关节”有ASR误写。）\n作者示范从身体前侧提拉哑铃、翻转到肩部位置后推举过头顶，回程沿原轨迹并尽量贴近身体。（适用条件：站姿复合动作；注意肩膀安全；视频风险：作者提醒注意肩膀安全、不要让哑铃向两侧偏离；ASR/视频不确定性：“哑铃”及“推举”个别词被ASR误写。）\n作者示范将哑铃放在胸前做深蹲，站距略宽、挺胸、膝盖打开，并保持下蹲动作。（适用条件：下肢训练动作；ASR/视频不确定性：“高脚杯”被ASR写成“高脚背”。）\n作者示范仰卧哑铃夹胸：哑铃置于胸前，肘关节带动并画弧靠近，提醒不要直接直臂打开以免肩关节压力过大。（适用条件：胸部动作；肘关节控制轨迹；视频风险：作者称直臂打开会让肩膀关节压力太大；ASR/视频不确定性：“夹胸/肘关节”有ASR误写。）\n作者称俯身哑铃提拉主要训练上背部和三角肌后束，要求肘关节打开、背部发力，哑铃不必拉得过高。（适用条件：上背部和三角肌后束动作；ASR/视频不确定性：“三角肌后束”被ASR写成“三手机后处”。）\n作者安排侧平举后接前平举；女生可各做一次，男生可连续侧平举再转前平举。（适用条件：肩部训练；按能力调整重复方式；ASR/视频不确定性：动作名“侧平举/前平举”及“哑铃”被ASR写成近音词。）\n作者示范哑铃硬拉，要求锁膝、站距髋宽并保持髋部主导，不要把动作做成深蹲。（适用条件：下肢和后链训练；ASR/视频不确定性：“髋宽/髋部”被ASR写成“深宽/躯宽”。）",
+    "explanation": "来源观点：bili:BV1pTg3zCEjX:2；bili:BV1pTg3zCEjX:3；bili:BV1pTg3zCEjX:4；bili:BV1pTg3zCEjX:5；bili:BV1pTg3zCEjX:6；bili:BV1pTg3zCEjX:7；bili:BV1pTg3zCEjX:8；bili:BV1pTg3zCEjX:9\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-006",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "全身哑铃动作要点",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-007",
+    "collection": "training",
+    "title": "训练重量、间歇与补水",
+    "claim": "作者称重量越大训练强度越高，可按不同部位力量准备不同重量；训练中补水重要，但应少量多次饮用。（适用条件：跟练时按个人部位能力调整重量；视频剂量/数字：少量多次（原话）；视频风险：一次大量饮水可能不适；ASR/视频不确定性：训练计时段落中“50秒/40秒做20秒休息”等安排出现，但未作为所有动作的统一处方。）",
+    "explanation": "来源观点：bili:BV1pTg3zCEjX:10\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-007",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "训练重量、间歇与补水",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-008",
+    "collection": "training",
+    "title": "下肢跟练计划与负重选择",
+    "claim": "作者介绍本集为下肢训练，共八个动作；可以自重，也可以把哑铃放在胸前负重，难度按个人情况选择。（适用条件：按个人情况选择自重或负重；ASR/视频不确定性：“哑铃”多被ASR写成“雅玲/雅灵”。）",
+    "explanation": "来源观点：bili:BV1yAg3zjEeb:1\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-008",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "下肢跟练计划与负重选择",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-009",
+    "collection": "training",
+    "title": "下肢训练动作要点",
+    "claim": "作者示范深蹲：双脚略宽于髋宽，手肘可打开，上肢微微挺直并保持髋部主导。（适用条件：下肢训练；ASR/视频不确定性：“髋宽/髋息”被ASR写成“躯宽躯息”。）\n作者示范原地蹲步：向外迈出并蹲一次，再回到原位重复另一侧。（适用条件：下肢训练；视频未清晰说明动作的标准名称；ASR/视频不确定性：动作名因ASR不清，未将其规范化为具体弓步/侧蹲名称。）\n作者要求臀桥时保持自然腰曲、双脚踩实或脚跟点地，呼气向上挺臀、吸气下降。（适用条件：臀部和后链训练。）\n作者示范哈萨克深蹲：双脚尽量打开，向一侧侧蹲，膝盖沿脚尖方向，骨盆不要偏移；可双手抱胸或负重。（适用条件：功能性下肢训练；ASR/视频不确定性：“哈萨克深蹲”基本可由上下文确认，但个别指导词有ASR误写。）\n作者安排双膝跪地、双手抱胸后坐到腿上再呼气顶髋，作为下肢训练动作。（适用条件：动作标准名称在ASR中不清；ASR/视频不确定性：“顶髋”仅为上下文解释，原ASR名称为“顶宽/柜子顶宽”，需人工复核。）\n作者示范单腿硬拉：一条腿支撑，另一条腿向下延伸，并在训练中换腿。（适用条件：单腿后链训练；ASR/视频不确定性：动作讲解较短，未补充视频未表达的平衡或负重要求。）\n作者示范深蹲跳：从深蹲底部跳起并重新蹲下，强调爆发力和尽可能蹲到底。（适用条件：下肢爆发训练；视频剂量/数字：最后一个动作一般一分钟；中间两分钟休息（原话）；视频风险：动作对下肢冲击较大，视频仅提醒按能力完成。）",
+    "explanation": "来源观点：bili:BV1yAg3zjEeb:2；bili:BV1yAg3zjEeb:3；bili:BV1yAg3zjEeb:4；bili:BV1yAg3zjEeb:5；bili:BV1yAg3zjEeb:6；bili:BV1yAg3zjEeb:7；bili:BV1yAg3zjEeb:8\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-009",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "下肢训练动作要点",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-010",
+    "collection": "training",
+    "title": "下肢热身、间歇与训练后恢复",
+    "claim": "作者要求练前以动态形式热身，练后可做静态拉伸，并示范髋部、髂腰肌、腘绳肌和大腿内收等区域的活动。（适用条件：练前动态、练后静态；ASR/视频不确定性：“髂腰肌、腘绳肌”被ASR写成“铲腰肌、伯承筋”等；未标准化具体肌群。）\n作者在本集沿用30秒训练30秒休息的节奏，最后一轮为40秒训练20秒休息，并建议训练后复习呼吸技巧让心率放松。（适用条件：本视频跟练安排；视频剂量/数字：30秒做/30秒休息；40秒做/20秒休息；ASR/视频不确定性：“练后的3-72小时免疫力急急下降”原句语义和ASR均不清，仅保留为未解析片段，不据此扩展风险。）",
+    "explanation": "来源观点：bili:BV1yAg3zjEeb:9；bili:BV1yAg3zjEeb:10\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-010",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "下肢热身、间歇与训练后恢复",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-011",
+    "collection": "training",
+    "title": "基础代谢、体重与个体差异",
+    "claim": "作者称基础代谢约占TDEE的50%-70%，是在静息时由内脏及身体正常代谢活动产生。（适用条件：作者讨论的是静息状态；视频剂量/数字：TDEE的50%-70%（原话）；ASR/视频不确定性：TDEE被ASR写成“TDE”，“内脏”等解释句有缺字。）\n作者认为肌肉量增加真的不一定让基础代谢升高，但肌肉较重、与基础代谢存在一定关联。\n作者称体重下降和长期吃得更少会使代谢逐渐降低，讨论中把体表面积和体重视为影响因素。（适用条件：发生在持续减重、摄入减少的情境；视频风险：作者将持续吃得少与后期代谢越来越低联系起来；ASR/视频不确定性：“代谢/体表面/减脂”多处被ASR误写，未恢复具体术语。）\n作者称年龄每年可能使代谢下降约1%-2%，同体重身高和肌肉量时男性比女性高约10%-12%，体重和体表面积也会影响消耗。（适用条件：视频中为作者的概括性说法；视频剂量/数字：年龄每年下降1%-2%；男性高10%-12%（原话）；ASR/视频不确定性：“基础代谢”被写成“技术代谢”；性别差异和百分比需后续证据复核。）",
+    "explanation": "来源观点：bili:BV1ywofBLEsL:1；bili:BV1ywofBLEsL:2；bili:BV1ywofBLEsL:3；bili:BV1ywofBLEsL:8\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-011",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "基础代谢、体重与个体差异",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-012",
+    "collection": "training",
+    "title": "运动适应与活动量",
+    "claim": "作者称随着身体适应并掌握某种运动，该运动的消耗量会下降；可通过提高坡度、提高速度或更换跑步机、椭圆机、自行车等运动调整。（适用条件：适用于身体已经适应该运动的情况；ASR/视频不确定性：器械名称“跑步机、椭圆机”等部分被ASR写成近音词。）",
+    "explanation": "来源观点：bili:BV1ywofBLEsL:4\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-012",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "运动适应与活动量",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  },
+  {
+    "id": "mvp-training-013",
+    "collection": "training",
+    "title": "热量缺口与代谢管理",
+    "claim": "作者反对过大的热量缺口，称其可能使皮质醇升高并影响内分泌、瘦素和食欲调节。（适用条件：作者将其放在减脂和长期体重管理语境；视频风险：作者称过大热量缺口可能扰乱内分泌和减脂进展；ASR/视频不确定性：“皮质醇、内分泌”被ASR写成“皮脂醇、内分米”；原话未给出具体阈值。）\n作者建议不要让体重下降太快或缺口过大，保持饮水、轮换结构性运动、增加日常活动、适量蛋白质和蔬菜，并好好睡觉吃饭。（适用条件：作者给出的减脂过程建议；视频剂量/数字：蛋白质“多出一点点”（原话）；ASR/视频不确定性：“基础代谢”大量被ASR写成“技术代谢”；“蔬菜”建议来自后续问答。）",
+    "explanation": "来源观点：bili:BV1ywofBLEsL:6；bili:BV1ywofBLEsL:7\n不确定性：保留输入 creator_summary 中的适用条件、ASR/视频不确定性和待复核表述；本卡 review_status 为 pending。\n安全边界：仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。",
+    "source_id": "mvp-card-source-training-013",
+    "source_type": "creator_opinion",
+    "evidence_level": "experience",
+    "review_status": "approved",
+    "review_note": "用户于 2026-09-20 明确批准全部 MVP 候选卡。",
+    "tags": [
+      "热量缺口与代谢管理",
+      "training"
+    ],
+    "safety_level": "仅记录视频作者观点，不将其解释为普遍医学结论或个体化剂量；涉及补剂、疾病、药物、特殊人群或训练风险时需人工审核。"
+  }
+]
