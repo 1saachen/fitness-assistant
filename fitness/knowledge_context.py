@@ -1,6 +1,15 @@
 """Deliberately curated baseline strategies and fail-closed source coverage."""
 
+import json
 from collections.abc import Mapping
+from dataclasses import dataclass, replace
+from datetime import timedelta
+from pathlib import Path
+
+from pydantic import ValidationError
+
+from fitness.knowledge import build_manifest
+from fitness.models import FeedbackData, KnowledgeCitation, KnowledgeVideo, Profile, StrategySnapshot
 
 
 class StrategyCoverageError(ValueError):
@@ -155,3 +164,210 @@ def build_strategy_library(manifest: list[dict]) -> list[dict]:
     ]
     validate_strategy_coverage(manifest, strategies)
     return strategies
+
+
+@dataclass(frozen=True)
+class RetrievalIssue:
+    id: str
+    label: str
+    terms: tuple[str, ...]
+    collections: tuple[str, ...]
+    knowledge_item_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class KnowledgeContextResult:
+    strategies: tuple[StrategySnapshot, ...] = ()
+    citations: tuple[KnowledgeCitation, ...] = ()
+    issues: tuple[RetrievalIssue, ...] = ()
+    query_terms: tuple[str, ...] = ()
+    status: str = "ok"
+
+
+_CONTEXT_ERRORS = (OSError, UnicodeError, json.JSONDecodeError, ValidationError, StrategyCoverageError)
+
+
+def _citation(row: dict, matched_issues: tuple[str, ...] = ()) -> KnowledgeCitation:
+    source = row["source"]
+    videos = source.get("videos") or [{
+        "bvid": None, "title": source["video_title"], "url": source["video_url"],
+        "published_at": source.get("published_at"),
+    }]
+    return KnowledgeCitation(
+        id=row["id"], title=row["title"], collection=row["collection"],
+        excerpt=(row["metadata"].get("claim") or row["text"])[:2000],
+        creator_name=source["creator_name"], videos=[KnowledgeVideo.model_validate(video) for video in videos],
+        matched_issues=list(matched_issues),
+    )
+
+
+def _has_weight_plateau(history: list[dict], current: FeedbackData) -> bool:
+    window_start = current.date - timedelta(days=21)
+    measurements = {current.date: current.weight_kg} if current.weight_kg is not None else {}
+    for record in history:
+        if not isinstance(record, Mapping) or record.get("status") != "confirmed":
+            continue
+        data = record.get("data")
+        if not isinstance(data, Mapping):
+            continue
+        try:
+            entry = FeedbackData.model_validate({"date": record.get("date"), **data})
+        except ValidationError:
+            continue
+        if entry.weight_kg is not None and window_start <= entry.date <= current.date:
+            # Current feedback takes precedence; history arrives newest first.
+            measurements.setdefault(entry.date, entry.weight_kg)
+    if len(measurements) < 3 or (max(measurements) - min(measurements)).days < 14:
+        return False
+    # Require stable measurements throughout the period, not merely similar endpoints.
+    return max(measurements.values()) - min(measurements.values()) <= 0.3 + 1e-9
+
+
+def _mentions_supplement(title: str, raw_text: str) -> bool:
+    title_folded, text_folded = title.casefold(), raw_text.casefold()
+    if len(title) > 1:
+        return title_folded in text_folded
+    if text_folded.strip() == title_folded:
+        return True
+    return any(pattern in text_folded for pattern in (
+        f"补{title_folded}", f"{title_folded}补剂", f"{title_folded}剂",
+        f"缺{title_folded}", f"{title_folded}片", f"{title_folded}元素",
+    ))
+
+
+def _extract_issues(feedback: FeedbackData, raw_text: str, history: list[dict],
+                    manifest: list[dict]) -> tuple[RetrievalIssue, ...]:
+    issues = []
+    if feedback.sleep_hours is not None and feedback.sleep_hours < 7:
+        issues.append(RetrievalIssue("short_sleep", "睡眠不足", ("睡眠", "睡眠时长", "恢复"),
+                                     ("sleep_recovery", "supplements")))
+    if feedback.fatigue:
+        issues.append(RetrievalIssue("training_fatigue", "训练疲劳", ("疲劳", "恢复", "训练量"),
+                                     ("training", "sleep_recovery")))
+    if feedback.food_summary or any(term in raw_text for term in ("吃", "食堂", "外卖", "饮食")):
+        issues.append(RetrievalIssue("diet_adherence", "饮食执行", ("饮食记录", "隐藏热量", "蛋白质"),
+                                     ("fat_loss",)))
+    if feedback.weight_kg is not None:
+        issues.append(RetrievalIssue("weight_trend", "体重趋势", ("体重变化", "长期减脂评估"), ("fat_loss",)))
+    supplement_titles = tuple(dict.fromkeys(
+        row["title"] for row in manifest
+        if row["collection"] == "supplements" and _mentions_supplement(row["title"], raw_text)
+    ))
+    if supplement_titles:
+        issues.append(RetrievalIssue("supplement_question", "补剂问题",
+                                     tuple(dict.fromkeys((*supplement_titles, "补剂"))), ("supplements",)))
+    if _has_weight_plateau(history, feedback):
+        issues.append(RetrievalIssue("weight_plateau", "体重平台期", ("体重变化", "平台期", "热量缺口"),
+                                     ("fat_loss", "training")))
+    return tuple(issues)
+
+
+def _retrieve_issue(issue: RetrievalIssue, manifest: list[dict]) -> RetrievalIssue:
+    scored = []
+    for row in manifest:
+        title, body = row["title"].casefold(), row["text"].casefold()
+        matched = {term for term in issue.terms if term.casefold() in title or term.casefold() in body}
+        if not matched:
+            continue
+        score = sum(
+            12 * (term.casefold() == title) + 4 * title.count(term.casefold()) + body.count(term.casefold())
+            for term in matched
+        )
+        if row["collection"] in issue.collections:
+            score += 2
+        scored.append((score, row["id"], matched))
+    scored.sort(key=lambda candidate: (-candidate[0], candidate[1]))
+    selected = scored[:3]
+    matched_terms = set().union(*(entry[2] for entry in scored))
+    covered = set().union(*(entry[2] for entry in selected))
+    if len(matched_terms) >= 3 and covered != matched_terms:
+        for candidate in scored[3:]:
+            if not candidate[2] - covered:
+                continue
+            selected.append(candidate)
+            covered.update(candidate[2])
+            if len(selected) == 5 or covered == matched_terms:
+                break
+    return replace(issue, knowledge_item_ids=tuple(entry[1] for entry in selected))
+
+
+class KnowledgeContextService:
+    """Build deterministic context from current approved cards and reviewed strategies."""
+
+    def __init__(self, knowledge_root: Path, strategy_path: Path):
+        self.knowledge_root = Path(knowledge_root)
+        self.strategy_path = Path(strategy_path)
+
+    def _load(self) -> tuple[list[dict], list[tuple[dict, StrategySnapshot]]]:
+        if not self.knowledge_root.is_dir():
+            raise StrategyCoverageError("knowledge root must be an existing directory")
+        try:
+            manifest = build_manifest(self.knowledge_root)
+        except ValueError as error:
+            # The manifest API reports referential-integrity errors as plain ValueError.
+            # Translate only those known data failures; programming errors must propagate.
+            if type(error) is ValueError and str(error).startswith((
+                "duplicate source id:", "duplicate knowledge id:", "missing source for knowledge item:",
+            )):
+                raise StrategyCoverageError(str(error)) from error
+            raise
+        if not manifest:
+            raise StrategyCoverageError("knowledge root has no approved items")
+        manifest.sort(key=lambda row: row["id"])
+        artifact = json.loads(self.strategy_path.read_text(encoding="utf-8"))
+        if not isinstance(artifact, Mapping):
+            raise StrategyCoverageError("strategy artifact must be a mapping")
+        if type(artifact.get("version")) is not int or artifact["version"] != 1:
+            raise StrategyCoverageError("unsupported strategy artifact version")
+        if not isinstance(artifact.get("strategies"), list):
+            raise StrategyCoverageError("strategies must be a list")
+        if not isinstance(artifact.get("reference_only"), list):
+            raise StrategyCoverageError("reference_only must be a list")
+        persisted_coverage = artifact.get("coverage")
+        if (not isinstance(persisted_coverage, Mapping)
+                or set(persisted_coverage) != {"approved", "covered", "reference_only"}
+                or any(type(value) is not int or value < 0 for value in persisted_coverage.values())):
+            raise StrategyCoverageError("coverage must contain exactly three nonnegative integer counts")
+        strategies = artifact["strategies"]
+        report = validate_strategy_coverage(manifest, strategies, artifact["reference_only"])
+        if dict(persisted_coverage) != report:
+            raise StrategyCoverageError("persisted coverage does not match the approved manifest")
+        validated = []
+        for strategy in strategies:
+            applicability = strategy.get("applicability")
+            if (not isinstance(applicability, list) or not applicability
+                    or any(goal not in ("fat_loss", "muscle_gain", "general_health") for goal in applicability)):
+                raise StrategyCoverageError("strategy applicability must contain supported goals")
+            snapshot = StrategySnapshot.model_validate({
+                key: strategy[key] for key in StrategySnapshot.model_fields if key in strategy
+            })
+            validated.append((strategy, snapshot))
+        return manifest, validated
+
+    def for_plan(self, profile: Profile) -> KnowledgeContextResult:
+        try:
+            manifest, validated = self._load()
+            strategies = tuple(snapshot for strategy, snapshot in validated
+                               if profile.goals.primary in strategy["applicability"])
+            selected_ids = {item_id for strategy in strategies for item_id in strategy.knowledge_item_ids}
+            citations = tuple(_citation(row) for row in manifest if row["id"] in selected_ids)
+            return KnowledgeContextResult(strategies=strategies, citations=citations)
+        except _CONTEXT_ERRORS:
+            return KnowledgeContextResult(status="unavailable")
+
+    def for_feedback(self, profile: Profile, feedback: FeedbackData, raw_text: str,
+                     history: list[dict]) -> KnowledgeContextResult:
+        try:
+            manifest, _ = self._load()
+            issues = tuple(_retrieve_issue(issue, manifest)
+                           for issue in _extract_issues(feedback, raw_text, history, manifest))
+            matches: dict[str, list[str]] = {}
+            for issue in issues:
+                for item_id in issue.knowledge_item_ids:
+                    matches.setdefault(item_id, []).append(issue.id)
+            citations = tuple(_citation(row, tuple(matches[row["id"]]))
+                              for row in manifest if row["id"] in matches)
+            query_terms = tuple(dict.fromkeys(term for issue in issues for term in issue.terms))
+            return KnowledgeContextResult(citations=citations, issues=issues, query_terms=query_terms)
+        except _CONTEXT_ERRORS:
+            return KnowledgeContextResult(status="unavailable")

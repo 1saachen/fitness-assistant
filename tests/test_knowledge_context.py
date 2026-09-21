@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from fitness.knowledge import build_manifest
+from fitness.models import FeedbackData, Profile
 
 ROOT = Path(__file__).resolve().parents[1] / "data" / "knowledge"
 STRATEGY_IDS = {
@@ -193,3 +194,338 @@ def test_coverage_rejects_invalid_reference_reasons(reason_fields):
     context = context_module()
     with pytest.raises(context.StrategyCoverageError, match="reason"):
         context.validate_strategy_coverage([], [], [{"id": "reference", **reason_fields}])
+
+
+def make_service(root=ROOT, strategy_path=None):
+    context = context_module()
+    assert hasattr(context, "KnowledgeContextService"), "knowledge context service is missing"
+    return context.KnowledgeContextService(root, strategy_path or root / "baseline-strategies.json")
+
+
+def feedback(**values):
+    return FeedbackData(date="2026-09-21", **values)
+
+
+def write_library(root, cards, source_overrides=None):
+    source = {
+        "id": "source", "creator_name": "Test creator", "video_title": "Legacy video",
+        "video_url": "https://example.org/legacy", "published_at": "2026-01-01",
+        **(source_overrides or {}),
+    }
+    (root / "sources").mkdir(parents=True, exist_ok=True)
+    (root / "sources" / "source.json").write_text(json.dumps(source), encoding="utf-8")
+    approved = []
+    for index, card in enumerate(cards):
+        item = {
+            "id": f"card-{index:02d}", "collection": "training", "title": "General",
+            "claim": "General claim", "source_id": "source", "source_type": "creator_opinion",
+            "evidence_level": "limited", "review_status": "approved", **card,
+        }
+        folder = root / item["collection"]
+        folder.mkdir(exist_ok=True)
+        (folder / f"{index}.json").write_text(json.dumps(item), encoding="utf-8")
+        if item["review_status"] == "approved":
+            approved.append(item["id"])
+    artifact = {
+        "coverage": {"approved": len(approved), "covered": len(approved), "reference_only": 0},
+        "version": 1, "reference_only": [], "strategies": [{
+            "id": "strategy", "title": "Reviewed strategy", "summary": "Reviewed summary",
+            "action_rules": ["Keep a record"], "applicability": ["fat_loss"],
+            "domain": "training", "knowledge_item_ids": approved,
+        }],
+    }
+    (root / "baseline-strategies.json").write_text(json.dumps(artifact), encoding="utf-8")
+    return root
+
+
+def test_plan_loads_all_seven_reviewed_strategies_and_74_sources(profile_data):
+    result = make_service().for_plan(Profile.model_validate(profile_data))
+    assert result.status == "ok"
+    assert len(result.strategies) == 7
+    assert {strategy.id for strategy in result.strategies} == STRATEGY_IDS
+    assert len(result.citations) == 74
+    assert [citation.id for citation in result.citations] == sorted(row["id"] for row in build_manifest(ROOT))
+    assert {item for strategy in result.strategies for item in strategy.knowledge_item_ids} == {
+        citation.id for citation in result.citations
+    }
+
+
+def test_multi_issue_retrieval_is_per_issue_and_merges_shared_cards(tmp_path, profile_data):
+    cards = [
+        {"id": "shared", "title": "恢复", "collection": "sleep_recovery"},
+        *[{"title": f"睡眠时长 {i}", "collection": "sleep_recovery"} for i in range(3)],
+        *[{"title": f"疲劳训练量 {i}"} for i in range(3)],
+        *[{"title": f"饮食记录隐藏热量蛋白质 {i}", "collection": "fat_loss"} for i in range(3)],
+        {"id": "irrelevant", "collection": "sleep_recovery"},
+        {"id": "pending", "title": "睡眠时长恢复", "review_status": "pending"},
+    ]
+    service = make_service(write_library(tmp_path, cards))
+    profile = Profile.model_validate(profile_data)
+    result = service.for_feedback(profile, feedback(sleep_hours=5, fatigue="疲惫", food_summary="食堂"), "", [])
+    assert result.status == "ok"
+    assert [issue.id for issue in result.issues] == ["short_sleep", "training_fatigue", "diet_adherence"]
+    assert all(1 <= len(issue.knowledge_item_ids) <= 5 for issue in result.issues)
+    assert len(result.citations) > 5
+    assert len({citation.id for citation in result.citations}) == len(result.citations)
+    shared = next(citation for citation in result.citations if citation.id == "shared")
+    assert shared.matched_issues == ["short_sleep", "training_fatigue"]
+    assert not {"pending", "irrelevant"} & {citation.id for citation in result.citations}
+    assert result.query_terms == ("睡眠", "睡眠时长", "恢复", "疲劳", "训练量", "饮食记录", "隐藏热量", "蛋白质")
+    assert service.for_feedback(profile, feedback(sleep_hours=5, fatigue="疲惫", food_summary="食堂"), "", []) == result
+
+
+@pytest.mark.parametrize("failure", ["missing_root", "file_root", "empty_root", "invalid_items", "missing_source", "duplicate_source", "duplicate_item", "missing_strategy", "invalid_json", "invalid_utf8", "list", "version", "bool_version", "no_reference_only", "null_reference_only", "invalid_strategy", "coverage", "applicability"])
+def test_invalid_context_degrades_without_partial_results(tmp_path, profile_data, failure):
+    root = write_library(tmp_path / "knowledge", [{"title": "睡眠"}])
+    strategy = root / "baseline-strategies.json"
+    artifact = json.loads(strategy.read_text(encoding="utf-8"))
+    if failure == "missing_root":
+        root = tmp_path / "missing"
+    elif failure == "file_root":
+        root = strategy
+    elif failure == "empty_root":
+        root = tmp_path / "empty"
+        root.mkdir()
+    elif failure == "invalid_items":
+        (root / "training" / "0.json").write_text("{}", encoding="utf-8")
+    elif failure == "missing_source":
+        (root / "sources" / "source.json").unlink()
+    elif failure == "duplicate_source":
+        (root / "sources" / "duplicate.json").write_bytes((root / "sources" / "source.json").read_bytes())
+    elif failure == "duplicate_item":
+        (root / "training" / "duplicate.json").write_bytes((root / "training" / "0.json").read_bytes())
+    elif failure == "missing_strategy":
+        strategy.unlink()
+    elif failure == "invalid_json":
+        strategy.write_text("{", encoding="utf-8")
+    elif failure == "invalid_utf8":
+        strategy.write_bytes(b"\xff")
+    else:
+        if failure == "list":
+            artifact = []
+        elif failure == "version":
+            artifact["version"] = 2
+        elif failure == "bool_version":
+            artifact["version"] = True
+        elif failure == "no_reference_only":
+            del artifact["reference_only"]
+        elif failure == "null_reference_only":
+            artifact["reference_only"] = None
+        elif failure == "invalid_strategy":
+            artifact["strategies"][0]["summary"] = 1
+        elif failure == "coverage":
+            artifact["strategies"][0]["knowledge_item_ids"] = []
+        else:
+            artifact["strategies"][0]["applicability"] = "fat_loss"
+        strategy.write_text(json.dumps(artifact), encoding="utf-8")
+    service = make_service(root, strategy)
+    profile = Profile.model_validate(profile_data)
+    for result in [service.for_plan(profile), service.for_feedback(profile, feedback(sleep_hours=5), "", [])]:
+        assert result.status == "unavailable"
+        assert result.strategies == result.citations == result.issues == result.query_terms == ()
+
+
+@pytest.mark.parametrize("entrypoint", ["plan", "feedback"])
+@pytest.mark.parametrize("coverage", [
+    "missing", None, [], "invalid", 1,
+    {}, {"approved": 1, "covered": 1},
+    {"approved": 1, "covered": 1, "reference_only": 0, "extra": 0},
+    *[{"approved": 1, "covered": 1, "reference_only": 0, field: value}
+      for field in ("approved", "covered", "reference_only")
+      for value in (None, "1", 1.0, True, False, -1, 2)],
+])
+def test_persisted_coverage_must_match_fresh_report(tmp_path, profile_data, entrypoint, coverage):
+    root = write_library(tmp_path, [{"title": "睡眠"}])
+    strategy_path = root / "baseline-strategies.json"
+    artifact = json.loads(strategy_path.read_text(encoding="utf-8"))
+    if coverage == "missing":
+        del artifact["coverage"]
+    else:
+        artifact["coverage"] = coverage
+    strategy_path.write_text(json.dumps(artifact), encoding="utf-8")
+    service = make_service(root)
+    profile = Profile.model_validate(profile_data)
+    result = (service.for_plan(profile) if entrypoint == "plan"
+              else service.for_feedback(profile, feedback(sleep_hours=5), "", []))
+    assert result.status == "unavailable"
+    assert result.strategies == result.citations == result.issues == result.query_terms == ()
+
+
+@pytest.mark.parametrize("videos", [None, [], [
+    {"bvid": "BV1", "title": "Structured 1", "url": "https://example.org/1"},
+    {"bvid": "BV2", "title": "V" * 500, "url": "javascript:ignored-later", "published_at": "2025-01-01"},
+]])
+def test_citations_preserve_structured_videos_or_legacy_fallback(tmp_path, profile_data, videos):
+    root = write_library(tmp_path, [{"title": "K" * 300, "claim": "C" * 2000, "explanation": "E" * 4000}],
+                         {} if videos is None else {"videos": videos})
+    result = make_service(root).for_plan(Profile.model_validate(profile_data))
+    assert result.status == "ok"
+    citation = result.citations[0]
+    assert citation.title == "K" * 300
+    assert citation.excerpt == "C" * 2000
+    assert citation.creator_name == "Test creator"
+    assert citation.collection == "training"
+    assert citation.matched_issues == []
+    if videos:
+        assert [video.model_dump() for video in citation.videos] == [
+            {"published_at": None, **video} for video in videos
+        ]
+    else:
+        assert citation.videos[0].model_dump() == {
+            "bvid": None, "title": "Legacy video", "url": "https://example.org/legacy", "published_at": "2026-01-01",
+        }
+        assert len(citation.videos) == 1
+
+
+def test_supplement_issue_uses_exact_approved_title_and_goal_alone_is_not_issue(tmp_path, profile_data):
+    root = write_library(tmp_path, [
+        {"title": "肌酸", "collection": "supplements"},
+        {"title": "咖啡因", "collection": "supplements"},
+        {"title": "未审核补剂", "collection": "supplements", "review_status": "pending"},
+    ])
+    service = make_service(root)
+    profile = Profile.model_validate(profile_data)
+    result = service.for_feedback(profile, feedback(), "肌酸和咖啡因，肌酸", [])
+    assert [issue.id for issue in result.issues] == ["supplement_question"]
+    assert result.issues[0].terms == ("肌酸", "咖啡因", "补剂")
+    assert result.issues[0].collections == ("supplements",)
+    assert len(result.citations) == 2
+    assert service.for_feedback(profile, feedback(), "未审核补剂", []).issues == ()
+    assert service.for_feedback(profile, feedback(), "", []).citations == ()
+
+
+@pytest.mark.parametrize("title,raw_text", [
+    ("Omega-3", "omega-3怎么用"), ("PQQ", "想了解pqq"), ("维生素D", "维生素d有用吗"),
+])
+def test_supplement_names_match_case_insensitively_with_canonical_terms(tmp_path, profile_data, title, raw_text):
+    service = make_service(write_library(tmp_path, [{"title": title, "collection": "supplements"}]))
+    result = service.for_feedback(Profile.model_validate(profile_data), feedback(), raw_text, [])
+    assert [issue.id for issue in result.issues] == ["supplement_question"]
+    assert result.issues[0].terms == (title, "补剂")
+
+
+@pytest.mark.parametrize("raw_text,expected", [
+    ("今天举铁很开心", False), ("今天坐地铁去训练", False),
+    ("我想补铁", True), ("铁补剂", True), ("铁剂", True), ("是不是缺铁", True),
+    ("铁片有用吗", True), ("铁元素", True), (" 铁 ", True),
+])
+def test_single_character_supplement_requires_explicit_context(tmp_path, profile_data, raw_text, expected):
+    service = make_service(write_library(tmp_path, [{"title": "铁", "collection": "supplements"}]))
+    result = service.for_feedback(Profile.model_validate(profile_data), feedback(), raw_text, [])
+    assert ("supplement_question" in {issue.id for issue in result.issues}) is expected
+
+
+@pytest.mark.parametrize("days,weights,statuses,expected", [
+    ([1, 8, 15], [73, 73.1, 73.2], ["confirmed"] * 3, True),
+    ([1, 8, 14], [73, 73.1, 73.2], ["confirmed"] * 3, False),
+    ([1, 15], [73, 73.1], ["confirmed"] * 2, False),
+    ([1, 8, 15], [73, 73.1, 73.2], ["confirmed", "draft", "confirmed"], False),
+    ([1, 8, 15], [73, 73.1, 74], ["confirmed"] * 3, False),
+    ([1, 8, 15], [73, 73.1, 73.3], ["confirmed"] * 3, True),
+])
+def test_plateau_requires_confirmed_weight_history_over_two_weeks(tmp_path, profile_data, days, weights, statuses, expected):
+    service = make_service(write_library(tmp_path, [{"title": "体重变化平台期", "collection": "fat_loss"}]))
+    history = [{"date": f"2026-09-{day:02d}", "status": status, "data": {"weight_kg": weight}}
+               for day, weight, status in zip(days, weights, statuses, strict=True)]
+    current = FeedbackData(date=f"2026-09-{days[-1]:02d}", weight_kg=weights[-1])
+    result = service.for_feedback(Profile.model_validate(profile_data), current, "", history)
+    assert ("weight_plateau" in {issue.id for issue in result.issues}) is expected
+    assert result.issues[0].id == "weight_trend"
+    assert len(result.citations) == 1
+
+
+@pytest.mark.parametrize("measurements,current_weight,expected", [
+    ([('2026-09-21', 72), ('2026-09-08', 72.1), ('2026-09-01', 72), ('2026-08-01', 75)], 72, True),
+    ([('2026-01-21', 72), ('2026-01-08', 72.1), ('2026-01-01', 72)], None, False),
+    ([('2026-09-21', 73), ('2026-09-08', 73), ('2026-09-01', 73)], 72, False),
+    ([('2026-09-21', 72), ('2026-09-08', 72), ('2026-09-08', 73), ('2026-09-01', 72)], None, True),
+    ([('2026-09-08', 72.1), ('2026-09-01', 72)], 72, True),
+    ([('2026-09-08', 72.1), ('2026-08-31', 72)], 72, True),
+    ([('2026-09-08', 72.1), ('2026-08-30', 72)], 72, False),
+    ([('2026-09-22', 75), ('2026-09-08', 72.1), ('2026-09-01', 72)], 72, True),
+    ([('2026-09-01', 72), ('2026-09-01', 72)], 72, False),
+])
+def test_plateau_uses_recent_window_and_authoritative_measurements(
+    tmp_path, profile_data, measurements, current_weight, expected,
+):
+    service = make_service(write_library(tmp_path, [{"title": "体重变化平台期", "collection": "fat_loss"}]))
+    history = [{"date": day, "status": "confirmed", "data": {"weight_kg": weight}}
+               for day, weight in measurements]
+    result = service.for_feedback(Profile.model_validate(profile_data), feedback(weight_kg=current_weight), "", history)
+    assert ("weight_plateau" in {issue.id for issue in result.issues}) is expected
+
+
+@pytest.mark.parametrize("full_coverage,expected_count", [(True, 3), (False, 4)])
+def test_expansion_only_adds_cards_needed_for_term_coverage(tmp_path, profile_data, full_coverage, expected_count):
+    cards = [{"title": "睡眠时长恢复" if full_coverage else "睡眠时长", "collection": "sleep_recovery"}
+             for _ in range(6)]
+    cards.append({"id": "z-recovery", "title": "恢复辅助", "collection": "sleep_recovery"})
+    service = make_service(write_library(tmp_path, cards))
+    result = service.for_feedback(Profile.model_validate(profile_data), feedback(sleep_hours=6), "", [])
+    assert len(result.issues[0].knowledge_item_ids) == expected_count
+    assert result.issues[0].knowledge_item_ids[:3] == ("card-00", "card-01", "card-02")
+    if not full_coverage:
+        assert result.issues[0].knowledge_item_ids[-1] == "z-recovery"
+
+
+def test_only_two_matching_terms_does_not_expand(tmp_path, profile_data):
+    cards = [{"title": "睡眠", "collection": "sleep_recovery"} for _ in range(6)]
+    cards.append({"title": "恢复", "collection": "training"})
+    result = make_service(write_library(tmp_path, cards)).for_feedback(
+        Profile.model_validate(profile_data), feedback(sleep_hours=6), "", [],
+    )
+    assert len(result.issues[0].knowledge_item_ids) == 3
+
+
+def test_supplement_issue_never_exceeds_five_even_with_more_uncovered_terms(tmp_path, profile_data):
+    titles = ["肌酸", "咖啡因", "乳清", "鱼油", "镁", "维生素D"]
+    service = make_service(write_library(tmp_path, [
+        {"title": title, "collection": "supplements"} for title in titles
+    ]))
+    result = service.for_feedback(Profile.model_validate(profile_data), feedback(), "、".join(titles) + "补镁", [])
+    assert len(result.issues) == 1
+    assert len(result.issues[0].knowledge_item_ids) == len(result.citations) == 5
+
+
+def test_scoring_is_case_insensitive_and_prioritizes_title_matches(tmp_path, profile_data):
+    root = write_library(tmp_path, [
+        {"id": "z-title", "title": "CREATINE", "collection": "supplements"},
+        {"id": "b-substring", "title": "creatine overview", "collection": "training"},
+        {"id": "a-body", "claim": "Creatine", "collection": "supplements"},
+        {"id": "irrelevant", "collection": "supplements"},
+    ])
+    result = make_service(root).for_feedback(Profile.model_validate(profile_data), feedback(), "CREATINE", [])
+    assert result.issues[0].knowledge_item_ids == ("z-title", "b-substring", "a-body")
+
+
+@pytest.mark.parametrize("raw_text", ["今天吃得多", "食堂", "外卖", "饮食情况"])
+def test_raw_food_mentions_create_diet_issue_without_structured_summary(tmp_path, profile_data, raw_text):
+    service = make_service(write_library(tmp_path, [{"title": "蛋白质", "collection": "fat_loss"}]))
+    result = service.for_feedback(Profile.model_validate(profile_data), feedback(sleep_hours=7), raw_text, [])
+    assert [issue.id for issue in result.issues] == ["diet_adherence"]
+
+
+def test_manifest_is_reloaded_and_applicability_filters_plan(tmp_path, profile_data):
+    root = write_library(tmp_path, [{"title": "睡眠"}])
+    service = make_service(root)
+    profile = Profile.model_validate(profile_data)
+    assert len(service.for_plan(profile).strategies) == 1
+    other_goal = profile.model_copy(update={"goals": profile.goals.model_copy(update={"primary": "muscle_gain"})})
+    assert service.for_plan(other_goal).strategies == ()
+    item_path = root / "training" / "0.json"
+    item = json.loads(item_path.read_text(encoding="utf-8"))
+    item["review_status"] = "pending"
+    item_path.write_text(json.dumps(item), encoding="utf-8")
+    assert service.for_plan(profile).status == "unavailable"
+
+
+@pytest.mark.parametrize("error", [RuntimeError, ValueError, TypeError, KeyError])
+def test_unexpected_programming_error_is_not_hidden(tmp_path, profile_data, monkeypatch, error):
+    service = make_service(write_library(tmp_path, [{"title": "睡眠"}]))
+
+    def broken_manifest(root):
+        raise error("programming defect")
+
+    monkeypatch.setattr(context_module(), "build_manifest", broken_manifest)
+    with pytest.raises(error, match="programming defect"):
+        service.for_plan(Profile.model_validate(profile_data))
