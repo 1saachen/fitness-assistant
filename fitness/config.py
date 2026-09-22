@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 @dataclass
 class Settings:
     db_path: Path = field(default_factory=lambda: ROOT / "data/local/fitness.sqlite3")
-    example_path: Path = field(default_factory=lambda: ROOT / "data/examples/user-profile.json")
+    example_path: Path = field(default_factory=lambda: ROOT / "data/examples/demo-profile.json")
     api_key: str = field(default="", repr=False)
     model: str = "deepseek-chat"
     base_url: str = "https://api.deepseek.com"

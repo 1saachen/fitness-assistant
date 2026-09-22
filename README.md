@@ -30,6 +30,24 @@ Invoke-RestMethod http://127.0.0.1:8000/api/state
 
 `demo` 模式不调用外部模型；当前可用模式只有 `demo`，`external model API calls = 0`。档案、计划、反馈和建议写入本地 SQLite，知识检索读取 `data/knowledge/` 中已批准的内容。
 
+## 可重复本地演示
+
+在新环境或空数据库中，可以用仓库内提交的演示档案初始化当前用户资料：
+
+```powershell
+.\.venv\Scripts\python.exe -m fitness.demo_cli init
+```
+
+初始化命令只在数据库没有档案时写入版本 1；重复执行会返回 `already_initialized`，不会覆盖已有档案。也可以用 `--db-path` 和 `--profile-path` 指定测试路径或其他已审核的档案文件。初始化后按上面的基本使用流程即可生成计划、确认反馈并生成建议。
+
+开发过程中需要从头演示时，可以显式确认清理本地运行数据：
+
+```powershell
+.\.venv\Scripts\python.exe -m fitness.demo_cli reset --confirm
+```
+
+执行重置前请先停止正在使用该数据库的本地服务。`reset --confirm` 只删除默认 `data/local/fitness.sqlite3` 及其 SQLite `-wal`、`-shm` 旁路文件，不会递归删除目录，也不会触碰知识库、源码或配置。它是本地数据删除操作；如果使用自定义数据库路径，请通过 `--db-path` 明确指定。
+
 ## 基本使用流程
 
 1. 在“我的档案”填写目标、身体信息、训练条件、饮食和恢复信息，点击“保存档案”。计划只能基于已保存的档案生成；修改档案后需重新生成旧草案才能确认。
@@ -136,7 +154,7 @@ GET /api/knowledge/search?q=睡眠%20镁&limit=5
 - [API 合约](docs/api-contract.md)
 - [RAG 计划与反馈集成设计](docs/superpowers/specs/2026-09-21-rag-plan-feedback-integration-design.md)
 - [人工维护知识库说明](data/knowledge/README.md)
-- 本地结构化示例档案：`data/examples/user-profile.json`（默认不纳入 Git）
+- 可提交的演示档案：`data/examples/demo-profile.json`
 
 ## 测试与静态检查
 

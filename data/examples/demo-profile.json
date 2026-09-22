@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "source": "reproducible_demo",
+  "profile_status": "complete",
+  "personal": {
+    "age_years": 22,
+    "sex": null,
+    "height_cm": 180,
+    "weight_kg": 80,
+    "weight_measured_on": null,
+    "body_fat_percent": 20,
+    "body_fat_source": "self_reported",
+    "body_fat_measurement_method": null,
+    "body_fat_measured_on": null
+  },
+  "goals": {
+    "primary": "fat_loss",
+    "secondary": ["maintain_strength"],
+    "deadline_negotiable": true,
+    "target_date": null,
+    "target_weight_kg": null,
+    "target_body_fat_percent": null
+  },
+  "training": {
+    "experience_years": 2,
+    "available_sessions_per_week": 4,
+    "session_duration_minutes": 60,
+    "gym_access": true,
+    "available_equipment": ["barbell", "dumbbell", "machine"],
+    "preferred_weekdays": [0, 2, 4, 6],
+    "current_routine": null
+  },
+  "nutrition": {
+    "primary_meal_source": "school_cafeteria",
+    "occasional_meal_sources": ["takeout", "quick_meals"],
+    "food_budget": {
+      "amount": 40,
+      "currency": "CNY",
+      "period": "day",
+      "approximate": true
+    },
+    "food_allergy_status": "none_known_self_reported",
+    "food_allergy_details": null,
+    "food_intolerances": null,
+    "other_dietary_restrictions": null
+  },
+  "supplements": {
+    "budget_separate_from_food": true,
+    "budget": {
+      "amount": null,
+      "currency": "CNY",
+      "period": null,
+      "approximate": true
+    },
+    "current_products": null
+  },
+  "health": {
+    "exercise_limiting_conditions_status": "none_known_self_reported",
+    "exercise_limiting_conditions_details": null,
+    "medications": null
+  },
+  "recovery": {
+    "usual_sleep_hours": null,
+    "sleep_schedule": null
+  },
+  "daily_activity_level": null
+}
