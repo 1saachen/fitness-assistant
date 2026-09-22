@@ -3,10 +3,13 @@
 import argparse
 import json
 import sys
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .config import Settings
 from .demo import DemoDataError, initialize_demo_profile, reset_runtime_data
+from .demo_script import run_demo_walkthrough
 from .storage import Store
 
 
@@ -21,6 +24,15 @@ def build_parser() -> argparse.ArgumentParser:
     reset = subparsers.add_parser("reset", help="删除本地 SQLite 演示运行数据")
     reset.add_argument("--confirm", action="store_true", help="确认删除本地运行数据")
     reset.add_argument("--db-path", type=Path, help="覆盖默认 SQLite 路径")
+
+    walkthrough = subparsers.add_parser("walkthrough", help="运行一次完整的本地演示流程")
+    walkthrough.add_argument("--db-path", type=Path, help="覆盖默认 SQLite 路径")
+    walkthrough.add_argument("--profile-path", type=Path, help="覆盖默认演示档案路径")
+    walkthrough.add_argument(
+        "--date", type=date.fromisoformat,
+        default=datetime.now(ZoneInfo("Asia/Shanghai")).date(),
+        help="演示日期，格式 YYYY-MM-DD",
+    )
     return parser
 
 
@@ -33,11 +45,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "init":
             profile_path = args.profile_path or settings.example_path
             result = initialize_demo_profile(Store(db_path), profile_path)
-        else:
+        elif args.command == "reset":
             if not args.confirm:
                 print("重置本地数据需要显式传入 --confirm。", file=sys.stderr)
                 return 2
             result = reset_runtime_data(db_path)
+        else:
+            result = run_demo_walkthrough(Store(db_path), args.profile_path or settings.example_path, args.date)
     except DemoDataError as exc:
         print(str(exc), file=sys.stderr)
         return 1

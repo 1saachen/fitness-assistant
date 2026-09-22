@@ -132,3 +132,34 @@ def test_demo_cli_initializes_and_resets_an_explicit_database(tmp_path):
     assert reset.returncode == 0
     assert json.loads(reset.stdout)["removed"] >= 1
     assert not db_path.exists()
+
+
+def test_demo_cli_walkthrough_completes_the_local_flow(tmp_path):
+    profile_path = tmp_path / "demo-profile.json"
+    profile_path.write_text(json.dumps(demo_profile_data()), encoding="utf-8")
+    db_path = tmp_path / "runtime" / "fitness.sqlite3"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "fitness.demo_cli",
+            "walkthrough",
+            "--date",
+            "2026-09-22",
+            "--db-path",
+            str(db_path),
+            "--profile-path",
+            str(profile_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["status"] == "completed"
+    assert summary["plan_status"] == "confirmed"
+    assert summary["feedback_status"] == "confirmed"
+    assert summary["advice_generated"] is True

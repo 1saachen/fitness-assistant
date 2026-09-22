@@ -133,9 +133,13 @@ def test_profile_version_survives_reload(client, profile_data):
         response = client.put("/api/profile", json={"profile": profile_data, "expected_version": version})
         assert response.status_code == 200
         assert client.get("/api/state").json()["profile_version"] == version + 1
-    assert (
-        client.put("/api/profile", json={"profile": profile_data, "expected_version": 1}).status_code == 409
-    )
+    conflict = client.put("/api/profile", json={"profile": profile_data, "expected_version": 1})
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == {
+        "code": "profile_version_conflict",
+        "message": "档案已有更新，请刷新后再保存。",
+        "retryable": True,
+    }
 
 
 def test_complete_confirm_correct_flow(client, profile_data):
@@ -209,6 +213,7 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
     unavailable_client, profile_data,
 ):
     unavailable_client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
+    assert unavailable_client.get("/api/state").json()["knowledge_status"] == "unavailable"
     plan_response = unavailable_client.post(
         "/api/plans", json={"start_date": "2026-09-21", "mode": "demo"}
     )
@@ -291,6 +296,7 @@ def test_plan_trace_reports_only_context_that_fit_persistence_limits(client, pro
 
     monkeypatch.setattr(main, "knowledge_context_service", OversizedService())
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
+    assert client.get("/api/state").json()["knowledge_status"] == "capacity_exceeded"
     plan = client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "demo"}).json()
     assert plan["data"]["strategy_context"] == []
     assert plan["data"]["source_ids"] == []
@@ -417,13 +423,55 @@ def test_advice_rejects_profile_changed_during_generation(client, profile_data, 
 
 def test_live_is_unavailable_not_disguised_demo(client):
     assert client.get("/api/state").json()["mode"] == "demo"
-    assert (
-        client.post(
-            "/api/feedback/parse", json={"text": "完成训练", "date": "2026-09-14", "mode": "live"}
-        ).status_code
-        == 503
+    response = client.post(
+        "/api/feedback/parse", json={"text": "完成训练", "date": "2026-09-14", "mode": "live"}
     )
+    assert response.status_code == 503
+    assert response.json()["detail"] == {
+        "code": "mode_unavailable",
+        "message": "在线模型尚未接入，请使用演示模式。",
+        "retryable": False,
+    }
     assert client.get("/api/state").json()["feedback"] == []
+
+
+def test_state_exposes_knowledge_status_and_export_endpoints(client, profile_data):
+    client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
+    plan = client.post("/api/plans", json={"start_date": "2026-09-22", "mode": "demo"}).json()
+    assert client.get("/api/state").json()["knowledge_status"] == "ok"
+
+    for export_type, query in (
+        ("plan", {"plan_id": plan["id"]}),
+        ("feedback", {}),
+        ("advice", {}),
+    ):
+        response = client.get(f"/api/export/{export_type}?format=json", params=query)
+        if export_type == "plan":
+            assert response.status_code == 200
+            assert response.headers["content-type"].startswith("application/json")
+            assert response.json()["items"][0]["id"] == plan["id"]
+        else:
+            assert response.status_code == 404
+            assert response.json()["detail"]["code"] == "export_not_found"
+
+    invalid = client.get("/api/export/plan", params={"format": "xml", "plan_id": plan["id"]})
+    assert invalid.status_code == 400
+    assert invalid.json()["detail"]["code"] == "export_format_invalid"
+
+
+def test_export_includes_recent_feedback_and_advice(client, profile_data):
+    row = confirmed_feedback(client, profile_data)
+    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"}).json()
+
+    feedback_export = client.get("/api/export/feedback?format=csv")
+    assert feedback_export.status_code == 200
+    assert row["id"] in feedback_export.text
+    advice_export = client.get(
+        "/api/export/advice", params={"format": "markdown", "feedback_id": advised["id"]}
+    )
+    assert advice_export.status_code == 200
+    assert "健身助手建议导出" in advice_export.text
+    assert "根据这次反馈给出短期建议" in advice_export.text
 
 
 def test_knowledge_review_and_publish_flow(client):

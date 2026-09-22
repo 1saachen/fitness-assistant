@@ -118,6 +118,16 @@ function feedbackIssueLabel(issue) {
     : issue;
 }
 
+function knowledgeStatusMessage(status) {
+  if (status === "unavailable")
+    return "知识库当前不可用，已使用本地规则继续生成；本次没有引用知识库内容。";
+  if (status === "capacity_exceeded")
+    return "知识引用超过本地保存容量，已使用本地规则继续生成；本次未保存知识依据。";
+  if (status === "unknown")
+    return "知识库状态未知，当前结果仅使用已保存的本地规则。";
+  return null;
+}
+
 function safeCitationVideos(videos = []) {
   return normalizeContextList(videos).flatMap((video) => {
     const safeUrl = safeVideoUrl(video?.url);
@@ -287,6 +297,7 @@ if (typeof module !== "undefined")
     groupKnowledgeByIssue,
     assignPlanKnowledge,
     feedbackIssueLabel,
+    knowledgeStatusMessage,
     safeCitationVideos,
     renderKnowledgeCitation,
     renderPlanFoundations,
@@ -307,6 +318,7 @@ if (typeof document !== "undefined") {
     plan: null,
     selectedFeedback: null,
     mode: "demo",
+    knowledgeStatus: "unknown",
     feedbackDirty: false,
     sources: [],
     reviewCards: [],
@@ -337,7 +349,7 @@ if (typeof document !== "undefined") {
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(
+        const error = new Error(
           Array.isArray(body.detail)
             ? body.detail
                 .map((issue) => `${issue.loc.slice(1).join(".")}：${issue.msg}`)
@@ -346,6 +358,9 @@ if (typeof document !== "undefined") {
               ? body.detail
               : body.detail?.message || `请求失败（${response.status}）`,
         );
+        error.code = body.detail?.code;
+        error.retryable = body.detail?.retryable;
+        throw error;
       }
       return await response.json();
     } finally {
@@ -383,6 +398,26 @@ if (typeof document !== "undefined") {
     el.type = "button";
     el.addEventListener("click", fn);
     return el;
+  };
+  const renderExportActions = (kind, ident = null) => {
+    const wrap = document.createElement("div");
+    wrap.className = "export-actions";
+    const label = node("label", "导出", "export-label");
+    const select = document.createElement("select");
+    select.setAttribute("aria-label", `${kind} 导出格式`);
+    [
+      ["json", "JSON"],
+      ["csv", "CSV"],
+      ["markdown", "Markdown"],
+    ].forEach(([value, text]) => select.add(new Option(text, value)));
+    label.append(select);
+    const button = action("下载", "button secondary", () => {
+      const params = new URLSearchParams({ format: select.value });
+      if (ident) params.set(kind === "plan" ? "plan_id" : "feedback_id", ident);
+      window.location.href = `/api/export/${kind}?${params.toString()}`;
+    });
+    wrap.append(label, button);
+    return wrap;
   };
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const fmt = (value) => (value ? String(value).slice(0, 10) : "未记录");
@@ -949,7 +984,10 @@ if (typeof document !== "undefined") {
         `${fmt(plan.start_date)} 起 · 演示草案 · 使用档案版本 ${plan.profile_version}`,
         "metadata",
       ),
+      renderExportActions("plan", plan.id),
     );
+    const planStatusMessage = knowledgeStatusMessage(plan.trace?.knowledge_status);
+    if (planStatusMessage) card.append(node("p", planStatusMessage, "notice-inline"));
     if (plan.status === "draft" && plan.profile_version !== app.version)
       card.append(
         node(
@@ -1061,6 +1099,7 @@ if (typeof document !== "undefined") {
       root.append(node("div", "还没有记录。", "empty-state"));
       return;
     }
+    root.append(renderExportActions("feedback"));
     app.feedback.forEach((item) => {
       const el = action(
         `${fmt(item.date)} · ${item.status === "confirmed" ? "已确认" : "草稿"}\n${item.data?.training_summary || item.raw_text}`,
@@ -1249,7 +1288,13 @@ if (typeof document !== "undefined") {
     if (item.advice) {
       const advice = document.createElement("div");
       advice.className = "advice-panel";
-      advice.append(node("h3", "今日建议"), node("p", item.advice.summary));
+      advice.append(
+        node("h3", "今日建议"),
+        renderExportActions("advice", item.id),
+        node("p", item.advice.summary),
+      );
+      const adviceStatusMessage = knowledgeStatusMessage(item.trace?.knowledge_status);
+      if (adviceStatusMessage) advice.append(node("p", adviceStatusMessage, "notice-inline"));
       const list = document.createElement("ul");
       item.advice.suggestions.forEach((x) => list.append(node("li", x)));
       advice.append(list);
@@ -1264,6 +1309,7 @@ if (typeof document !== "undefined") {
     app.plans = payload.plans || [];
     app.feedback = payload.feedback || [];
     app.mode = payload.mode || "demo";
+    app.knowledgeStatus = payload.knowledge_status || "unknown";
     app.plan =
       app.plans.find((x) => x.id === app.plan?.id) || app.plans[0] || null;
     app.selectedFeedback =
@@ -1280,6 +1326,8 @@ if (typeof document !== "undefined") {
       app.mode === "live"
         ? `在线模型：${payload.model || "已配置"}。生成前仍会要求你确认草稿。`
         : "演示模式：使用本地规则生成，不调用外部模型。";
+    const globalKnowledgeStatus = knowledgeStatusMessage(app.knowledgeStatus);
+    if (globalKnowledgeStatus) $("mode-note").textContent += ` ${globalKnowledgeStatus}`;
     renderProfile();
     renderOverview();
     renderPlans();

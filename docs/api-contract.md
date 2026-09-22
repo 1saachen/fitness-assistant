@@ -1,12 +1,16 @@
 # MVP HTTP contract
 
-All endpoints are same-origin JSON under `/api`. This release runs locally as a single-user app. Errors return `{"detail": "readable message"}` or standard validation errors.
+All endpoints are same-origin JSON under `/api`. This release runs locally as a single-user app. Errors return a structured `detail` object with `code`, `message`, and `retryable`, or standard validation errors.
 
 ## Profile
 
-- `GET /api/state`: `{profile, profile_version, plans, feedback, mode, available_modes, model, example_available, today}`. Profile may be null; lists are newest first. This release reports `mode: "demo"`, `available_modes: ["demo"]`, and `model: null`; today uses Asia/Shanghai by default.
+- `GET /api/state`: `{profile, profile_version, plans, feedback, mode, available_modes, model, example_available, knowledge_status, today}`. Profile may be null; lists are newest first. This release reports `mode: "demo"`, `available_modes: ["demo"]`, and `model: null`; today uses Asia/Shanghai by default. `knowledge_status` is `unknown` before a profile exists, otherwise `ok`, `unavailable`, or `capacity_exceeded`.
 - `GET /api/example-profile`: the raw nested local example JSON, only on explicit click. No automatic database import.
 - `PUT /api/profile`: `{profile: <nested JSON>, expected_version: <0 for first save>}` → `{version, data, created_at}`. Profile retains the structure of `data/examples/demo-profile.json`. Extra fields rejected. Nullable fields stay null. Conflict returns 409.
+
+- `GET /api/export/{plan|feedback|advice}?format={json|csv|markdown}`: downloads local records. Optional `plan_id` or `feedback_id` narrows the export. Empty selections return `404` with `detail.code: "export_not_found"`; unsupported formats return `400` with `detail.code: "export_format_invalid"`.
+
+Mutation conflicts use stable codes: profile version conflicts use `profile_version_conflict`; feedback revision or concurrent advice conflicts use `feedback_revision_conflict`.
 
 ## Plans
 

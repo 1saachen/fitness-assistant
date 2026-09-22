@@ -19,3 +19,10 @@ test('review status labels remain user-facing and stable', () => {
   assert.equal(ui.reviewLabel('approved'), '已批准');
   assert.equal(ui.reviewLabel('rejected'), '已拒绝');
 });
+
+test('knowledge degradation statuses have distinct user-facing explanations', () => {
+  assert.equal(typeof ui.knowledgeStatusMessage, 'function');
+  assert.equal(ui.knowledgeStatusMessage('ok'), null);
+  assert.equal(ui.knowledgeStatusMessage('unavailable').includes('不可用'), true);
+  assert.equal(ui.knowledgeStatusMessage('capacity_exceeded').includes('容量'), true);
+});

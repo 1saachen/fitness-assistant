@@ -40,6 +40,14 @@ Invoke-RestMethod http://127.0.0.1:8000/api/state
 
 初始化命令只在数据库没有档案时写入版本 1；重复执行会返回 `already_initialized`，不会覆盖已有档案。也可以用 `--db-path` 和 `--profile-path` 指定测试路径或其他已审核的档案文件。初始化后按上面的基本使用流程即可生成计划、确认反馈并生成建议。
 
+需要快速演示完整闭环时，可以在一个空数据库中运行：
+
+```powershell
+.\.venv\Scripts\python.exe -m fitness.demo_cli walkthrough --date 2026-09-22
+```
+
+该命令会依次初始化档案、生成并确认一周计划、创建并确认一条每日反馈、生成建议，并以 JSON 输出各记录 ID 和知识状态。它只使用本地规则和已批准知识，不调用外部模型；数据库已有计划或反馈时会拒绝继续，先运行 `reset --confirm` 再重试。
+
 开发过程中需要从头演示时，可以显式确认清理本地运行数据：
 
 ```powershell
@@ -47,6 +55,20 @@ Invoke-RestMethod http://127.0.0.1:8000/api/state
 ```
 
 执行重置前请先停止正在使用该数据库的本地服务。`reset --confirm` 只删除默认 `data/local/fitness.sqlite3` 及其 SQLite `-wal`、`-shm` 旁路文件，不会递归删除目录，也不会触碰知识库、源码或配置。它是本地数据删除操作；如果使用自定义数据库路径，请通过 `--db-path` 明确指定。
+
+页面和 API 会区分知识状态：`ok` 表示知识快照已保存，`unavailable` 表示知识库文件或策略产物不可用但规则流程仍继续，`capacity_exceeded` 表示上下文超过本地快照容量并整体降级为规则结果。并发保存冲突会返回结构化错误 `code`，提示刷新反馈或根据最新档案重新生成。
+
+## 导出当前记录
+
+计划、反馈和已生成建议都可以从页面选择 JSON、CSV 或 Markdown 下载，也可以直接调用接口：
+
+```text
+GET /api/export/plan?format=json&plan_id=<plan_id>
+GET /api/export/feedback?format=csv
+GET /api/export/advice?format=markdown&feedback_id=<feedback_id>
+```
+
+JSON 保留结构化字段和生成轨迹；CSV 展开常用字段，便于表格处理；Markdown 适合阅读和归档。导出不包含本地密钥、Cookie 或服务配置。
 
 ## 基本使用流程
 
@@ -94,7 +116,7 @@ POST /api/feedback/{feedback_id}/advice
 
 计划页面会显示“方案依据”，按 baseline 模块展开行动规则、支持知识卡和来源视频。反馈页面会显示“本次调整依据”，按 issue 展开知识卡和来源视频。页面渲染的是生成时保存的快照。
 
-`GET /api/state` 返回当前应用状态，其中 `plans` 和 `feedback` 分别最多包含最近 100 条记录；它不是数据库完整导出或备份接口。计划中的 `strategy_context`、`knowledge_context` 和 `source_ids` 位于 `plans[*].data`，计划轨迹位于 `plans[*].trace`；反馈建议的 `knowledge_context` 和 `source_ids` 位于 `feedback[*].advice`，建议轨迹位于 `feedback[*].trace`。反馈流程不使用 `strategy_context`。
+`GET /api/state` 返回当前应用状态，其中 `plans` 和 `feedback` 分别最多包含最近 100 条记录；它不是数据库完整导出或备份接口。响应中的 `knowledge_status` 表示当前已保存档案对应的知识状态。计划中的 `strategy_context`、`knowledge_context` 和 `source_ids` 位于 `plans[*].data`，计划轨迹位于 `plans[*].trace`；反馈建议的 `knowledge_context` 和 `source_ids` 位于 `feedback[*].advice`，建议轨迹位于 `feedback[*].trace`。反馈流程不使用 `strategy_context`。
 
 升级前创建的 SQLite 记录可能没有新增的 context 字段，旧 trace 也可能不含当前的知识检索字段。页面会把缺失的 context 按空列表处理并显示为未采用知识库内容；读取 API 时应把缺失的 trace 字段视为未知。不要把旧记录缺少字段误认为数据损坏。
 

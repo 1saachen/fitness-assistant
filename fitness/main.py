@@ -4,12 +4,13 @@ from typing import Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .agent import DemoAgent
 from .config import ROOT, Settings
+from .exporting import ExportFormatError, render_export
 from .knowledge import build_manifest, search_knowledge
 from .knowledge_context import KnowledgeContextService
 from .models import (
@@ -54,15 +55,40 @@ def index():
 
 def err(e):
     if isinstance(e, Conflict):
-        raise HTTPException(409, str(e))
+        message = str(e)
+        if "档案" in message:
+            code = "profile_version_conflict"
+        elif "反馈" in message:
+            code = "feedback_revision_conflict"
+        else:
+            code = "request_conflict"
+        raise HTTPException(409, {
+            "code": code,
+            "message": message,
+            "retryable": True,
+        })
     if isinstance(e, NotFound):
-        raise HTTPException(404, str(e))
+        raise HTTPException(404, {
+            "code": "not_found",
+            "message": str(e),
+            "retryable": False,
+        })
     raise e
 
 
 @app.get("/api/state")
 def state():
     record = store.profile()
+    knowledge_status = "unknown"
+    if record:
+        try:
+            context = knowledge_context_service.for_plan(Profile.model_validate(record["data"]))
+            knowledge_status = context_persistence_status(context)
+        except Exception as exc:
+            if isinstance(exc, (OSError, ValueError, json.JSONDecodeError)):
+                knowledge_status = "unavailable"
+            else:
+                raise
     return {
         "profile": record["data"] if record else None,
         "profile_version": record["version"] if record else 0,
@@ -72,13 +98,18 @@ def state():
         "available_modes": ["demo"],
         "model": None,
         "example_available": settings.example_path.exists(),
+        "knowledge_status": knowledge_status,
         "today": datetime.now(ZoneInfo(settings.timezone)).date().isoformat(),
     }
 
 
 def require_demo(mode):
     if mode != "demo":
-        raise HTTPException(503, "在线模型尚未接入，请使用演示模式。")
+        raise HTTPException(503, {
+            "code": "mode_unavailable",
+            "message": "在线模型尚未接入，请使用演示模式。",
+            "retryable": False,
+        })
 
 
 @app.get("/api/example-profile")
@@ -229,6 +260,52 @@ def knowledge_search(q: str, limit: int = 8):
     if limit < 1 or limit > 20:
         raise HTTPException(400, "limit 必须在 1 到 20 之间")
     return {"query": q, "items": search_knowledge(ROOT / "data/knowledge", q, limit)}
+
+
+def _export_response(kind: str, export_format: str, rows: list[dict]):
+    try:
+        document = render_export(kind, rows, export_format)
+    except ExportFormatError as exc:
+        raise HTTPException(400, {
+            "code": "export_format_invalid" if "格式" in str(exc) else "export_type_invalid",
+            "message": str(exc),
+            "retryable": False,
+        }) from exc
+    if not rows:
+        raise HTTPException(404, {
+            "code": "export_not_found",
+            "message": "没有可导出的记录。",
+            "retryable": False,
+        })
+    return Response(
+        content=document.content,
+        media_type=document.media_type,
+        headers={"Content-Disposition": f'attachment; filename="{document.filename}"'},
+    )
+
+
+@app.get("/api/export/plan")
+def export_plan(format: str = "json", plan_id: str | None = None):
+    rows = store.plans()
+    if plan_id:
+        rows = [row for row in rows if row["id"] == plan_id]
+    return _export_response("plan", format, rows)
+
+
+@app.get("/api/export/feedback")
+def export_feedback(format: str = "json", feedback_id: str | None = None):
+    rows = store.feedback()
+    if feedback_id:
+        rows = [row for row in rows if row["id"] == feedback_id]
+    return _export_response("feedback", format, rows)
+
+
+@app.get("/api/export/advice")
+def export_advice(format: str = "json", feedback_id: str | None = None):
+    rows = [row for row in store.feedback() if row.get("advice") is not None]
+    if feedback_id:
+        rows = [row for row in rows if row["id"] == feedback_id]
+    return _export_response("advice", format, rows)
 
 
 @app.get("/api/knowledge/review")
