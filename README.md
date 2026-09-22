@@ -132,6 +132,7 @@ GET /api/knowledge/search?q=睡眠%20镁&limit=5
 
 ## 项目资料
 
+- [工作日志与路线图](docs/work-log.md)
 - [API 合约](docs/api-contract.md)
 - [RAG 计划与反馈集成设计](docs/superpowers/specs/2026-09-21-rag-plan-feedback-integration-design.md)
 - [人工维护知识库说明](data/knowledge/README.md)
