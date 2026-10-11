@@ -1,6 +1,6 @@
 # Fitness Assistant
 
-一个完全本地运行的健身管理 MVP，覆盖档案、训练与饮食计划、每日反馈、建议、SQLite 持久化，以及经人工审核后发布的本地知识库。当前应用只开放 `demo` 模式，由确定性的本地规则和本地 RAG 生成结果。
+一个本地优先的健身管理应用，覆盖档案、训练、饮食、补剂优先级、作息恢复、每日反馈、个人历史、局部调整、SQLite 持久化和人工审核知识库。采用单 Agent 编排已验证的本地工具；默认 `demo` 模式使用规则和本地 RAG，可显式启用兼容 OpenAI Chat Completions 的外部模型。
 
 ## 本地启动
 
@@ -28,7 +28,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/state
 
 停止服务时在运行窗口按 `Ctrl+C`。
 
-`demo` 模式不调用外部模型；当前可用模式只有 `demo`，`external model API calls = 0`。档案、计划、反馈和建议写入本地 SQLite，知识检索读取 `data/knowledge/` 中已批准的内容。
+`demo` 模式不调用外部模型。默认外部调用数为 0；只有配置 `FITNESS_LIVE_ENABLED=true` 和密钥后，页面才开放 `live`。档案、计划、反馈和建议写入本地 SQLite，知识检索读取 `data/knowledge/` 中已批准的内容。
 
 ## 可重复本地演示
 
@@ -86,14 +86,46 @@ GET /api/history/trends?days=7&end_date=2026-10-11
 GET /api/history/similar/<feedback_id>?limit=3
 ```
 
-相似历史只返回共享 issue、明确匹配信号和过去保存的建议摘要，不推断过去建议产生了某种结果，也不形成医疗因果结论。
+相似历史返回当前日期之前的共享 issue、匹配信号、过去建议及随后明确记录；后续记录不证明执行过建议或构成因果。完整个人历史查询不会受状态页最多显示100条记录的限制。
+
+## 单 Agent 与可选在线模型
+
+Agent 在生成建议时依次调用档案、当前计划、审核知识、近期反馈、趋势、相似历史和局部训练调整预览工具。在线模型可以选择继续读取工具并表达建议；本地工具负责事实与计算。基础训练处方、来源快照、补剂用量和诊断不能由模型直接改写。
+
+复制 `.env.example` 为本地 `.env`，配置密钥和显式开关后重启服务。完整配置、失败回退及使用量说明见 [Provider 文档](docs/provider.md)。密钥不得提交到 Git。模型失败、非法工具、步数超限或不合格输出会回退到本地结果，并在页面提示。
+
+生成器保留供应商返回的 token 使用量、调用次数和状态；不会在缺少实际定价时估算成本。日志仅含模型、延迟、状态和用量，不记录档案、提示词、Cookie或密钥。
+
+当日尚未完成训练且明确疲劳时，可以展开调整预览并确认减少组数。确认记录保留旧值、新值、触发问题和证据，原始周计划快照保持不变。页面显示已确认变更后的组数。异常症状优先触发停止训练和专业评估，不生成训练调整。
+
+## 导入、备份与恢复
+
+反馈页提供 JSON、CSV、Markdown 文件导入，先展示事实预览，再由你明确确认写入；无效批次不会部分导入，重复批次不会重复记录。Markdown 导出额外保存完整事实 JSON，支持完整往返；旧的纯文字 Markdown 仅恢复其中实际写出的字段。
+
+```powershell
+.\.venv\Scripts\python.exe -m fitness.data_cli import-preview --source feedback.json
+.\.venv\Scripts\python.exe -m fitness.data_cli backup --database data/local/fitness.sqlite3 --destination <新的备份文件路径>
+.\.venv\Scripts\python.exe -m fitness.data_cli restore-preview --source <备份路径> --database <目标数据库路径>
+```
+
+恢复需使用预览得到的 source/target fingerprint 和 `restore-confirm --confirm`；请先停止使用该数据库的服务。详细命令与认证、迁移、Docker、官方健康平台的边界见 [数据与部署文档](docs/data-boundaries.md)。当前数据库 schema 为3，会自动迁移旧表，拒绝高于当前版本的数据库。
+
+## 检索质量与维护
+
+```powershell
+.\.venv\Scripts\python.exe -m fitness.evaluation_cli --output-dir data/evaluation/reports
+```
+
+命令输出 JSON/Markdown 检索和审核报告；知识不可用或待复核时返回非零退出码。当前小型回归集覆盖14个案例、15个问题，在74张审核卡上首选分类命中率100%、预期卡 top-3覆盖率86.67%、指定误导集合召回0；保留未命中的案例，不把这当作对所有用户语言的保证。
+
+离线字符 TF-IDF 比较没有优于关键词基线；它不是神经嵌入。当前没有测得 embeddings 收益，暂不引入向量数据库。知识审核和 membership 变更流程见 [知识质量](docs/knowledge-quality.md)，指标和局限见 [检索评估](docs/retrieval-evaluation.md)。
 
 ## 基本使用流程
 
 1. 在“我的档案”填写目标、身体信息、训练条件、饮食和恢复信息，点击“保存档案”。计划只能基于已保存的档案生成；修改档案后需重新生成旧草案才能确认。
 2. 在“本周计划”选择开始日期，点击“生成计划草案”。检查训练、饮食和“方案依据”，再点击“确认这份计划”。每次生成都会留下独立记录。
 3. 在“每日反馈”输入当天训练、饮食、睡眠、疲劳或体重等事实，点击“整理为反馈草稿”。核对结构化字段后点击“确认并保存反馈”。
-4. 对已确认的反馈点击“生成今日建议”。页面会显示规则建议和“本次调整依据”；若修改已确认反馈，旧建议会被清除，需重新生成。
+4. 对已确认的反馈点击“生成今日建议”。先阅读行动建议，按需展开“为什么这样建议”；若修改已确认反馈，旧建议会被清除，需重新生成。适用时可预览并确认当日局部训练调整。
 
 对应 API 顺序如下：
 
@@ -106,7 +138,7 @@ POST /api/feedback/{feedback_id}/confirm
 POST /api/feedback/{feedback_id}/advice
 ```
 
-所有生成请求的 `mode` 都应为 `demo`。反馈草稿示例：
+默认演示使用 `mode: "demo"`；显式配置在线模型后，可以选择 `live`。反馈草稿示例：
 
 ```json
 {
@@ -132,7 +164,7 @@ POST /api/feedback/{feedback_id}/advice
 
 ## 查看保存的上下文与轨迹
 
-计划页面会显示“方案依据”，按 baseline 模块展开行动规则、支持知识卡和来源视频。反馈页面会显示“本次调整依据”，按 issue 展开知识卡和来源视频。页面渲染的是生成时保存的快照。
+计划页面保留可展开的“方案依据”。反馈页面默认显示行动建议，主动展开“为什么这样建议”时显示触发事实、规则和趋势摘要；完整知识卡与来源保存在生成时的快照及 trace 中。
 
 `GET /api/state` 返回当前应用状态，其中 `plans` 和 `feedback` 分别最多包含最近 100 条记录；它不是数据库完整导出或备份接口。响应中的 `knowledge_status` 表示当前已保存档案对应的知识状态。计划中的 `strategy_context`、`knowledge_context` 和 `source_ids` 位于 `plans[*].data`，计划轨迹位于 `plans[*].trace`；反馈建议的 `knowledge_context` 和 `source_ids` 位于 `feedback[*].advice`，建议轨迹位于 `feedback[*].trace`。反馈流程不使用 `strategy_context`。
 
@@ -191,6 +223,7 @@ GET /api/knowledge/search?q=睡眠%20镁&limit=5
 ## 项目资料
 
 - [工作日志与路线图](docs/work-log.md)
+- [P0–P2 逐项验收与当前限制](docs/p2-completion-audit.md)
 - [API 合约](docs/api-contract.md)
 - [RAG 计划与反馈集成设计](docs/superpowers/specs/2026-09-21-rag-plan-feedback-integration-design.md)
 - [人工维护知识库说明](data/knowledge/README.md)

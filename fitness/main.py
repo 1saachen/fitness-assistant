@@ -10,22 +10,25 @@ from pydantic import BaseModel, Field
 
 from .agent import DemoAgent
 from .config import ROOT, Settings
+from .data_transfer import confirm_feedback_import, preview_feedback_import
 from .exporting import ExportFormatError, render_export
-from .history import HistoryQueryError, find_similar_feedback, get_recent_feedback, summarize_recent_trend
+from .history import HistoryQueryError, explain_similar_feedback, get_recent_feedback, summarize_recent_trend
 from .knowledge import build_manifest, search_knowledge
 from .knowledge_context import KnowledgeContextService
 from .models import (
+    Contract,
     FeedbackConfirm,
-    FeedbackData,
     ModeRequest,
     ParseRequest,
     PlanRequest,
     Profile,
     ProfileSave,
 )
+from .orchestration import FitnessAgent
 from .planning import context_persistence_status
 from .review import ReviewNotFound, ReviewService
 from .storage import Conflict, NotFound, Store
+from .tools import LocalTools
 
 settings = Settings.from_env()
 store = Store(settings.db_path)
@@ -47,6 +50,71 @@ knowledge_context_service = KnowledgeContextService(
 class KnowledgeReviewRequest(BaseModel):
     status: Literal["pending", "approved", "rejected"]
     note: str = Field(default="", max_length=2000)
+
+
+class ImportRequest(Contract):
+    content: str = Field(min_length=1, max_length=1_000_000)
+    format: Literal['json', 'csv', 'markdown']
+    batch_id: str | None = None
+    confirmed: bool = False
+
+
+class AdjustmentConfirm(Contract):
+    proposal: dict
+    confirmed: bool = False
+
+
+@app.post('/api/import/feedback/preview')
+def import_preview(req: ImportRequest):
+    try:
+        return preview_feedback_import(req.content, req.format)
+    except ValueError as exc:
+        raise HTTPException(400, {'code':'import_invalid', 'message':str(exc), 'retryable':False}) from exc
+
+
+@app.post('/api/import/feedback/confirm')
+def import_confirm(req: ImportRequest):
+    try:
+        return confirm_feedback_import(store, req.content, req.format,
+                                       expected_batch_id=req.batch_id or '', confirmed=req.confirmed)
+    except Conflict as exc:
+        err(exc)
+    except ValueError as exc:
+        raise HTTPException(400, {'code':'import_invalid', 'message':str(exc), 'retryable':False}) from exc
+
+
+@app.get('/api/feedback/{ident}/training-adjustment')
+def adjustment_preview(ident: str):
+    try:
+        row = store.get_feedback(ident)
+        if row['status'] != 'confirmed':
+            raise Conflict('请先确认反馈。')
+        return LocalTools(store, knowledge_context_service, row,
+                          today=_history_end_date(None)).call('adjust_today_training', {}).payload
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
+@app.post('/api/feedback/{ident}/training-adjustment/confirm')
+def adjustment_confirm(ident: str, req: AdjustmentConfirm):
+    if not req.confirmed:
+        raise HTTPException(400, '需要明确确认局部调整。')
+    proposal = adjustment_preview(ident)
+    if not proposal.get('changes'):
+        raise HTTPException(409, '当前没有适用的当日训练调整。')
+    if proposal != req.proposal:
+        err(Conflict('反馈或计划已有更新，请重新预览调整。'))
+    try:
+        return store.record_plan_change(**{k:v for k,v in proposal.items() if k != 'reason'})
+    except (Conflict, NotFound) as exc:
+        err(exc)
+    except ValueError as exc:
+        raise HTTPException(400, '局部调整不符合允许的字段范围。') from exc
+
+
+@app.get('/api/plans/{ident}/changes')
+def plan_changes(ident: str):
+    return store.plan_changes(ident)
 
 
 @app.get("/")
@@ -94,21 +162,33 @@ def state():
         "profile": record["data"] if record else None,
         "profile_version": record["version"] if record else 0,
         "plans": store.plans(),
-        "feedback": store.feedback(),
+        "feedback": _feedback_state(),
         "mode": "demo",
-        "available_modes": ["demo"],
-        "model": None,
+        "available_modes": ["demo", "live"] if settings.live_enabled and settings.api_key else ["demo"],
+        "model": settings.model if settings.live_enabled and settings.api_key else None,
+        "plan_changes": store.plan_changes(),
         "example_available": settings.example_path.exists(),
         "knowledge_status": knowledge_status,
         "today": datetime.now(ZoneInfo(settings.timezone)).date().isoformat(),
     }
 
 
+def _feedback_state():
+    rows = store.feedback()
+    changes = store.plan_changes()
+    for row in rows:
+        preview = (row.get('trace') or {}).get('training_adjustment_preview')
+        if preview and any(c['feedback_id'] == row['id'] and c['changes'] == preview.get('changes')
+                           for c in changes):
+            row['trace'].pop('training_adjustment_preview', None)
+    return rows
+
+
 def require_demo(mode):
-    if mode != "demo":
+    if mode != "demo" and not (settings.live_enabled and settings.api_key):
         raise HTTPException(503, {
             "code": "mode_unavailable",
-            "message": "在线模型尚未接入，请使用演示模式。",
+            "message": "在线模型未启用或未配置密钥，请使用演示模式。",
             "retryable": False,
         })
 
@@ -135,15 +215,13 @@ def plan(req: PlanRequest):
     if not p:
         raise HTTPException(409, "请先保存档案")
     profile_data = Profile.model_validate(p["data"])
-    context = knowledge_context_service.for_plan(profile_data)
-    data = agent.generate_plan(profile_data, req.start_date, context).model_dump(mode="json")
-    trace = {
-        "steps": ["baseline_strategy_selection", "planner"],
-        "strategy_ids": [strategy["id"] for strategy in data["strategy_context"]],
-        "knowledge_item_ids": data["source_ids"],
-        "knowledge_status": context_persistence_status(context),
-    }
-    return store.create_plan(data, p["version"], req.start_date.isoformat(), req.mode, trace)
+    try:
+        run = FitnessAgent(store, knowledge_context_service, settings, rules=agent).plan(
+            profile_data, req.start_date, req.mode)
+    except Conflict as exc:
+        err(exc)
+    return store.create_plan(run.data.model_dump(mode="json"), p["version"],
+                             req.start_date.isoformat(), req.mode, run.trace)
 
 
 @app.post("/api/plans/{ident}/confirm")
@@ -157,18 +235,25 @@ def confirm_plan(ident: str):
 @app.post("/api/feedback/parse")
 def parse(req: ParseRequest):
     require_demo(req.mode)
-    data = agent.parse_feedback(req.text, req.date).model_dump(mode="json")
-    return store.create_feedback(req.text, data, req.mode, {"steps": ["parser"]})
+    run = FitnessAgent(store, knowledge_context_service, settings, rules=agent).parse(req.text, req.date, req.mode)
+    return store.create_feedback(req.text, run.data.model_dump(mode='json'), req.mode, run.trace)
 
 
 @app.post("/api/feedback/{ident}/confirm")
 def confirm_feedback(ident: str, req: FeedbackConfirm):
     try:
+        row = store.get_feedback(ident)
+        parser_usage = (row.get('trace') or {}).get('parser_provider')
+        if not parser_usage and row['status'] == 'draft':
+            parser_usage = (row.get('trace') or {}).get('provider')
+        trace = {'steps':['parser']}
+        if parser_usage and parser_usage.get('status') != 'demo':
+            trace['parser_provider'] = parser_usage
         return store.confirm_feedback(
             ident,
             req.data.model_dump(mode="json"),
             req.expected_revision,
-            trace={"steps": ["parser"]},
+            trace=trace,
         )
     except (Conflict, NotFound) as e:
         err(e)
@@ -184,37 +269,10 @@ def advice(ident: str, req: ModeRequest):
         p = store.profile()
         if not p:
             raise HTTPException(409, "请先保存档案")
-        profile_data = Profile.model_validate(p["data"])
-        feedback_data = FeedbackData.model_validate(row["data"])
-        history = store.feedback()
-        context = knowledge_context_service.for_feedback(
-            profile_data,
-            feedback_data,
-            row["raw_text"],
-            history,
-        )
-        a = agent.advice(
-            profile_data,
-            feedback_data,
-            history,
-            context,
-        ).model_dump(mode="json")
-        advice_trace = {
-            "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
-            "issues": [issue.id for issue in context.issues],
-            "profile_goal": profile_data.goals.primary,
-            "issue_goal_context": [
-                {
-                    "issue": issue.id,
-                    "terms": list(issue.goal_terms),
-                    "collections": list(issue.goal_collections),
-                }
-                for issue in context.issues
-            ],
-            "knowledge_query_terms": list(context.query_terms),
-            "knowledge_item_ids": a["source_ids"],
-            "knowledge_status": context_persistence_status(context),
-        }
+        run = FitnessAgent(store, knowledge_context_service, settings, rules=agent).advise(
+            row, req.mode, today=_history_end_date(None))
+        a = run.data.model_dump(mode="json")
+        advice_trace = run.trace
         return store.save_advice(
             ident,
             a,
@@ -306,7 +364,7 @@ def history_recent(
 ):
     try:
         return get_recent_feedback(
-            store.feedback(),
+            store.feedback(limit=None),
             end_date=_history_end_date(end_date),
             days=days,
             issue=issue,
@@ -320,7 +378,7 @@ def history_recent(
 def history_trends(days: int = 7, end_date: date | None = None):
     try:
         return summarize_recent_trend(
-            store.feedback(), end_date=_history_end_date(end_date), days=days
+            store.feedback(limit=None), end_date=_history_end_date(end_date), days=days
         )
     except HistoryQueryError as exc:
         _history_error(exc)
@@ -330,7 +388,7 @@ def history_trends(days: int = 7, end_date: date | None = None):
 def history_similar(feedback_id: str, limit: int = 3):
     try:
         current = store.get_feedback(feedback_id)
-        return find_similar_feedback(store.feedback(), current, limit=limit)
+        return explain_similar_feedback(store.feedback(limit=None), current, limit=limit)
     except HistoryQueryError as exc:
         _history_error(exc)
     except NotFound as exc:

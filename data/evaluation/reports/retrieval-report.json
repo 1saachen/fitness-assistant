@@ -1,0 +1,899 @@
+{
+  "corpus": {
+    "approved_cards": 74,
+    "collections": {
+      "training": 13,
+      "fat_loss": 18,
+      "supplements": 36,
+      "sleep_recovery": 7
+    }
+  },
+  "keyword": {
+    "method": "KnowledgeContextService keyword scoring",
+    "cases": [
+      {
+        "id": "short-sleep",
+        "category": "sleep",
+        "issues": [
+          {
+            "id": "short_sleep",
+            "ranked_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-006",
+              "mvp-sleep_recovery-001"
+            ],
+            "expected_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-004"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 3,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "health-sleep",
+        "category": "sleep",
+        "issues": [
+          {
+            "id": "short_sleep",
+            "ranked_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-006",
+              "mvp-sleep_recovery-001"
+            ],
+            "expected_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-004"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 3,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "training-fatigue",
+        "category": "fatigue",
+        "issues": [
+          {
+            "id": "training_fatigue",
+            "ranked_ids": [
+              "mvp-training-010",
+              "mvp-training-011",
+              "mvp-sleep_recovery-005"
+            ],
+            "expected_ids": [
+              "mvp-training-010",
+              "mvp-sleep_recovery-005"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 3,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "food-recording",
+        "category": "diet",
+        "issues": [
+          {
+            "id": "diet_adherence",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-016",
+              "mvp-diet_fat_loss-009",
+              "mvp-diet_fat_loss-015"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-007",
+              "mvp-diet_fat_loss-015",
+              "mvp-diet_fat_loss-016"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.3333333333333333,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 4,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "muscle-protein",
+        "category": "diet",
+        "issues": [
+          {
+            "id": "diet_adherence",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-016",
+              "mvp-diet_fat_loss-009",
+              "mvp-diet_fat_loss-015"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-009"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 4,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "confirmed-plateau",
+        "category": "plateau",
+        "issues": [
+          {
+            "id": "weight_trend",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-010",
+              "mvp-diet_fat_loss-002"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-010"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "weight_plateau",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-012",
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-005",
+              "mvp-diet_fat_loss-008"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-005",
+              "mvp-diet_fat_loss-012",
+              "mvp-diet_fat_loss-017"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.6666666666666666,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": true,
+        "citation_count": 5,
+        "dedup_saved": 1,
+        "dedup_correct": true
+      },
+      {
+        "id": "draft-is-not-plateau",
+        "category": "plateau",
+        "issues": [
+          {
+            "id": "weight_trend",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-010",
+              "mvp-diet_fat_loss-002"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-010"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 2,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "magnesium-vitamin-d",
+        "category": "supplements",
+        "issues": [
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "mvp-supplements-006",
+              "mvp-supplements-018",
+              "mvp-supplements-025"
+            ],
+            "expected_ids": [
+              "mvp-supplements-018",
+              "mvp-supplements-006"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 3,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "omega-case-fold",
+        "category": "supplements",
+        "issues": [
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "mvp-supplements-017",
+              "mvp-supplements-019",
+              "mvp-supplements-011"
+            ],
+            "expected_ids": [
+              "mvp-supplements-017"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 3,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "sleep-patch",
+        "category": "supplements",
+        "issues": [
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "couren-sleep-patch-20260914",
+              "mvp-supplements-019",
+              "mvp-supplements-011"
+            ],
+            "expected_ids": [
+              "couren-sleep-patch-20260914"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 3,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "multiple-issues",
+        "category": "multi_issue",
+        "issues": [
+          {
+            "id": "short_sleep",
+            "ranked_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-006",
+              "mvp-sleep_recovery-001"
+            ],
+            "expected_ids": [
+              "mvp-sleep_recovery-005"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "training_fatigue",
+            "ranked_ids": [
+              "mvp-training-010",
+              "mvp-training-011",
+              "mvp-sleep_recovery-005"
+            ],
+            "expected_ids": [
+              "mvp-training-010",
+              "mvp-sleep_recovery-005"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "diet_adherence",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-016",
+              "mvp-diet_fat_loss-009",
+              "mvp-diet_fat_loss-015"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-016"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "mvp-supplements-018",
+              "couren-magnesium-deficiency-20260914",
+              "mvp-supplements-019"
+            ],
+            "expected_ids": [
+              "mvp-supplements-018",
+              "couren-magnesium-deficiency-20260914"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": true,
+        "citation_count": 12,
+        "dedup_saved": 1,
+        "dedup_correct": true
+      },
+      {
+        "id": "unrelated-study",
+        "category": "unrelated",
+        "issues": [],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "iron-metaphor",
+        "category": "unrelated",
+        "issues": [],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "healthy-empty",
+        "category": "unrelated",
+        "issues": [],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      }
+    ],
+    "metrics": {
+      "case_count": 14,
+      "issue_count": 15,
+      "preferred_collection_hit_rate": 1.0,
+      "top3_coverage": 0.8666666666666667,
+      "misleading_recall_count": 0,
+      "misleading_recall_rate": 0.0,
+      "unexpected_issue_count": 0,
+      "missing_issue_count": 0,
+      "unavailable_case_count": 0,
+      "invalid_retrieval_case_count": 0,
+      "cross_issue_overlap_cases": 2,
+      "cross_issue_dedup_success_rate": 1.0,
+      "duplicate_citations_saved": 2
+    }
+  },
+  "tfidf": {
+    "method": "offline character bigram TF-IDF lexical control; not embeddings",
+    "is_embedding_model": false,
+    "cases": [
+      {
+        "id": "short-sleep",
+        "category": "sleep",
+        "issues": [
+          {
+            "id": "short_sleep",
+            "ranked_ids": [
+              "mvp-sleep_recovery-005",
+              "couren-sleep-patch-20260914",
+              "couren-magnesium-deficiency-20260914"
+            ],
+            "expected_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-004"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "health-sleep",
+        "category": "sleep",
+        "issues": [
+          {
+            "id": "short_sleep",
+            "ranked_ids": [
+              "couren-sleep-habits-first-20260914",
+              "mvp-sleep_recovery-005",
+              "couren-sleep-patch-20260914"
+            ],
+            "expected_ids": [
+              "mvp-sleep_recovery-005",
+              "mvp-sleep_recovery-004"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "training-fatigue",
+        "category": "fatigue",
+        "issues": [
+          {
+            "id": "training_fatigue",
+            "ranked_ids": [
+              "mvp-supplements-022",
+              "mvp-training-010",
+              "mvp-supplements-028"
+            ],
+            "expected_ids": [
+              "mvp-training-010",
+              "mvp-sleep_recovery-005"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": [
+              "mvp-supplements-022",
+              "mvp-supplements-028"
+            ]
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "food-recording",
+        "category": "diet",
+        "issues": [
+          {
+            "id": "diet_adherence",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-007",
+              "mvp-diet_fat_loss-016",
+              "mvp-diet_fat_loss-015"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-007",
+              "mvp-diet_fat_loss-015",
+              "mvp-diet_fat_loss-016"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "muscle-protein",
+        "category": "diet",
+        "issues": [
+          {
+            "id": "diet_adherence",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-007",
+              "mvp-training-013",
+              "mvp-diet_fat_loss-009"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-009"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "confirmed-plateau",
+        "category": "plateau",
+        "issues": [
+          {
+            "id": "weight_trend",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-010",
+              "mvp-training-013"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-010"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "weight_plateau",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-training-013",
+              "mvp-diet_fat_loss-012"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-005",
+              "mvp-diet_fat_loss-012",
+              "mvp-diet_fat_loss-017"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.3333333333333333,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": true,
+        "citation_count": 0,
+        "dedup_saved": 6,
+        "dedup_correct": false
+      },
+      {
+        "id": "draft-is-not-plateau",
+        "category": "plateau",
+        "issues": [
+          {
+            "id": "weight_trend",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-010",
+              "mvp-diet_fat_loss-011"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-002",
+              "mvp-diet_fat_loss-010"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "magnesium-vitamin-d",
+        "category": "supplements",
+        "issues": [
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "couren-vitamin-d-sleep-20260914",
+              "mvp-supplements-025",
+              "mvp-supplements-002"
+            ],
+            "expected_ids": [
+              "mvp-supplements-018",
+              "mvp-supplements-006"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "omega-case-fold",
+        "category": "supplements",
+        "issues": [
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "mvp-supplements-026",
+              "mvp-supplements-017",
+              "mvp-supplements-009"
+            ],
+            "expected_ids": [
+              "mvp-supplements-017"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "sleep-patch",
+        "category": "supplements",
+        "issues": [
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "couren-sleep-patch-20260914",
+              "couren-tart-cherry-sleep-20260914",
+              "couren-vitamin-d-sleep-20260914"
+            ],
+            "expected_ids": [
+              "couren-sleep-patch-20260914"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 3,
+        "dedup_correct": false
+      },
+      {
+        "id": "multiple-issues",
+        "category": "multi_issue",
+        "issues": [
+          {
+            "id": "short_sleep",
+            "ranked_ids": [
+              "couren-magnesium-deficiency-20260914",
+              "mvp-sleep_recovery-005",
+              "couren-sleep-patch-20260914"
+            ],
+            "expected_ids": [
+              "mvp-sleep_recovery-005"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 1.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "training_fatigue",
+            "ranked_ids": [
+              "mvp-supplements-022",
+              "mvp-training-010",
+              "couren-magnesium-deficiency-20260914"
+            ],
+            "expected_ids": [
+              "mvp-training-010",
+              "mvp-sleep_recovery-005"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": [
+              "mvp-supplements-022",
+              "couren-magnesium-deficiency-20260914"
+            ]
+          },
+          {
+            "id": "diet_adherence",
+            "ranked_ids": [
+              "mvp-diet_fat_loss-007",
+              "mvp-diet_fat_loss-015",
+              "mvp-diet_fat_loss-009"
+            ],
+            "expected_ids": [
+              "mvp-diet_fat_loss-006",
+              "mvp-diet_fat_loss-016"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.0,
+            "misleading_ids": []
+          },
+          {
+            "id": "supplement_question",
+            "ranked_ids": [
+              "couren-magnesium-deficiency-20260914",
+              "mvp-training-010",
+              "mvp-diet_fat_loss-007"
+            ],
+            "expected_ids": [
+              "mvp-supplements-018",
+              "couren-magnesium-deficiency-20260914"
+            ],
+            "preferred_collection_hit": true,
+            "top3_coverage": 0.5,
+            "misleading_ids": [
+              "mvp-training-010",
+              "mvp-diet_fat_loss-007"
+            ]
+          }
+        ],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": true,
+        "citation_count": 0,
+        "dedup_saved": 12,
+        "dedup_correct": false
+      },
+      {
+        "id": "unrelated-study",
+        "category": "unrelated",
+        "issues": [],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "iron-metaphor",
+        "category": "unrelated",
+        "issues": [],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      },
+      {
+        "id": "healthy-empty",
+        "category": "unrelated",
+        "issues": [],
+        "unexpected_issue_ids": [],
+        "missing_issue_ids": [],
+        "status": "ok",
+        "unknown_retrieval_ids": [],
+        "cross_issue_overlap": false,
+        "citation_count": 0,
+        "dedup_saved": 0,
+        "dedup_correct": true
+      }
+    ],
+    "metrics": {
+      "case_count": 14,
+      "issue_count": 15,
+      "preferred_collection_hit_rate": 1.0,
+      "top3_coverage": 0.6222222222222222,
+      "misleading_recall_count": 6,
+      "misleading_recall_rate": 0.13333333333333333,
+      "unexpected_issue_count": 0,
+      "missing_issue_count": 0,
+      "unavailable_case_count": 0,
+      "invalid_retrieval_case_count": 0
+    }
+  },
+  "embedding_assessment": {
+    "measured": false,
+    "decision": "defer vector infrastructure",
+    "reason": "No local embedding model is configured; TF-IDF is provided only as an offline semantic candidate."
+  }
+}

@@ -86,6 +86,19 @@ def test_json_export_keeps_structured_data_and_trace():
     assert document.filename.endswith(".json")
 
 
+def test_markdown_feedback_roundtrip_preserves_all_explicit_facts():
+    from fitness.data_transfer import preview_feedback_import
+    from fitness.models import FeedbackData
+    row = sample_feedback()
+    row['data']['diet_followed_plan'] = False
+    row['data']['intake_kcal'] = 2000
+    content = render_export('feedback', [row], 'markdown').content
+    preview = preview_feedback_import(content, 'markdown')
+    assert preview['errors'] == []
+    assert len(preview['items']) == 1
+    assert preview['items'][0]['data'] == FeedbackData.model_validate(row['data']).model_dump(mode='json')
+
+
 def test_csv_and_markdown_exports_are_readable():
     csv_document = render_export("feedback", [sample_feedback()], "csv")
     markdown_document = render_export("advice", [sample_feedback()], "markdown")

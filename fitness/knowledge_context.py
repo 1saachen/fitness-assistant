@@ -288,6 +288,11 @@ def _apply_goal_context(issue: RetrievalIssue, goal: str) -> RetrievalIssue:
 def _retrieve_issue(issue: RetrievalIssue, manifest: list[dict]) -> RetrievalIssue:
     scored = []
     for row in manifest:
+        # Generic training fatigue is not a supplement question. Keep fallback
+        # and term-coverage expansion inside the issue/goal context domains.
+        if (issue.id == "training_fatigue"
+                and row["collection"] not in (*issue.collections, *issue.goal_collections)):
+            continue
         title, body = row["title"].casefold(), row["text"].casefold()
         matched = {term for term in issue.terms if term.casefold() in title or term.casefold() in body}
         if not matched:

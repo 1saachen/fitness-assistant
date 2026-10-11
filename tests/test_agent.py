@@ -14,6 +14,16 @@ def test_feedback_parser_records_only_explicit_diet_adherence():
     assert agent.parse_feedback("今天吃食堂", date(2026, 10, 3)).diet_followed_plan is None
 
 
+def test_parser_does_not_turn_negated_or_hypothetical_phrases_into_facts():
+    agent = DemoAgent()
+    for text in ('未完成训练', '没有完成训练', '今天还没练完'):
+        assert agent.parse_feedback(text, date(2026, 10, 11)).training_completed is False
+    for text in ('我希望今晚睡了5小时', '昨晚没睡了5小时', '计划明天体重80公斤'):
+        parsed = agent.parse_feedback(text, date(2026, 10, 11))
+        assert parsed.sleep_hours is None
+        assert parsed.weight_kg is None
+
+
 def citation(index, *issues, excerpt=None, collection="training"):
     return KnowledgeCitation(
         id=f"knowledge-{index:03d}",

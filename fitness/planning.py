@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from .catalog import available
 from .knowledge_context import KnowledgeContextResult
 from .models import PlanData
+from .nutrition import nutrition_plan
 
 STRATEGY_TITLE_PREVIEW_LENGTH = 40
 MAX_STRATEGY_SNAPSHOTS = 20
@@ -37,7 +40,13 @@ def generate_plan(profile, start_date, context=None):
     context = context or KnowledgeContextResult()
     training = profile.training
     session_count = training.available_sessions_per_week or 3
-    chosen_days = training.preferred_weekdays or [0, 2, 4, 6][:session_count]
+    default_days = {
+        1: [0], 2: [0, 3], 3: [0, 2, 4], 4: [0, 2, 4, 6],
+        5: [0, 1, 2, 4, 5], 6: [0, 1, 2, 3, 4, 5],
+    }[session_count]
+    chosen_days = ([i for i in range(7)
+                    if (start_date + timedelta(days=i)).weekday() in training.preferred_weekdays]
+                   if training.preferred_weekdays is not None else default_days)
     exercise_pool = {item.id: item for item in available(training.available_equipment)}
     templates = [
         ["barbell_bench_press", "lat_pulldown", "plank"],
@@ -56,6 +65,15 @@ def generate_plan(profile, start_date, context=None):
                 for exercise_id in templates[chosen_days.index(day_index) % len(templates)]
                 if exercise_id in exercise_pool
             ]
+            if len(exercise_ids) < len(templates[chosen_days.index(day_index) % len(templates)]):
+                questions.append("器械不足时仅使用可用动作作有限草案，无法替代完整模板；空动作日作恢复，请补充器械。")
+            if not exercise_ids:
+                exercise_ids = [item.id for item in exercise_pool.values()
+                                if item.equipment != 'bodyweight'][:3]
+            if not exercise_ids:
+                days.append({"day_index": day_index, "label": f"第{day_index + 1}天 · 恢复",
+                             "kind": "rest", "exercises": [], "estimated_minutes": 0})
+                continue
             exercises = [
                 {
                     "exercise_id": exercise_id,
@@ -86,24 +104,8 @@ def generate_plan(profile, start_date, context=None):
                     "estimated_minutes": 0,
                 }
             )
-    nutrition = {
-        "approach": "以食堂可获得的蛋白质、蔬菜和主食为基础，保持规律进餐。",
-        "meal_options": [
-            {
-                "meal": "早餐",
-                "suggestions": ["鸡蛋或奶制品搭配主食", "按饥饿程度调整份量"],
-            },
-            {
-                "meal": "午餐/晚餐",
-                "suggestions": ["优先选择肉/蛋/豆制品、蔬菜和米饭", "外卖时选择少油并保留蛋白质"],
-            },
-            {
-                "meal": "训练后",
-                "suggestions": ["在接下来一餐补充蛋白质和碳水", "饮水并观察恢复"],
-            },
-        ],
-        "budget_note": "学校食堂价格未知，需记录实际花费后再核算40元/天预算。",
-    }
+    nutrition, nutrition_questions = nutrition_plan(profile)
+    questions.extend(nutrition_questions)
     strategies, citations = persistent_context_snapshots(context)
     strategy_summary = (
         f" 方案依据（共{len(strategies)}个模块）："
@@ -111,17 +113,25 @@ def generate_plan(profile, start_date, context=None):
         if strategies
         else ""
     )
+    goal_title, goal_summary = {
+        "fat_loss": ("减脂保力量", "减脂并维持力量，建立可持续的饮食与训练习惯。"),
+        "muscle_gain": ("增肌与力量", "增肌并改善力量，结合饮食、训练和恢复反馈调整。"),
+        "general_health": ("健康与体能", "维持基本健康，逐步建立规律运动、饮食和作息。"),
+    }[profile.goals.primary]
     return PlanData(
-        title="减脂保力量 · 一周草案",
+        title=f"{goal_title} · 一周草案",
         summary=(
-            f"{profile.personal.age_years}岁，目标为{profile.goals.primary}。"
-            "使用中等训练量维持力量，按反馈逐周调整。"
+            f"{profile.personal.age_years}岁，目标为{goal_summary}"
             f"{strategy_summary}"
         ),
         days=days,
         nutrition=nutrition,
-        questions=questions,
+        questions=list(dict.fromkeys(questions)),
         source_ids=[citation.id for citation in citations],
         strategy_context=strategies,
         knowledge_context=citations,
+        recovery_guidance=["优先建立规律作息，成年人通常以7至9小时睡眠为参考，按个人恢复反馈调整。",
+                           "休息日安排轻活动；异常疼痛或持续不适时停止相关训练并咨询专业人员。"],
+        supplement_guidance=["先保障正餐、训练和睡眠，再按明确需求讨论补剂；不把视频排名当作个体用量。",
+                             "补剂花费单独记录；有疾病、用药或不良反应时先咨询医生或药师。"],
     )

@@ -549,7 +549,7 @@ def test_scoring_is_case_insensitive_and_prioritizes_title_matches(tmp_path, pro
     assert result.issues[0].knowledge_item_ids == ("z-title", "a-body", "b-substring")
 
 
-def test_exact_title_match_precedes_preferred_collection_body_match(tmp_path, profile_data):
+def test_exact_generic_fatigue_title_cannot_override_collection_boundary(tmp_path, profile_data):
     root = write_library(tmp_path, [
         {"id": "preferred-body", "title": "训练恢复建议", "claim": "疲劳", "collection": "training"},
         {"id": "nonpreferred-exact", "title": "疲劳", "collection": "supplements"},
@@ -560,7 +560,33 @@ def test_exact_title_match_precedes_preferred_collection_body_match(tmp_path, pr
     )
 
     assert result.issues[0].id == "training_fatigue"
-    assert result.issues[0].knowledge_item_ids[0] == "nonpreferred-exact"
+    assert result.issues[0].knowledge_item_ids == ("preferred-body",)
+
+
+def test_generic_fatigue_expansion_stays_with_issue_collections(tmp_path, profile_data):
+    root = write_library(tmp_path, [
+        {"id": "training-fatigue", "title": "训练后恢复", "claim": "疲劳恢复训练量", "collection": "training"},
+        {"id": "sleep-recovery", "title": "睡眠恢复", "claim": "疲劳恢复睡眠", "collection": "sleep_recovery"},
+        {"id": "supplement-fatigue", "title": "维生素B12与训练疲劳", "claim": "疲劳恢复补剂", "collection": "supplements"},
+    ])
+    result = make_service(root).for_feedback(
+        Profile.model_validate(profile_data), feedback(fatigue="训练后疲劳"), "", [],
+    )
+    issue = result.issues[0]
+    assert issue.id == "training_fatigue"
+    assert "supplement-fatigue" not in issue.knowledge_item_ids
+
+
+def test_exact_supplement_title_remains_retrievable(tmp_path, profile_data):
+    root = write_library(tmp_path, [
+        {"id": "supplement-b12", "title": "维生素B12", "claim": "补剂适用条件", "collection": "supplements"},
+        {"id": "training-b12", "title": "训练恢复", "claim": "维生素B12疲劳", "collection": "training"},
+    ])
+    result = make_service(root).for_feedback(
+        Profile.model_validate(profile_data), feedback(), "维生素B12适用条件", [],
+    )
+    assert result.issues[0].id == "supplement_question"
+    assert result.issues[0].knowledge_item_ids[0] == "supplement-b12"
 
 
 @pytest.mark.parametrize("raw_text", ["今天吃得多", "食堂", "外卖", "饮食情况"])

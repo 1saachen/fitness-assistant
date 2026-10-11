@@ -79,6 +79,26 @@ function withFakeDocument(run) {
   }
 }
 
+test('optional why explanation renders facts and history safely with no default knowledge cards', () => {
+  withFakeDocument(() => {
+    const detail = ui.renderBriefExplanation({explanations:[{
+      issue:'short_sleep', facts:['sleep_hours=5 <script>'], rule:'先安排恢复',
+      history:['14天3次记录平均6小时'], knowledge_ids:['card-1'],
+    }]}, {similar_history:{matches:[{date:'2026-10-01', previous_suggestions:['降低训练量'],
+       next_observation:{date:'2026-10-02',data:{sleep_hours:7}}, outcome_notice:'未证明因果'}]}});
+    assert.equal(detail.tagName, 'DETAILS');
+    assert.ok(detail.textContent.includes('为什么这样建议'));
+    assert.ok(detail.textContent.includes('sleep_hours=5 <script>'));
+    assert.ok(detail.textContent.includes('未证明因果'));
+    assert.equal(descendants(detail, n => n.tagName === 'SCRIPT').length, 0);
+  });
+});
+
+test('refresh preserves live selection only while configured', () => {
+  assert.equal(ui.preservedMode('live', {mode:'demo',available_modes:['demo','live']}), 'live');
+  assert.equal(ui.preservedMode('live', {mode:'demo',available_modes:['demo']}), 'demo');
+});
+
 test('groups one citation under every valid matched feedback issue in input order', () => {
   assert.equal(typeof ui.groupKnowledgeByIssue, 'function');
   const groups = ui.groupKnowledgeByIssue([

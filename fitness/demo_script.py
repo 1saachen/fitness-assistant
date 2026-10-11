@@ -3,12 +3,11 @@
 from datetime import date
 from pathlib import Path
 
-from .agent import DemoAgent
-from .config import ROOT
+from .config import ROOT, Settings
 from .demo import DemoDataError, initialize_demo_profile
 from .knowledge_context import KnowledgeContextService
-from .models import FeedbackData, Profile
-from .planning import context_persistence_status
+from .models import Profile
+from .orchestration import FitnessAgent
 from .storage import Store
 
 
@@ -22,50 +21,28 @@ def run_demo_walkthrough(store: Store, profile_path: Path, start_date: date) -> 
     context_service = KnowledgeContextService(
         ROOT / "data/knowledge", ROOT / "data/knowledge/baseline-strategies.json"
     )
-    agent = DemoAgent()
+    agent = FitnessAgent(store, context_service, Settings(db_path=store.path))
 
-    plan_context = context_service.for_plan(profile)
-    plan_data = agent.generate_plan(profile, start_date, plan_context).model_dump(mode="json")
+    plan_run = agent.plan(profile, start_date, 'demo')
+    plan_data = plan_run.data.model_dump(mode="json")
     plan = store.create_plan(
         plan_data,
         profile_row["version"],
         start_date.isoformat(),
         "demo",
-        {
-            "steps": ["baseline_strategy_selection", "planner"],
-            "strategy_ids": [row["id"] for row in plan_data["strategy_context"]],
-            "knowledge_item_ids": plan_data["source_ids"],
-            "knowledge_status": context_persistence_status(plan_context),
-        },
+        plan_run.trace,
     )
     plan = store.confirm_plan(plan["id"])
 
     raw_text = "完成训练，睡了6小时，今天很累，吃食堂"
-    feedback_data = agent.parse_feedback(raw_text, start_date).model_dump(mode="json")
+    feedback_data = agent.parse(raw_text, start_date, 'demo').data.model_dump(mode="json")
     feedback = store.create_feedback(raw_text, feedback_data, "demo", {"steps": ["parser"]})
     feedback = store.confirm_feedback(
         feedback["id"], feedback_data, 0, trace={"steps": ["parser"]}
     )
-    feedback_model = FeedbackData.model_validate(feedback["data"])
-    history = store.feedback()
-    advice_context = context_service.for_feedback(profile, feedback_model, raw_text, history)
-    advice = agent.advice(profile, feedback_model, history, advice_context).model_dump(mode="json")
-    advice_trace = {
-        "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
-        "issues": [issue.id for issue in advice_context.issues],
-        "profile_goal": profile.goals.primary,
-        "issue_goal_context": [
-            {
-                "issue": issue.id,
-                "terms": list(issue.goal_terms),
-                "collections": list(issue.goal_collections),
-            }
-            for issue in advice_context.issues
-        ],
-        "knowledge_query_terms": list(advice_context.query_terms),
-        "knowledge_item_ids": advice["source_ids"],
-        "knowledge_status": context_persistence_status(advice_context),
-    }
+    advice_run = agent.advise(feedback, 'demo')
+    advice = advice_run.data.model_dump(mode='json')
+    advice_trace = advice_run.trace
     feedback = store.save_advice(
         feedback["id"],
         advice,

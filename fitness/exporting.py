@@ -208,6 +208,12 @@ def _markdown_feedback(rows: list[dict], advice_only: bool = False) -> str:
             f"- 来源 ID：{', '.join(_source_ids(row)) or '无'}",
             "",
         ])
+    if not advice_only:
+        sections.extend(['### 可重新导入的明确事实', '', '```json', _json_cell({
+            'export_version':1, 'type':'feedback', 'items':[
+                {'status':row.get('status', 'draft'), 'raw_text':row.get('raw_text', ''),
+                 'data':row.get('data') or {}} for row in rows],
+        }), '```', ''])
     return "\n".join(sections).rstrip() + "\n"
 
 

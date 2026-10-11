@@ -1,0 +1,23 @@
+# Retrieval evaluation
+
+Run the reproducible local report with:
+
+```text
+python -m fitness.evaluation_cli --output-dir data/evaluation/reports
+```
+
+The committed cases in `data/evaluation/retrieval-cases.json` are held-out regression labels. They cover short sleep, fatigue, food recording, a confirmed weight plateau, unconfirmed plateau history, named supplements, an unrelated message, and a multi-issue message. Each positive issue has expected card IDs and preferred collections. Forbidden collections make a plausible but unsafe cross-domain hit visible. Empty unrelated cases verify that the extractor does not create an issue simply because a query contains a common character.
+
+The keyword result is the production `KnowledgeContextService` with the real 74-card approved corpus. Metrics include preferred-collection hit rate, mean expected top-three coverage, misleading recall count/rate, unexpected issue count, unavailable cases, and cross-issue citation deduplication. A citation may match multiple issues; the report checks that `matched_issues` retains that relationship while the returned citation appears once.
+
+Preferred-collection hit means at least one of the ranked first three cards belongs to the label's preferred collections. Top-three coverage is expected-card recall per labeled issue, averaged equally across issues. Misleading recall counts forbidden-collection cards across all retrieved positions, including the keyword baseline's fourth/fifth coverage expansion; the rate divides that count by issue-card selections. Repeated cards across different issues count separately for recall, while dedup checks the final citation union and its exact issue attribution. An unrelated case has no positive relevance labels; unexpected issue count reports any inferred issue instead of inflating positive recall scores.
+
+The second result is an offline character-bigram TF-IDF candidate. It is an explainable lexical similarity control and is explicitly **not** an embedding model. This environment has no local embedding model (`sentence_transformers`, `transformers`, `torch`, and `sklearn` are unavailable), so no embedding benefit is measured. Vector infrastructure is deferred until a fixed model, versioned index, held-out benchmark, and resource budget are available. The TF-IDF result must not be described as proof that embeddings would help or hurt.
+
+Both methods run the same cases and approved corpus; issue extraction stays fixed to isolate ranking. TF-IDF receives the raw message plus the production issue and goal terms and fits document-frequency weights only on corpus text. Expected IDs, preferred collections, and forbidden collections are never ranking inputs. It returns three positive-similarity cards with no production collection boost. Candidate dedup is not assessed because this offline experiment changes ranking only and does not replace the citation assembly service.
+
+The committed report records 14 cases and 15 labeled issues. Keyword retrieval has 100% preferred-collection hits, 86.67% mean top-three coverage, zero forbidden recalls, and correct deduplication in both overlapping cases, removing two duplicate citations. Generic fatigue ranking and keyword coverage expansion stay inside the issue's preferred and goal collections, preventing a B12 card from becoming advice evidence for an unasked supplement question; explicit supplement questions retain exact-title ranking. Other issues preserve their prior ranking behavior. TF-IDF remains an unconstrained lexical comparison, with its measured metrics in the report. These results support keeping the production keyword approach for this corpus; they provide no measured result for neural embeddings. Remaining gaps are the fourth-position diet-recording card and absent expected sleep-habits card. Reports surface these gaps rather than silently redefining labels to pass.
+
+The fixture is intentionally small and editorially labeled. It is useful for deterministic regressions and ranking failures, not a clinical efficacy study, a population benchmark, or proof of recall on future user language. When labels change, record the reason and rerun the report; do not tune the retriever against the expected IDs without adding a new held-out case.
+
+Each report command removes previous retrieval outputs before evaluation. Missing, malformed, empty or invalid case fixtures return exit code 2 and produce `evaluation-error.json` instead of leaving stale successful reports. Unknown retriever card IDs remain visible as `unknown_retrieval_ids` with `status: invalid_retrieval` and an invalid-case count; they do not cause an unhandled key lookup or get silently dropped from ranking.

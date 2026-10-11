@@ -1,3 +1,37 @@
+function preservedMode(current, payload) {
+  const available = payload.available_modes || ['demo'];
+  return available.includes(current) ? current : (payload.mode || 'demo');
+}
+
+function renderBriefExplanation(advice = {}, trace = {}) {
+  const detail = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = '为什么这样建议';
+  detail.append(summary);
+  normalizeContextList(advice.explanations).forEach(explanation => {
+    const section = document.createElement('section');
+    const label = document.createElement('strong');
+    label.textContent = feedbackIssueLabel(explanation.issue);
+    section.append(label);
+    [...normalizeContextList(explanation.facts), explanation.rule,
+      ...normalizeContextList(explanation.history)].filter(Boolean).forEach(text => {
+      const p = document.createElement('p'); p.textContent = text; section.append(p);
+    });
+    detail.append(section);
+  });
+  normalizeContextList(trace.similar_history?.matches).forEach(match => {
+    const p = document.createElement('p');
+    p.textContent = `${match.date} 相似记录：${normalizeContextList(match.previous_suggestions).join('；') || match.previous_advice_summary || '没有保存当时建议'}。${match.outcome_notice || '不推断执行效果或因果。'}`;
+    detail.append(p);
+    if (match.next_observation) {
+      const fact = document.createElement('p');
+      fact.textContent = `随后 ${match.next_observation.date} 的明确记录：${JSON.stringify(match.next_observation.data)}`;
+      detail.append(fact);
+    }
+  });
+  return detail;
+}
+
 function fieldValue(value, type) {
   if (value === "" || value == null) return null;
   if (type === "number") return Number(value);
@@ -329,6 +363,8 @@ function renderAdviceContextSections(advice = {}, sources = []) {
 
 if (typeof module !== "undefined")
   module.exports = {
+    preservedMode,
+    renderBriefExplanation,
     fieldValue,
     mergeFields,
     reviewLabel,
@@ -1007,7 +1043,16 @@ if (typeof document !== "undefined") {
       return;
     }
     const plan = app.plan;
-    const data = plan.data;
+    const data = JSON.parse(JSON.stringify(plan.data));
+    (app.planChanges || []).filter(change => change.plan_id === plan.id).forEach(change => {
+      (change.changes || []).forEach(field => {
+        const parts = field.path.split('.');
+        if (parts.length === 5 && parts[0] === 'days' && parts[2] === 'exercises' && parts[4] === 'sets') {
+          const exercise = data.days?.[Number(parts[1])]?.exercises?.[Number(parts[3])];
+          if (exercise) exercise.sets = field.new_value;
+        }
+      });
+    });
     const card = document.createElement("section");
     card.className = "card";
     const head = document.createElement("div");
@@ -1024,13 +1069,14 @@ if (typeof document !== "undefined") {
     card.append(
       node(
         "p",
-        `${fmt(plan.start_date)} 起 · 演示草案 · 使用档案版本 ${plan.profile_version}`,
+        `${fmt(plan.start_date)} 起 · ${plan.mode === 'live' ? '在线辅助草案' : '演示草案'} · 使用档案版本 ${plan.profile_version}`,
         "metadata",
       ),
       renderExportActions("plan", plan.id),
     );
     const planStatusMessage = knowledgeStatusMessage(plan.trace?.knowledge_status);
     if (planStatusMessage) card.append(node("p", planStatusMessage, "notice-inline"));
+    if (plan.trace?.provider?.status === 'fallback') card.append(node('p', '在线模型未完成，已使用本地规则生成。', 'notice-inline'));
     if (plan.status === "draft" && plan.profile_version !== app.version)
       card.append(
         node(
@@ -1082,6 +1128,17 @@ if (typeof document !== "undefined") {
       nutrition,
       node("p", data.nutrition.budget_note, "notice-inline"),
     );
+    [['作息与恢复', data.recovery_guidance], ['补剂优先级', data.supplement_guidance]].forEach(([title, rows]) => {
+      if (!rows?.length) return;
+      card.append(node('h3', title));
+      const list = document.createElement('ul'); rows.forEach(text => list.append(node('li', text))); card.append(list);
+    });
+    if ((app.planChanges || []).some(change => change.plan_id === plan.id)) {
+      const history = document.createElement('details'); history.append(node('summary', '已确认的局部调整'));
+      app.planChanges.filter(change => change.plan_id === plan.id).forEach(change =>
+        history.append(node('p', `${change.day_date}：${change.changes.map(c => `${c.path} ${c.old_value} → ${c.new_value}`).join('；')}`)));
+      card.append(history);
+    }
     card.append(...renderPlanContextSections(data, app.sources));
     if (plan.status !== "confirmed" && plan.profile_version === app.version)
       card.append(
@@ -1381,10 +1438,34 @@ if (typeof document !== "undefined") {
       );
       const adviceStatusMessage = knowledgeStatusMessage(item.trace?.knowledge_status);
       if (adviceStatusMessage) advice.append(node("p", adviceStatusMessage, "notice-inline"));
+      if (item.trace?.provider?.status === 'fallback') advice.append(node('p', '在线模型未完成，已回退为本地规则建议。', 'notice-inline'));
       const list = document.createElement("ul");
       item.advice.suggestions.forEach((x) => list.append(node("li", x)));
       advice.append(list);
-      advice.append(...renderAdviceContextSections(item.advice, app.sources));
+      advice.append(renderBriefExplanation(item.advice, item.trace));
+      const preview = item.trace?.training_adjustment_preview;
+      if (preview?.changes?.length) {
+        const adjustment = document.createElement('details');
+        adjustment.append(node('summary', '预览当日训练调整'), node('p', preview.reason));
+        preview.changes.forEach(change => {
+          const parts = change.path.split('.');
+          const plan = app.plans.find(row => row.id === preview.plan_id);
+          const exercise = plan?.data?.days?.[Number(parts[1])]?.exercises?.[Number(parts[3])];
+          adjustment.append(node('p', `${exercise?.name || '训练动作'}：${change.old_value} 组 → ${change.new_value} 组`));
+        });
+        adjustment.append(action('确认这次局部调整', 'button secondary', async (event) => {
+          const target = event.currentTarget; busy(target, true);
+          try {
+            await api(`/api/feedback/${item.id}/training-adjustment/confirm`, {
+              method:'POST', body:JSON.stringify({proposal:preview, confirmed:true}),
+            });
+            renderAll(await api('/api/state'));
+            show('局部调整已记录，基础周计划快照已保留。');
+          } catch (error) { show(error.message, true); }
+          finally { busy(target, false); }
+        }));
+        advice.append(adjustment);
+      }
       card.append(advice);
     }
     root.append(card);
@@ -1394,13 +1475,15 @@ if (typeof document !== "undefined") {
     app.version = payload.profile_version;
     app.plans = payload.plans || [];
     app.feedback = payload.feedback || [];
-    app.mode = payload.mode || "demo";
+    app.planChanges = payload.plan_changes || [];
+    app.mode = preservedMode(app.mode, payload);
     app.knowledgeStatus = payload.knowledge_status || "unknown";
     app.plan =
       app.plans.find((x) => x.id === app.plan?.id) || app.plans[0] || null;
     app.selectedFeedback =
       app.feedback.find((x) => x.id === app.selectedFeedback?.id) || null;
     $("mode").value = app.mode;
+    [...$("mode").options].find(option => option.value === 'live').textContent = '在线模型';
     [...$("mode").options].forEach((option) => {
       option.disabled = !(payload.available_modes || ["demo"]).includes(
         option.value,
@@ -1424,6 +1507,39 @@ if (typeof document !== "undefined") {
     renderKnowledgeDetail();
   }
   document.addEventListener("DOMContentLoaded", async () => {
+    $('import-feedback-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (app.feedbackDirty) {
+        show('请先保存或撤销当前反馈编辑，再导入历史。', true);
+        return;
+      }
+      const target = event.currentTarget.querySelector('button'); busy(target, true);
+      const root = $('import-preview'); root.replaceChildren();
+      try {
+        const file = $('import-file').files[0];
+        if (!file || file.size > 1_000_000) throw new Error('请选择不超过1MB的反馈文件。');
+        const payload = {content:await file.text(), format:$('import-format').value};
+        const preview = await api('/api/import/feedback/preview', {method:'POST', body:JSON.stringify(payload)});
+        root.append(node('p', `${preview.items.length} 条待导入，${preview.skipped} 条跳过，${preview.errors.length} 条错误。`));
+        preview.errors.forEach(error => root.append(node('p', `第${error.index+1}条：${error.error}`, 'notice-inline')));
+        preview.items.forEach(item => root.append(node('pre', JSON.stringify(item.data, null, 2))));
+        if (!preview.errors.length && preview.items.length) root.append(action('确认导入这些事实', 'button', async (e) => {
+          if (app.feedbackDirty) {
+            show('请先保存或撤销当前反馈编辑，再确认导入。', true);
+            return;
+          }
+          const button = e.currentTarget; busy(button, true);
+          try {
+            const result = await api('/api/import/feedback/confirm', {method:'POST', body:JSON.stringify({
+              ...payload, batch_id:preview.batch_id, confirmed:true,
+            })});
+            root.replaceChildren(node('p', `导入${result.imported}条，重复${result.duplicates}条。`));
+            renderAll(await api('/api/state')); await loadTrends();
+            show('历史反馈已导入。');
+          } catch(error) {show(error.message, true);} finally {busy(button, false);}
+        }));
+      } catch(error) {show(error.message, true);} finally {busy(target, false);}
+    });
     window.addEventListener("hashchange", () =>
       go(window.location.hash.slice(1)),
     );
@@ -1440,9 +1556,14 @@ if (typeof document !== "undefined") {
       .forEach((el) => el.addEventListener("click", () => go(el.dataset.go)));
     $("mode").addEventListener("change", () => {
       app.mode = $("mode").value;
+      $("mode-note").textContent = app.mode === "live"
+        ? "在线模型：使用本地工具读取事实；失败或输出未通过校验时回退本地结果，并显示原因。"
+        : "演示模式：使用本地规则生成，不调用外部模型。";
+      const status = knowledgeStatusMessage(app.knowledgeStatus);
+      if (status) $("mode-note").textContent += ` ${status}`;
       show(
         app.mode === "live"
-          ? "在线模型未配置时不会自动降级。"
+          ? "已切换到在线模型；失败时将保留本地结果并显示回退原因。"
           : "已切换到演示模式。",
       );
     });

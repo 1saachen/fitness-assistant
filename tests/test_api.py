@@ -25,6 +25,12 @@ else:
     os.environ["FITNESS_DB_PATH"] = _PREVIOUS_DB_PATH
 
 
+def legacy_trace(trace):
+    """Old trace contract is preserved alongside the new tool/usage metadata."""
+    return {key: value for key, value in trace.items()
+            if key not in {'tool_calls', 'provider', 'trend', 'similar_history', 'training_adjustment_preview'}}
+
+
 def write_knowledge_library(root):
     source = {
         "id": "test-source",
@@ -149,7 +155,7 @@ def test_complete_confirm_correct_flow(client, profile_data):
     assert plan["status"] == "draft"
     assert plan["data"]["strategy_context"]
     assert plan["data"]["knowledge_context"]
-    assert plan["trace"] == {
+    assert legacy_trace(plan["trace"]) == {
         "steps": ["baseline_strategy_selection", "planner"],
         "strategy_ids": ["api-baseline"],
         "knowledge_item_ids": plan["data"]["source_ids"],
@@ -169,7 +175,7 @@ def test_complete_confirm_correct_flow(client, profile_data):
     advised = client.post(path + "/advice", json={"mode": "demo"}).json()
     assert advised["advice"]["knowledge_context"]
     assert len(advised["advice"]["knowledge_context"]) > 5
-    assert advised["trace"] == {
+    assert legacy_trace(advised["trace"]) == {
         "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
         "issues": ["short_sleep", "training_fatigue", "diet_adherence"],
         "profile_goal": "fat_loss",
@@ -221,7 +227,7 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
     plan = plan_response.json()
     assert plan["data"]["strategy_context"] == []
     assert plan["data"]["knowledge_context"] == []
-    assert plan["trace"] == {
+    assert legacy_trace(plan["trace"]) == {
         "steps": ["baseline_strategy_selection", "planner"],
         "strategy_ids": [],
         "knowledge_item_ids": [],
@@ -238,7 +244,7 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
     assert advice_response.status_code == 200
     advised = advice_response.json()
     assert advised["advice"]["knowledge_context"] == []
-    assert advised["trace"] == {
+    assert legacy_trace(advised["trace"]) == {
         "steps": ["issue_extraction", "knowledge_retrieval", "advisor"],
         "issues": [],
         "profile_goal": "fat_loss",
@@ -330,6 +336,7 @@ def test_advice_trace_reports_atomic_capacity_degradation(client, profile_data, 
     assert advised["advice"]["suggestions"] == [
         "保持训练动作质量和逐步增加重量",
         "优先保证规律睡眠与蛋白质来源",
+        "昨晚睡眠偏少，今天优先补足休息，避免用补剂替代规律作息。",
     ]
     assert advised["trace"]["knowledge_item_ids"] == []
     assert advised["trace"]["knowledge_status"] == "capacity_exceeded"
@@ -429,7 +436,7 @@ def test_live_is_unavailable_not_disguised_demo(client):
     assert response.status_code == 503
     assert response.json()["detail"] == {
         "code": "mode_unavailable",
-        "message": "在线模型尚未接入，请使用演示模式。",
+        "message": "在线模型未启用或未配置密钥，请使用演示模式。",
         "retryable": False,
     }
     assert client.get("/api/state").json()["feedback"] == []

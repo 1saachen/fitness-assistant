@@ -1,0 +1,895 @@
+{
+  "status": "ok",
+  "coverage": {
+    "approved": 74,
+    "covered": 74,
+    "reference_only": 0
+  },
+  "errors": [],
+  "strategy_safety_findings": [],
+  "membership_changes": {
+    "added": [],
+    "removed": [],
+    "changed": [],
+    "changed_strategies": [],
+    "changed_strategy_content": []
+  },
+  "source_type_counts": {
+    "creator_opinion": 74
+  },
+  "evidence_level_counts": {
+    "limited": 6,
+    "experience": 68
+  },
+  "provenance_layers": {
+    "creator_statement": {
+      "description": "Video creator claim with creator/source/video attribution; may contain ASR uncertainty.",
+      "is_medical_consensus": false
+    },
+    "editorial_strategy": {
+      "description": "Reviewed baseline synthesis with explicit source-card membership and safety boundary.",
+      "independent_evidence_upgrade": false
+    },
+    "system_judgement": {
+      "description": "Rules infer current issues, rank cards and choose bounded advice from user facts.",
+      "clinical_validation": false
+    }
+  },
+  "strategies": [
+    {
+      "id": "fat-loss-energy",
+      "knowledge_item_ids": [
+        "mvp-diet_fat_loss-001",
+        "mvp-diet_fat_loss-002",
+        "mvp-diet_fat_loss-003",
+        "mvp-diet_fat_loss-004",
+        "mvp-diet_fat_loss-005",
+        "mvp-diet_fat_loss-008",
+        "mvp-diet_fat_loss-010",
+        "mvp-diet_fat_loss-012",
+        "mvp-diet_fat_loss-013",
+        "mvp-diet_fat_loss-014",
+        "mvp-diet_fat_loss-016",
+        "mvp-diet_fat_loss-017",
+        "mvp-training-011",
+        "mvp-training-013"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    },
+    {
+      "id": "diet-protein",
+      "knowledge_item_ids": [
+        "mvp-diet_fat_loss-006",
+        "mvp-diet_fat_loss-007",
+        "mvp-diet_fat_loss-008",
+        "mvp-diet_fat_loss-009",
+        "mvp-diet_fat_loss-011",
+        "mvp-diet_fat_loss-013",
+        "mvp-diet_fat_loss-014",
+        "mvp-diet_fat_loss-015",
+        "mvp-diet_fat_loss-016",
+        "mvp-diet_fat_loss-018"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    },
+    {
+      "id": "strength-retention",
+      "knowledge_item_ids": [
+        "mvp-training-004",
+        "mvp-training-005",
+        "mvp-training-006",
+        "mvp-training-007",
+        "mvp-training-008",
+        "mvp-training-009",
+        "mvp-training-010"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    },
+    {
+      "id": "cardio-activity",
+      "knowledge_item_ids": [
+        "mvp-diet_fat_loss-017",
+        "mvp-training-001",
+        "mvp-training-002",
+        "mvp-training-003",
+        "mvp-training-004",
+        "mvp-training-012"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    },
+    {
+      "id": "sleep-recovery",
+      "knowledge_item_ids": [
+        "couren-gaba-sleep-20260914",
+        "couren-magnesium-deficiency-20260914",
+        "couren-melatonin-context-20260914",
+        "couren-probiotic-sleep-20260914",
+        "couren-sleep-habits-first-20260914",
+        "couren-sleep-patch-20260914",
+        "couren-tart-cherry-sleep-20260914",
+        "couren-vitamin-d-sleep-20260914",
+        "mvp-sleep_recovery-001",
+        "mvp-sleep_recovery-002",
+        "mvp-sleep_recovery-003",
+        "mvp-sleep_recovery-004",
+        "mvp-sleep_recovery-005",
+        "mvp-sleep_recovery-006",
+        "mvp-sleep_recovery-007"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    },
+    {
+      "id": "supplement-priority",
+      "knowledge_item_ids": [
+        "couren-gaba-sleep-20260914",
+        "couren-magnesium-deficiency-20260914",
+        "couren-melatonin-context-20260914",
+        "couren-probiotic-sleep-20260914",
+        "couren-sleep-habits-first-20260914",
+        "couren-sleep-patch-20260914",
+        "couren-tart-cherry-sleep-20260914",
+        "couren-vitamin-d-sleep-20260914",
+        "mvp-supplements-001",
+        "mvp-supplements-002",
+        "mvp-supplements-003",
+        "mvp-supplements-004",
+        "mvp-supplements-005",
+        "mvp-supplements-006",
+        "mvp-supplements-007",
+        "mvp-supplements-008",
+        "mvp-supplements-009",
+        "mvp-supplements-010",
+        "mvp-supplements-011",
+        "mvp-supplements-012",
+        "mvp-supplements-013",
+        "mvp-supplements-014",
+        "mvp-supplements-015",
+        "mvp-supplements-016",
+        "mvp-supplements-017",
+        "mvp-supplements-018",
+        "mvp-supplements-019",
+        "mvp-supplements-020",
+        "mvp-supplements-021",
+        "mvp-supplements-022",
+        "mvp-supplements-023",
+        "mvp-supplements-024",
+        "mvp-supplements-025",
+        "mvp-supplements-026",
+        "mvp-supplements-027",
+        "mvp-supplements-028"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    },
+    {
+      "id": "monitoring-adjustment",
+      "knowledge_item_ids": [
+        "mvp-diet_fat_loss-002",
+        "mvp-diet_fat_loss-003",
+        "mvp-diet_fat_loss-004",
+        "mvp-diet_fat_loss-007",
+        "mvp-diet_fat_loss-010",
+        "mvp-diet_fat_loss-014",
+        "mvp-diet_fat_loss-015",
+        "mvp-diet_fat_loss-016",
+        "mvp-diet_fat_loss-017",
+        "mvp-training-011",
+        "mvp-training-012",
+        "mvp-training-013"
+      ],
+      "limitations": [
+        "来源包含视频作者观点，存在转录与证据局限；审核通过不代表医学共识。"
+      ],
+      "safety_boundary": "不自动生成个体化剂量或医疗建议；涉及疾病、药物、特殊人群、持续症状或训练风险时需专业评估。"
+    }
+  ],
+  "supplement_reviews": [
+    {
+      "id": "couren-gaba-sleep-20260914",
+      "title": "GABA 与睡眠",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "limited",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-magnesium-deficiency-20260914",
+      "title": "镁与缺乏相关的睡眠问题",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "limited",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-melatonin-context-20260914",
+      "title": "褪黑素的适用情境",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "limited",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-probiotic-sleep-20260914",
+      "title": "益生菌与睡眠",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "limited",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-sleep-habits-first-20260914",
+      "title": "助眠补剂之前先改善睡眠习惯",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-sleep-patch-20260914",
+      "title": "睡眠贴",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-tart-cherry-sleep-20260914",
+      "title": "酸樱桃与睡眠",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "limited",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "couren-vitamin-d-sleep-20260914",
+      "title": "维生素 D 与睡眠",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "evidence_level": "limited",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-001",
+      "title": "维生素B1",
+      "source_id": "mvp-card-source-supplements-001",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-002",
+      "title": "叶酸",
+      "source_id": "mvp-card-source-supplements-002",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-003",
+      "title": "维生素B族",
+      "source_id": "mvp-card-source-supplements-003",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-004",
+      "title": "益生菌",
+      "source_id": "mvp-card-source-supplements-004",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-005",
+      "title": "钙",
+      "source_id": "mvp-card-source-supplements-005",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-006",
+      "title": "维生素D",
+      "source_id": "mvp-card-source-supplements-006",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-007",
+      "title": "复合维生素",
+      "source_id": "mvp-card-source-supplements-007",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-008",
+      "title": "辅酶Q10",
+      "source_id": "mvp-card-source-supplements-008",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-009",
+      "title": "鱼油（Omega-3）",
+      "source_id": "mvp-card-source-supplements-009",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-010",
+      "title": "PQQ",
+      "source_id": "mvp-card-source-supplements-010",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-011",
+      "title": "女性专用补剂的适用性",
+      "source_id": "mvp-card-source-supplements-011",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-012",
+      "title": "女性阴道益生菌",
+      "source_id": "mvp-card-source-supplements-012",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-013",
+      "title": "铁",
+      "source_id": "mvp-card-source-supplements-013",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-014",
+      "title": "胶原蛋白肽",
+      "source_id": "mvp-card-source-supplements-014",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-015",
+      "title": "花青素与姜黄素",
+      "source_id": "mvp-card-source-supplements-015",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-016",
+      "title": "维生素C",
+      "source_id": "mvp-card-source-supplements-016",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-017",
+      "title": "Omega-3",
+      "source_id": "mvp-card-source-supplements-017",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-018",
+      "title": "镁",
+      "source_id": "mvp-card-source-supplements-018",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-019",
+      "title": "肠道益生菌补剂与发酵食物",
+      "source_id": "mvp-card-source-supplements-019",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-020",
+      "title": "维生素B族与能量代谢和减脂",
+      "source_id": "mvp-card-source-supplements-020",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-021",
+      "title": "需要考虑B族补剂的人群",
+      "source_id": "mvp-card-source-supplements-021",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-022",
+      "title": "维生素B12与训练后神经疲劳",
+      "source_id": "mvp-card-source-supplements-022",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-023",
+      "title": "维生素D3的免疫与骨骼作用",
+      "source_id": "mvp-card-source-supplements-023",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-024",
+      "title": "维生素D3剂量与检测后补充",
+      "source_id": "mvp-card-source-supplements-024",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-025",
+      "title": "维生素D、镁与K2协同及食补",
+      "source_id": "mvp-card-source-supplements-025",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-026",
+      "title": "鱼油与Omega-3",
+      "source_id": "mvp-card-source-supplements-026",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-027",
+      "title": "鱼油的纯度与形式",
+      "source_id": "mvp-card-source-supplements-027",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    },
+    {
+      "id": "mvp-supplements-028",
+      "title": "晚上有氧时不建议BCAA",
+      "source_id": "mvp-card-source-supplements-028",
+      "evidence_level": "experience",
+      "automated_checks": {
+        "source_present": true,
+        "editorial_note_present": true,
+        "explanation_present": true,
+        "safety_boundary_present": true
+      },
+      "requires_human_review": [
+        "verify transcript and ASR ambiguity",
+        "verify independent evidence and applicability",
+        "assess conditions, medications and special populations",
+        "check dose statements, interactions and product quality",
+        "preserve uncertainty; do not generate individual dose or purchase advice"
+      ]
+    }
+  ],
+  "stale_pending_explanation_ids": [],
+  "limitations": [
+    "Review approval records permission to use a conservative source summary, not scientific consensus.",
+    "Automated checks verify metadata and membership, not efficacy, dose safety or transcript accuracy.",
+    "Creator evidence labels are existing editorial labels; no independent study verification was performed."
+  ]
+}

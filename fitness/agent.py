@@ -42,19 +42,23 @@ class DemoAgent:
         return generate_plan(profile, start_date, context)
 
     def parse_feedback(self, text, day):
+        factual_text = '，'.join(part for part in re.split(r'[，。；,;\n]', text)
+                                if not any(word in part for word in ('希望', '计划', '打算', '如果', '假如', '明天', '今晚')))
         sleep = None
-        match = re.search(r"(?:睡了|睡眠)\s*(\d+(?:\.\d+)?)\s*小时?", text)
+        match = re.search(r"(?:睡了|睡眠)\s*(\d+(?:\.\d+)?)\s*小时?", factual_text)
+        if match and any(word in factual_text[max(0, match.start()-4):match.start()] for word in ('没', '未', '不')):
+            match = None
         if match:
             sleep = float(match.group(1))
         weight = None
-        match = re.search(r"体重\s*(\d+(?:\.\d+)?)\s*(?:kg|公斤)?", text)
+        match = re.search(r"体重\s*(\d+(?:\.\d+)?)\s*(?:kg|公斤)?", factual_text)
         if match:
             weight = float(match.group(1))
         completed = (
-            True
-            if any(item in text for item in ("完成训练", "练完", "训练完成"))
-            else False
-            if any(item in text for item in ("没练", "未训练", "跳过"))
+            False
+            if any(item in factual_text for item in ("没练", "未训练", "跳过", "未完成训练", "没有完成训练", "没完成训练"))
+            else True
+            if any(item in factual_text for item in ("完成训练", "练完", "训练完成"))
             else None
         )
         diet_followed_plan = (
@@ -72,7 +76,7 @@ class DemoAgent:
             diet_followed_plan=diet_followed_plan,
             sleep_hours=sleep,
             weight_kg=weight,
-            fatigue="有点累" if "累" in text else None,
+            fatigue="有点累" if "累" in factual_text and not any(t in factual_text for t in ('不累', '没觉得累')) else None,
             uncertainties=["未提供精确食物份量，未估算热量"] if "吃" in text or "食堂" in text else [],
         )
 

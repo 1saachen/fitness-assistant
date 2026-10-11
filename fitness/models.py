@@ -178,6 +178,8 @@ class PlanData(Contract):
     source_ids: list[Short] = Field(default_factory=list, max_length=100)
     strategy_context: list[StrategySnapshot] = Field(default_factory=list, max_length=20)
     knowledge_context: list[KnowledgeCitation] = Field(default_factory=list, max_length=100)
+    recovery_guidance: list[Short] = Field(default_factory=list, max_length=8)
+    supplement_guidance: list[Short] = Field(default_factory=list, max_length=8)
 
 
 class FeedbackData(Contract):
@@ -194,11 +196,20 @@ class FeedbackData(Contract):
     uncertainties: list[Short] = Field(default_factory=list, max_length=15)
 
 
+class AdviceExplanation(Contract):
+    issue: Short
+    facts: list[Short] = Field(default_factory=list, max_length=10)
+    rule: Text
+    history: list[Short] = Field(default_factory=list, max_length=8)
+    knowledge_ids: list[Short] = Field(default_factory=list, max_length=20)
+
+
 class AdviceData(Contract):
     summary: Text
     suggestions: list[Short] = Field(min_length=1, max_length=8)
     source_ids: list[Short] = Field(default_factory=list, max_length=100)
     knowledge_context: list[KnowledgeCitation] = Field(default_factory=list, max_length=100)
+    explanations: list[AdviceExplanation] = Field(default_factory=list, max_length=10)
 
 
 class ProfileSave(Contract):

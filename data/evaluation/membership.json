@@ -1,0 +1,575 @@
+{
+  "version": 1,
+  "review_basis": "2026-10-11 reviewed editorial-only change: replace 66 stale pending explanation sentences with conservative approval/provenance wording. Claims, sources, evidence labels and strategy membership unchanged.",
+  "members": [
+    {
+      "id": "couren-gaba-sleep-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "c53672b647127be02d64f6cdb21c35c1d2beeb3e4e56b4ea201681c75409beb4"
+    },
+    {
+      "id": "couren-magnesium-deficiency-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "ec0ef554dde78dda70b08f0e1f064a972d9bfcad329d3b158968ecdd194beb22"
+    },
+    {
+      "id": "couren-melatonin-context-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "46db358479419a1f22166f61caeb2b9edf932f5e1d2867e32e084805f83bb7a6"
+    },
+    {
+      "id": "couren-probiotic-sleep-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "5ef696ea7260482af854bf0293bbb0248ef48ac96ed43085080d9eab7fd8d78b"
+    },
+    {
+      "id": "couren-sleep-habits-first-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "058085351f4d1d38625f33bba4e9f5f0b769be82f294ef6fba26dc08c6653011"
+    },
+    {
+      "id": "couren-sleep-patch-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "635d394d236a006f0e5e15788e2e15c2de2077db66182bc485b019f65918991c"
+    },
+    {
+      "id": "couren-tart-cherry-sleep-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "20a2dda73d4515c7ea418f09b297b407977940935c06dbb97ce5288caf4f023d"
+    },
+    {
+      "id": "couren-vitamin-d-sleep-20260914",
+      "collection": "supplements",
+      "source_id": "creator-couren-sleep-supplements-20260914",
+      "sha256": "689f9e29a0c9310cb7531a0355342a12eecacdba2f331e650f8460d37d6f27b8"
+    },
+    {
+      "id": "mvp-diet_fat_loss-001",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-001",
+      "sha256": "682afc0b94898ad6be5f4129d43956fa38318f4132eb1b01ab74e2c3bdc67b63"
+    },
+    {
+      "id": "mvp-diet_fat_loss-002",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-002",
+      "sha256": "c5824c69b6e79697ed30bfacc52bb5426f7fd2bc1929695575a95818e0bc3593"
+    },
+    {
+      "id": "mvp-diet_fat_loss-003",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-003",
+      "sha256": "50f7d01795e16fe17b13210d314bdc59c6f7e257a1957bb63123a4c7d203782f"
+    },
+    {
+      "id": "mvp-diet_fat_loss-004",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-004",
+      "sha256": "10b4649ce2475a459391d2cd8c5c344eb05a3eff04c8521cb1ccbb19c58d9521"
+    },
+    {
+      "id": "mvp-diet_fat_loss-005",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-005",
+      "sha256": "b15eff7469a255f36628f6accd77346af559df5bf0e5df8040357639ff38cb5e"
+    },
+    {
+      "id": "mvp-diet_fat_loss-006",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-006",
+      "sha256": "c55711f838b55f726ed319790caa8dda4c9bd88710224c1530460cdff8e4956d"
+    },
+    {
+      "id": "mvp-diet_fat_loss-007",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-007",
+      "sha256": "cdc6586594d4a4307f2d844a15ccd11bcc7f551a4088bac64dbc2172d1477ddb"
+    },
+    {
+      "id": "mvp-diet_fat_loss-008",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-008",
+      "sha256": "33f85b945c5e5987e4ce9f09497c01e65be8b37ae72c87ba58294d39730d02bd"
+    },
+    {
+      "id": "mvp-diet_fat_loss-009",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-009",
+      "sha256": "510d70a406504dc636e0e493f1cd340747f777c4a7c5050c24e4247f20c56268"
+    },
+    {
+      "id": "mvp-diet_fat_loss-010",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-010",
+      "sha256": "a1d38c73edba9778fe585fab47990886549b7b9536934c7ee82cd029460315d1"
+    },
+    {
+      "id": "mvp-diet_fat_loss-011",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-011",
+      "sha256": "f9a71fd115d2d2c47f250c0765e305bf28e68e37a93c3f54987332fefa5d501f"
+    },
+    {
+      "id": "mvp-diet_fat_loss-012",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-012",
+      "sha256": "42d5acfe1ff923f120461037ba3217f5d86f44ecd3d8f6748a51e8792cc140a7"
+    },
+    {
+      "id": "mvp-diet_fat_loss-013",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-013",
+      "sha256": "ab627b33d3b11d4f12a7765b6af9fdf127c99ac3fbc5d1162153898fe2b94b59"
+    },
+    {
+      "id": "mvp-diet_fat_loss-014",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-014",
+      "sha256": "83fc3c3d78bf24701a0da3d40db9ede249a5863a3937fd09c7daba37b7a4f5ef"
+    },
+    {
+      "id": "mvp-diet_fat_loss-015",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-015",
+      "sha256": "5cf7bcd66a1af7a2ba2178ef013ea43c43fe5ae080bc85ae9b181fa780aaa44d"
+    },
+    {
+      "id": "mvp-diet_fat_loss-016",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-016",
+      "sha256": "311119086b23554f23b4d35b4e1449b4dda624d0d39985faecb3a896c07a3729"
+    },
+    {
+      "id": "mvp-diet_fat_loss-017",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-017",
+      "sha256": "5687ac7c598a40c1e5b418f9549cd253487548dfe2ea6e385e62680812e078e0"
+    },
+    {
+      "id": "mvp-diet_fat_loss-018",
+      "collection": "fat_loss",
+      "source_id": "mvp-card-source-diet_fat_loss-018",
+      "sha256": "f8097fb56bce466fa31d5357df87fd0fc65109e6d1c7c48e5c0165534204ff94"
+    },
+    {
+      "id": "mvp-sleep_recovery-001",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-001",
+      "sha256": "233f8df9eea58e3893d4eb89a9eaa8ff63391b666b8664c5d733e1e8ea142536"
+    },
+    {
+      "id": "mvp-sleep_recovery-002",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-002",
+      "sha256": "2685a927ae7b8401c0ec8c1117e435d20923cffc2f276b04e107d7dd4f151174"
+    },
+    {
+      "id": "mvp-sleep_recovery-003",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-003",
+      "sha256": "7055fdb365b0ebc04b9ce18be844f0b97b7a2956f8d8b230b42dc9a95c7a4041"
+    },
+    {
+      "id": "mvp-sleep_recovery-004",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-004",
+      "sha256": "b6b848cd694279520366b7eb3cb43690e4c153cf2be357902dce1005f5ca14f2"
+    },
+    {
+      "id": "mvp-sleep_recovery-005",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-005",
+      "sha256": "50a0b4ad0fedc5c0c9b892d420dbacc1bdf17196f15039bd5f0fcf2c82bf4ecf"
+    },
+    {
+      "id": "mvp-sleep_recovery-006",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-006",
+      "sha256": "4cdb8cdf664dfcb86952cd8d0b74cabd9d6ffb5f3ea8422e3ef7d4e29f997438"
+    },
+    {
+      "id": "mvp-sleep_recovery-007",
+      "collection": "sleep_recovery",
+      "source_id": "mvp-card-source-sleep_recovery-007",
+      "sha256": "abc8ce6558639150f52302cff8c5a351dfa50d9a296472bb3f9a6caa2e972722"
+    },
+    {
+      "id": "mvp-supplements-001",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-001",
+      "sha256": "c02192f0462f8ed7e7ed02a50347cf6b798a90b3c0be20f6acbccaf171d856b7"
+    },
+    {
+      "id": "mvp-supplements-002",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-002",
+      "sha256": "1d74a08495768a18e9ac3107fae54970488346dc2d8979772d652d9a1ca737a8"
+    },
+    {
+      "id": "mvp-supplements-003",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-003",
+      "sha256": "24ddbf3d05576a2b2b91ea3f1e586093e566d2e31b9f6dccc064ebb724716fa9"
+    },
+    {
+      "id": "mvp-supplements-004",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-004",
+      "sha256": "59d339a420c6664a4f53a927038e9511d167427bb743cc5c93f7fa690707aa10"
+    },
+    {
+      "id": "mvp-supplements-005",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-005",
+      "sha256": "a61da5cd1bcf0f4237d12a5113ca0662bcc044ef7202f838cdd874fa689fb022"
+    },
+    {
+      "id": "mvp-supplements-006",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-006",
+      "sha256": "e5e7b5e742171951c4f4e6c12594456689a13654c2a87fbab5f006d3b9f84dae"
+    },
+    {
+      "id": "mvp-supplements-007",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-007",
+      "sha256": "a3f71f5b7abf18911a1397133e6cfe1658935fe1b802331f62bee0a237edf17e"
+    },
+    {
+      "id": "mvp-supplements-008",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-008",
+      "sha256": "f5cec0ee5e30ae651e2604fcec5ed6c5db93a784513046f261db69b71f8b45cf"
+    },
+    {
+      "id": "mvp-supplements-009",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-009",
+      "sha256": "08b6d0e9fff655cb4bcea04d280f78dfd13f76de7531c5c4493aa8bd2f1bf532"
+    },
+    {
+      "id": "mvp-supplements-010",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-010",
+      "sha256": "5c897b1f32fc29a56b37d2bd407ba376182e7a301b7cb5823da3e2a369034d54"
+    },
+    {
+      "id": "mvp-supplements-011",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-011",
+      "sha256": "3686b20cf468f3bc94333c71268d6b1efc9864be057825006020b8b6ccfc8370"
+    },
+    {
+      "id": "mvp-supplements-012",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-012",
+      "sha256": "e43dbb45d27f0252e5e9704ff4c9e3452bd9b9515cb76f968564505cd8281864"
+    },
+    {
+      "id": "mvp-supplements-013",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-013",
+      "sha256": "beb845f03ccc3fd0cc00675fc7e8d2f5156c071469ab0a6361cdde49bc63279d"
+    },
+    {
+      "id": "mvp-supplements-014",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-014",
+      "sha256": "bb3d60f124a572cace213ee4ed678d601257f72f7cb66af3df2965bf6dcff779"
+    },
+    {
+      "id": "mvp-supplements-015",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-015",
+      "sha256": "c95622c19d28295f90831a9cbb4cfd352cfc41d9d1de13bfb49f31e3249e884c"
+    },
+    {
+      "id": "mvp-supplements-016",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-016",
+      "sha256": "c06ae34fea496ab2044ac8d7c66479094cdd76d8d1e09c03f7e74204c2aa4dcb"
+    },
+    {
+      "id": "mvp-supplements-017",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-017",
+      "sha256": "5788f2b104c30239e9a25522844c85b235693923e4bb9b66306ee1d5383793b8"
+    },
+    {
+      "id": "mvp-supplements-018",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-018",
+      "sha256": "e70164626842e2b4e1089dcf3a78f0d3ff9ed747671cb35d6542639b153e4df6"
+    },
+    {
+      "id": "mvp-supplements-019",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-019",
+      "sha256": "775888d6a0b7474e36f17a9a3362bb49f7f14bcddb8a049f210db5c8f37afc67"
+    },
+    {
+      "id": "mvp-supplements-020",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-020",
+      "sha256": "b1db08ea5bb96822ac2f8cebb8f3c2f9976f5d010d85178e5fdf607093372e65"
+    },
+    {
+      "id": "mvp-supplements-021",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-021",
+      "sha256": "b423c31125dba30f52179ca1039f25e2884b799b761d4dd3f95539b25b034b58"
+    },
+    {
+      "id": "mvp-supplements-022",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-022",
+      "sha256": "14fc8be3e26b37c36b9bde563b586d378482cf3e6f529eca1cb72b627cd2f311"
+    },
+    {
+      "id": "mvp-supplements-023",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-023",
+      "sha256": "eca399e7f3b1693e32630af50ec2fedcb2b762e7a30904855c7a7000f0b86629"
+    },
+    {
+      "id": "mvp-supplements-024",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-024",
+      "sha256": "b03b0a01b56a36abd709e55fa55f14b6b471e3d237bb1ee517718cfc157e4732"
+    },
+    {
+      "id": "mvp-supplements-025",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-025",
+      "sha256": "07367218f3a2037b481644a0d165915cc0d159b2d24cecc9c776d5594817ac14"
+    },
+    {
+      "id": "mvp-supplements-026",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-026",
+      "sha256": "e6551e097da101f0672bdfb7afdbc7a2f292048cc33692ec755435c69010998a"
+    },
+    {
+      "id": "mvp-supplements-027",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-027",
+      "sha256": "1b727dc49042318b2237e51ff8686a30a6452b001e3071aad9adba70748c2a49"
+    },
+    {
+      "id": "mvp-supplements-028",
+      "collection": "supplements",
+      "source_id": "mvp-card-source-supplements-028",
+      "sha256": "302da293eda3d570bedfb351b603e3a30b6f9968fd8fa2c0ef3da8ac3c6b9069"
+    },
+    {
+      "id": "mvp-training-001",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-001",
+      "sha256": "0d05bc01dfba1f7aa85a940dd521b4a8dc0c852219e18341db5221ac383a7dde"
+    },
+    {
+      "id": "mvp-training-002",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-002",
+      "sha256": "8892711dd256dbbd9fbb84bb0d7e57ff2bb7c68deb30264bcac9f9473dc91816"
+    },
+    {
+      "id": "mvp-training-003",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-003",
+      "sha256": "b766af313798c6dbd6c9ff44b473e36007e595537b187bd54fa292ef7e43c945"
+    },
+    {
+      "id": "mvp-training-004",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-004",
+      "sha256": "433c2e566647a493a6cf623de23fabf35ede28bf7b514d2c8942cf42f000adf4"
+    },
+    {
+      "id": "mvp-training-005",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-005",
+      "sha256": "1a7595af84803475199f7cf93d6ecf1236403eda8e3e7504e4da798b2a925c1b"
+    },
+    {
+      "id": "mvp-training-006",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-006",
+      "sha256": "f4a5b94dce7ed8bedea342d16c37ddca1164f0c5c3d044b13eee83d31eef77f8"
+    },
+    {
+      "id": "mvp-training-007",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-007",
+      "sha256": "83c80836ba4be4befe258f1e60c34352213e026a964e8eb1d616f9a1d6880a8b"
+    },
+    {
+      "id": "mvp-training-008",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-008",
+      "sha256": "fdee90a7323b32f293a65b89328b7dc296edb8cd55d041f8f258267c0458a002"
+    },
+    {
+      "id": "mvp-training-009",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-009",
+      "sha256": "9d00fae816b2ca0527d90b1df7571fde4feeb27990b7df557c7443dc6c2e3e02"
+    },
+    {
+      "id": "mvp-training-010",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-010",
+      "sha256": "159f17d78005e3028a07133df5497f1a95fef9742e3e613d5ddb7a3c864369dc"
+    },
+    {
+      "id": "mvp-training-011",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-011",
+      "sha256": "826864b97c26e1641556c77c0e67e0c0190dcd275f17d2ee5b365213ae797368"
+    },
+    {
+      "id": "mvp-training-012",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-012",
+      "sha256": "8f454ac050405af90b2421416c1528fc05c3f5bd13d440565c03ada09d467963"
+    },
+    {
+      "id": "mvp-training-013",
+      "collection": "training",
+      "source_id": "mvp-card-source-training-013",
+      "sha256": "99b52e1ed2f574cde9dac92308a301a4e20a17b966d495b4614d9df23eec1e97"
+    }
+  ],
+  "strategy_memberships": {
+    "fat-loss-energy": [
+      "mvp-diet_fat_loss-001",
+      "mvp-diet_fat_loss-002",
+      "mvp-diet_fat_loss-003",
+      "mvp-diet_fat_loss-004",
+      "mvp-diet_fat_loss-005",
+      "mvp-diet_fat_loss-008",
+      "mvp-diet_fat_loss-010",
+      "mvp-diet_fat_loss-012",
+      "mvp-diet_fat_loss-013",
+      "mvp-diet_fat_loss-014",
+      "mvp-diet_fat_loss-016",
+      "mvp-diet_fat_loss-017",
+      "mvp-training-011",
+      "mvp-training-013"
+    ],
+    "diet-protein": [
+      "mvp-diet_fat_loss-006",
+      "mvp-diet_fat_loss-007",
+      "mvp-diet_fat_loss-008",
+      "mvp-diet_fat_loss-009",
+      "mvp-diet_fat_loss-011",
+      "mvp-diet_fat_loss-013",
+      "mvp-diet_fat_loss-014",
+      "mvp-diet_fat_loss-015",
+      "mvp-diet_fat_loss-016",
+      "mvp-diet_fat_loss-018"
+    ],
+    "strength-retention": [
+      "mvp-training-004",
+      "mvp-training-005",
+      "mvp-training-006",
+      "mvp-training-007",
+      "mvp-training-008",
+      "mvp-training-009",
+      "mvp-training-010"
+    ],
+    "cardio-activity": [
+      "mvp-diet_fat_loss-017",
+      "mvp-training-001",
+      "mvp-training-002",
+      "mvp-training-003",
+      "mvp-training-004",
+      "mvp-training-012"
+    ],
+    "sleep-recovery": [
+      "couren-gaba-sleep-20260914",
+      "couren-magnesium-deficiency-20260914",
+      "couren-melatonin-context-20260914",
+      "couren-probiotic-sleep-20260914",
+      "couren-sleep-habits-first-20260914",
+      "couren-sleep-patch-20260914",
+      "couren-tart-cherry-sleep-20260914",
+      "couren-vitamin-d-sleep-20260914",
+      "mvp-sleep_recovery-001",
+      "mvp-sleep_recovery-002",
+      "mvp-sleep_recovery-003",
+      "mvp-sleep_recovery-004",
+      "mvp-sleep_recovery-005",
+      "mvp-sleep_recovery-006",
+      "mvp-sleep_recovery-007"
+    ],
+    "supplement-priority": [
+      "couren-gaba-sleep-20260914",
+      "couren-magnesium-deficiency-20260914",
+      "couren-melatonin-context-20260914",
+      "couren-probiotic-sleep-20260914",
+      "couren-sleep-habits-first-20260914",
+      "couren-sleep-patch-20260914",
+      "couren-tart-cherry-sleep-20260914",
+      "couren-vitamin-d-sleep-20260914",
+      "mvp-supplements-001",
+      "mvp-supplements-002",
+      "mvp-supplements-003",
+      "mvp-supplements-004",
+      "mvp-supplements-005",
+      "mvp-supplements-006",
+      "mvp-supplements-007",
+      "mvp-supplements-008",
+      "mvp-supplements-009",
+      "mvp-supplements-010",
+      "mvp-supplements-011",
+      "mvp-supplements-012",
+      "mvp-supplements-013",
+      "mvp-supplements-014",
+      "mvp-supplements-015",
+      "mvp-supplements-016",
+      "mvp-supplements-017",
+      "mvp-supplements-018",
+      "mvp-supplements-019",
+      "mvp-supplements-020",
+      "mvp-supplements-021",
+      "mvp-supplements-022",
+      "mvp-supplements-023",
+      "mvp-supplements-024",
+      "mvp-supplements-025",
+      "mvp-supplements-026",
+      "mvp-supplements-027",
+      "mvp-supplements-028"
+    ],
+    "monitoring-adjustment": [
+      "mvp-diet_fat_loss-002",
+      "mvp-diet_fat_loss-003",
+      "mvp-diet_fat_loss-004",
+      "mvp-diet_fat_loss-007",
+      "mvp-diet_fat_loss-010",
+      "mvp-diet_fat_loss-014",
+      "mvp-diet_fat_loss-015",
+      "mvp-diet_fat_loss-016",
+      "mvp-diet_fat_loss-017",
+      "mvp-training-011",
+      "mvp-training-012",
+      "mvp-training-013"
+    ]
+  },
+  "strategy_fingerprints": {
+    "fat-loss-energy": "4ac1de8cf87852fb999c7f2d01a3db5d139e099309e7d5663d811e0cdeffa2cd",
+    "diet-protein": "bef7648f514a6cfb9ad00ca79b9c87b168b03e8e61ef433a4fbcbf164a685e56",
+    "strength-retention": "aa27a643d99bf3f6fdc2eb8eb6b5011ac5b45239542f04ccaef29a02aad3ca2f",
+    "cardio-activity": "66754e3545c4836c8352c93f142834007d236b55567743e742ac20c2c762fbaf",
+    "sleep-recovery": "52291fc95b826333cecbfb6e0d6152cf988a8fe540af2b4fe51dfbf5f3100d2e",
+    "supplement-priority": "2b003cbca2b345384e1b54bbc7fb5b871864a479becabfae6efc7af22e5c3385",
+    "monitoring-adjustment": "caa8cd1c5058220283ec7e9149001ae6da5b16d620bf6423613eb6c92364436b"
+  }
+}

@@ -180,6 +180,8 @@ def find_similar_feedback(records: list[dict], current: dict, *, limit: int = 3)
     for record in records:
         if record.get("status") != "confirmed" or record.get("id") == current.get("id"):
             continue
+        if _record_date(current) and (not _record_date(record) or _record_date(record) >= _record_date(current)):
+            continue
         candidate_data = record.get("data") or {}
         candidate_issues = _issues(record)
         shared_issues = [issue for issue in current_issues if issue in candidate_issues]
@@ -228,7 +230,7 @@ def find_similar_feedback(records: list[dict], current: dict, *, limit: int = 3)
             "matched_signals": signals,
             "previous_advice_summary": advice.get("summary"),
         })
-    candidates.sort(key=lambda row: (-row["score"], row["date"], str(row["id"])), reverse=False)
+    candidates.sort(key=lambda row: (row['score'], row['date'], str(row['id'])), reverse=True)
     matches = candidates[:limit]
     return {
         "current_feedback_id": current.get("id"),
@@ -236,3 +238,17 @@ def find_similar_feedback(records: list[dict], current: dict, *, limit: int = 3)
         "matches": matches,
         "message": None if matches else "没有足够的可比历史反馈。",
     }
+
+
+def explain_similar_feedback(records: list[dict], current: dict, *, limit: int = 3) -> dict:
+    result = find_similar_feedback(records, current, limit=limit)
+    by_id = {r['id']:r for r in records}
+    for match in result['matches']:
+        past = by_id[match['id']]
+        match['previous_suggestions'] = (past.get('advice') or {}).get('suggestions', [])[:3]
+        following = sorted([r for r in records if r['status'] == 'confirmed'
+                            and past['date'] < r['date'] < current['date']], key=lambda r:r['date'])
+        match['next_observation'] = ({'date':following[0]['date'], 'data':following[0]['data']}
+                                     if following else None)
+        match['outcome_notice'] = '仅为随后记录的事实；未证明执行了建议或建立因果。'
+    return result

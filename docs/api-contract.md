@@ -4,7 +4,7 @@ All endpoints are same-origin JSON under `/api`. This release runs locally as a 
 
 ## Profile
 
-- `GET /api/state`: `{profile, profile_version, plans, feedback, mode, available_modes, model, example_available, knowledge_status, today}`. Profile may be null; lists are newest first. This release reports `mode: "demo"`, `available_modes: ["demo"]`, and `model: null`; today uses Asia/Shanghai by default. `knowledge_status` is `unknown` before a profile exists, otherwise `ok`, `unavailable`, or `capacity_exceeded`.
+- `GET /api/state`: `{profile, profile_version, plans, feedback, mode, available_modes, model, plan_changes, example_available, knowledge_status, today}`. Profile may be null; plans/feedback are newest first. Default reports `mode: "demo"`, `available_modes: ["demo"]`, and `model: null`; explicit provider enablement and key add live availability. Today uses Asia/Shanghai by default. `knowledge_status` is `unknown` before a profile exists, otherwise `ok`, `unavailable`, or `capacity_exceeded`.
 - `GET /api/example-profile`: the raw nested local example JSON, only on explicit click. No automatic database import.
 - `PUT /api/profile`: `{profile: <nested JSON>, expected_version: <0 for first save>}` → `{version, data, created_at}`. Profile retains the structure of `data/examples/demo-profile.json`. Extra fields rejected. Nullable fields stay null. Conflict returns 409.
 
@@ -57,3 +57,20 @@ Records created before this contract may omit `strategy_context`, `knowledge_con
 Four tabs: 概览, 我的档案, 本周计划, 每日反馈 (history on daily feedback). Profile form must retain unknown optional fields and support at least the existing sample fields, session duration, dietary restrictions and recovery. Gym equipment values: `dumbbell`, `barbell`, `machine`, `bodyweight`; null means unspecified, not empty set. Primary goals: `fat_loss`, `muscle_gain`, `general_health`. Health/allergy status: `none_known_self_reported`, `unknown`, `has_conditions` / `has_allergies` with a separate detail string if needed.
 
 Do not hard-code user profile numbers into tracked HTML/JS; obtain them only when the user clicks import. Use an honest mode selector, visible save confirmations, reversible draft edits, loading buttons, dates, friendly errors and source links where supported. Source IDs are resolved using `GET /api/sources` → list of `{id, title, url, note}`. Exercise IDs resolved server-side. Treat all generated content as untrusted text, never raw HTML.
+# P1/P2 additions (2026-10-11)
+
+`GET /api/state` returns `available_modes`, optional configured `model`, and `plan_changes`. `demo` never calls a provider. `live` requires explicit enablement and a key; provider errors fall back to deterministic results with `trace.provider.status="fallback"` and a sanitized reason.
+
+The single agent saves ordered `trace.tool_calls`, deterministic trend and prior-only similar-history results, validated explanations, provider token totals and any parser provider metadata. Source snapshots and the previous optimistic revision/profile guards remain in place.
+
+| Endpoint | Contract |
+| --- | --- |
+| `POST /api/import/feedback/preview` | `{content, format}` with format json/csv/markdown; validates facts without writing and returns batch_id/items/errors/skipped |
+| `POST /api/import/feedback/confirm` | same content and format plus `batch_id`, `confirmed:true`; all-or-nothing import, fingerprints/idempotency, ignores generated advice/trace |
+| `GET /api/feedback/{id}/training-adjustment` | current-day-only conservative reduction preview; empty changes when not applicable |
+| `POST /api/feedback/{id}/training-adjustment/confirm` | `{proposal:<exact preview>, confirmed:true}`; recomputes and rejects stale/tampered preview, transactional immutable-base audit |
+| `GET /api/plans/{id}/changes` | chronological confirmed change records |
+
+Adjustment paths are restricted to `days.<day_index>.exercises.<exercise_index>.sets`; only reductions to at least one set are allowed. Date, confirmed feedback, profile version, revision, feedback timestamp and prior change count must agree. The stored base plan JSON is unchanged. State responses suppress previously confirmed obsolete proposals while stored trace remains an audit snapshot.
+
+Plan data adds optional `recovery_guidance` and `supplement_guidance`; advice adds optional `explanations` with issue/facts/rule/history/knowledge_ids. Old records read with default empty lists. Explanations do not imply medical causality. Similar history never includes same-day or future records.
