@@ -30,7 +30,7 @@ Mutation conflicts use stable codes: profile version conflicts use `profile_vers
 
 - `POST /api/feedback/parse`: `{text, date: "YYYY-MM-DD", mode}` → feedback record in draft status.
 - Feedback record: `{id, date, raw_text, status, revision, data, advice, advice_error, mode, trace, created_at, updated_at}`.
-- Feedback data: `{date, training_summary, training_completed: true|false|null, food_summary, sleep_hours, sleep_date, fatigue, weight_kg, intake_kcal, uncertainties: [string]}`. All scalar fields other than date are nullable. `intake_kcal` stays null unless explicitly provided by the user. Sleep date may be null to indicate ambiguity.
+- Feedback data: `{date, training_summary, training_completed: true|false|null, food_summary, diet_followed_plan: true|false|null, sleep_hours, sleep_date, fatigue, weight_kg, intake_kcal, uncertainties: [string]}`. All scalar fields other than date are nullable. `diet_followed_plan` is populated only from an explicit user statement; food descriptions do not imply adherence. `intake_kcal` stays null unless explicitly provided by the user. Sleep date may be null to indicate ambiguity.
 - `POST /api/feedback/{id}/confirm`: `{data: <editable feedback data>, expected_revision: <current>}` → confirmed record. Same confirmed content is idempotent. A correction uses the current revision, preserves audit history, and atomically clears the prior advice, advice error, and knowledge-retrieval trace; its trace returns to `{steps: ["parser"]}` until advice is generated again.
 - `POST /api/feedback/{id}/advice`: `{mode}` → updated record. Requires confirmed feedback; no mutation of plans. Advice data is `{summary, suggestions, source_ids, knowledge_context}` and uses the same knowledge citation snapshot shape as plans.
 - Advice retrieval extracts issues from the confirmed structured feedback, the feedback row's stored `raw_text`, and feedback history (newest first). The saved profile's primary goal supplies auxiliary terms and collection preferences for each extracted issue but does not create issues by itself. Exact full-title matches rank before collection preferences; otherwise each issue's preferred collections rank before goal-preferred collections and the rest of the library. Each issue retrieves 3 items by default and may expand to 5 to cover otherwise unmatched query terms. Results are deduplicated across issues, so a sleep/fatigue/diet response may persist more than 5 total citations. `matched_issues` records every issue supported by a citation.
@@ -42,6 +42,13 @@ Mutation conflicts use stable codes: profile version conflicts use `profile_vers
 ## Knowledge availability and compatibility
 
 Knowledge loading and validation are optional enrichment. If approved knowledge or the reviewed strategy artifact is missing, unreadable, or invalid, plan and advice generation still return 200 using the core rule-based behavior. Their nested context lists and trace ID lists are empty and `trace.knowledge_status` is `"unavailable"`. Storage failures, request validation failures, and unexpected programming errors are not converted to this fallback.
+
+## Personal History
+
+- `GET /api/history/recent?days={7|14|21}&end_date=YYYY-MM-DD&issue=<optional>&metric=<optional>` returns confirmed feedback in an inclusive calendar window, newest first. Supported metric filters are `sleep_hours`, `weight_kg`, `fatigue`, `training_completed`, and `diet_followed_plan`; a metric filter only returns records with an explicit non-null value.
+- `GET /api/history/trends?days={7|14|21}&end_date=YYYY-MM-DD` returns independent sample counts and deterministic summaries for sleep, weight, fatigue reports, training completion, and explicit diet execution. Numeric fields include average/minimum/maximum/range; weight also includes chronological change when at least two samples exist. A single sample is always marked `insufficient_data`.
+- `GET /api/history/similar/{feedback_id}?limit=3` ranks confirmed historical feedback by shared issue and explicit categorical signals. It excludes the current record and may return a previous advice summary, but never an inferred outcome.
+- Unsupported windows, metrics, or limits return `400` with `detail.code: "history_query_invalid"`.
 
 Records created before this contract may omit `strategy_context`, `knowledge_context`, `source_ids`, or the new trace fields. Clients must treat absent nested lists and trace lists as empty and an absent knowledge status as unknown; no database migration is required to read those records safely.
 

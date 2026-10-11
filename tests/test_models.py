@@ -29,8 +29,16 @@ def test_feedback_does_not_invent_intake():
     p = FeedbackData(date="2026-09-10", food_summary="学校食堂")
     assert p.intake_kcal is None
     assert p.sleep_date is None
+    assert p.diet_followed_plan is None
     with pytest.raises(ValidationError):
         FeedbackData(date="2026-09-10", sleep_hours=25)
+
+
+@pytest.mark.parametrize("value", [True, False, None])
+def test_feedback_accepts_explicit_diet_adherence(value):
+    from fitness.models import FeedbackData
+
+    assert FeedbackData(date="2026-09-10", diet_followed_plan=value).diet_followed_plan is value
 
 
 def test_unexpected_model_fields_are_rejected():

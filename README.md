@@ -70,6 +70,24 @@ GET /api/export/advice?format=markdown&feedback_id=<feedback_id>
 
 JSON 保留结构化字段和生成轨迹；CSV 展开常用字段，便于表格处理；Markdown 适合阅读和归档。导出不包含本地密钥、Cookie 或服务配置。
 
+## 个人历史与趋势
+
+“每日反馈”页面提供最近 7、14 或 21 天的确定性趋势摘要，包括睡眠、体重、疲劳记录比例、训练完成率和饮食执行率。每项指标显示自己的有效样本数；少于 2 条有效记录时标记为“数据不足”，不会根据单日波动作长期判断。
+
+饮食执行率只使用用户明确回答“是否按计划执行”的记录。普通的食物描述、食堂或外卖记录不会自动被判定为成功或失败。疲劳指标表示“有疲劳描述的记录占确认反馈的比例”；没有描述疲劳不等于用户没有疲劳。
+
+历史工具提供以下只读 API：
+
+```text
+GET /api/history/recent?days=7&end_date=2026-10-11
+GET /api/history/recent?days=14&end_date=2026-10-11&issue=short_sleep
+GET /api/history/recent?days=21&end_date=2026-10-11&metric=sleep_hours
+GET /api/history/trends?days=7&end_date=2026-10-11
+GET /api/history/similar/<feedback_id>?limit=3
+```
+
+相似历史只返回共享 issue、明确匹配信号和过去保存的建议摘要，不推断过去建议产生了某种结果，也不形成医疗因果结论。
+
 ## 基本使用流程
 
 1. 在“我的档案”填写目标、身体信息、训练条件、饮食和恢复信息，点击“保存档案”。计划只能基于已保存的档案生成；修改档案后需重新生成旧草案才能确认。

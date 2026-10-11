@@ -128,6 +128,47 @@ function knowledgeStatusMessage(status) {
   return null;
 }
 
+function trendMetricPresentation(key, metric = {}) {
+  const count = Number(metric.valid_count ?? metric.record_count ?? 0);
+  const display = (value) =>
+    value == null ? "暂无数据" : String(Number(value.toFixed?.(2) ?? value));
+  if (key === "sleep_hours")
+    return {
+      label: "平均睡眠",
+      value: metric.average == null ? "暂无数据" : `${display(metric.average)} 小时`,
+      detail:
+        count && metric.minimum != null && metric.maximum != null
+          ? `${count} 条有效记录 · ${display(metric.minimum)}–${display(metric.maximum)} 小时`
+          : `${count} 条有效记录`,
+      insufficient: Boolean(metric.insufficient_data),
+    };
+  if (key === "weight_kg")
+    return {
+      label: "平均体重",
+      value: metric.average == null ? "暂无数据" : `${display(metric.average)} kg`,
+      detail: `${count} 条有效记录 · ${metric.change == null ? "变化数据不足" : `变化 ${metric.change > 0 ? "+" : ""}${display(metric.change)} kg`}`,
+      insufficient: Boolean(metric.insufficient_data),
+    };
+  const isTraining = key === "training_completion";
+  const positiveCount = Number(
+    metric[isTraining ? "completed_count" : key === "diet_execution" ? "followed_count" : "reported_count"] ?? 0,
+  );
+  return {
+    label:
+      key === "training_completion"
+        ? "训练完成率"
+        : key === "diet_execution"
+          ? "饮食执行率"
+          : "疲劳记录比例",
+    value: metric.rate == null ? "暂无数据" : `${Math.round(metric.rate * 100)}%`,
+    detail:
+      count === 0
+        ? `0 条${key === "fatigue_reports" ? "确认反馈" : "明确记录"}`
+        : `${positiveCount} / ${count} 条${key === "fatigue_reports" ? "确认反馈" : "明确记录"}`,
+    insufficient: Boolean(metric.insufficient_data),
+  };
+}
+
 function safeCitationVideos(videos = []) {
   return normalizeContextList(videos).flatMap((video) => {
     const safeUrl = safeVideoUrl(video?.url);
@@ -298,6 +339,7 @@ if (typeof module !== "undefined")
     assignPlanKnowledge,
     feedbackIssueLabel,
     knowledgeStatusMessage,
+    trendMetricPresentation,
     safeCitationVideos,
     renderKnowledgeCitation,
     renderPlanFoundations,
@@ -315,6 +357,7 @@ if (typeof document !== "undefined") {
     version: 0,
     plans: [],
     feedback: [],
+    trends: null,
     plan: null,
     selectedFeedback: null,
     mode: "demo",
@@ -1118,6 +1161,44 @@ if (typeof document !== "undefined") {
       root.append(el);
     });
   }
+  function renderTrends() {
+    const root = $("trend-metrics");
+    root.replaceChildren();
+    if (!app.trends) {
+      root.append(node("div", "趋势数据暂不可用。", "empty-state"));
+      return;
+    }
+    const window = app.trends.window;
+    $("trend-range").textContent =
+      `${window.start_date} 至 ${window.end_date} · ${app.trends.record_count} 条已确认反馈`;
+    [
+      "sleep_hours",
+      "weight_kg",
+      "fatigue_reports",
+      "training_completion",
+      "diet_execution",
+    ].forEach((key) => {
+      const presentation = trendMetricPresentation(key, app.trends.metrics?.[key]);
+      const card = node("article", "", `trend-metric${presentation.insufficient ? " insufficient" : ""}`);
+      card.append(
+        node("span", presentation.label),
+        node("strong", presentation.value),
+        node("small", presentation.detail),
+      );
+      if (presentation.insufficient) card.append(node("small", "数据不足"));
+      root.append(card);
+    });
+    $("trend-message").textContent =
+      "各指标只使用自身的非空样本；单条记录不会被判定为长期趋势。";
+  }
+  async function loadTrends() {
+    const days = Number($("trend-window").value || 7);
+    const endDate = $("feedback-date").value || today();
+    app.trends = await api(
+      `/api/history/trends?days=${encodeURIComponent(days)}&end_date=${encodeURIComponent(endDate)}`,
+    );
+    renderTrends();
+  }
   function renderFeedbackEditor(item) {
     app.feedbackDirty = false;
     const root = $("feedback-editor");
@@ -1140,6 +1221,7 @@ if (typeof document !== "undefined") {
       ["date", "记录日期", "date"],
       ["training_summary", "训练记录", "text"],
       ["food_summary", "饮食记录", "text"],
+      ["diet_followed_plan", "饮食是否按计划执行", "boolean"],
       ["training_completed", "是否完成训练", "boolean"],
       ["sleep_hours", "睡眠小时", "number"],
       ["fatigue", "疲劳感受", "text"],
@@ -1201,6 +1283,10 @@ if (typeof document !== "undefined") {
           renderFeedbackHistory();
           renderFeedbackEditor(confirmed);
           renderOverview();
+          loadTrends().catch(() => {
+            app.trends = null;
+            renderTrends();
+          });
           show("反馈已保存。");
         } catch (error) {
           show(error.message, true);
@@ -1333,6 +1419,7 @@ if (typeof document !== "undefined") {
     renderPlans();
     renderFeedbackHistory();
     renderFeedbackEditor(app.selectedFeedback);
+    renderTrends();
     renderKnowledgeList();
     renderKnowledgeDetail();
   }
@@ -1463,11 +1550,24 @@ if (typeof document !== "undefined") {
         renderFeedbackHistory();
         renderFeedbackEditor(app.selectedFeedback);
         renderOverview();
+        await loadTrends().catch(() => {
+          app.trends = null;
+          renderTrends();
+        });
         show("历史记录已刷新。");
       } catch (error) {
         show(error.message, true);
       } finally {
         busy(target, false);
+      }
+    });
+    $("trend-window").addEventListener("change", async () => {
+      try {
+        await loadTrends();
+      } catch (error) {
+        app.trends = null;
+        renderTrends();
+        show(`无法加载趋势：${error.message}`, true);
       }
     });
     ["knowledge-collection", "knowledge-status"].forEach((id) => {
@@ -1517,6 +1617,10 @@ if (typeof document !== "undefined") {
       renderAll(payload);
       $("plan-date").value = payload.today;
       $("feedback-date").value = payload.today;
+      await loadTrends().catch(() => {
+        app.trends = null;
+        renderTrends();
+      });
       go(window.location.hash.slice(1) || "overview");
     } catch (error) {
       show(`无法连接本地服务：${error.message}`, true);

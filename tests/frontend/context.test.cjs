@@ -312,3 +312,58 @@ test('assembles advice new, legacy, and empty branches through one mount decisio
     assert.equal(empty[0].textContent.includes('本次未采用知识库内容'), true);
   });
 });
+
+test('formats trend metrics with sample counts and explicit insufficient data', () => {
+  assert.equal(typeof ui.trendMetricPresentation, 'function');
+
+  assert.deepEqual(ui.trendMetricPresentation('sleep_hours', {
+    valid_count: 3,
+    average: 6.5,
+    minimum: 5.5,
+    maximum: 7.5,
+    insufficient_data: false,
+  }), {
+    label: '平均睡眠',
+    value: '6.5 小时',
+    detail: '3 条有效记录 · 5.5–7.5 小时',
+    insufficient: false,
+  });
+  assert.deepEqual(ui.trendMetricPresentation('weight_kg', {
+    valid_count: 1,
+    average: 79,
+    minimum: 79,
+    maximum: 79,
+    change: null,
+    insufficient_data: true,
+  }), {
+    label: '平均体重',
+    value: '79 kg',
+    detail: '1 条有效记录 · 变化数据不足',
+    insufficient: true,
+  });
+});
+
+test('formats explicit zero rates as data instead of missing values', () => {
+  assert.deepEqual(ui.trendMetricPresentation('training_completion', {
+    valid_count: 2,
+    completed_count: 0,
+    rate: 0,
+    insufficient_data: false,
+  }), {
+    label: '训练完成率',
+    value: '0%',
+    detail: '0 / 2 条明确记录',
+    insufficient: false,
+  });
+  assert.deepEqual(ui.trendMetricPresentation('diet_execution', {
+    valid_count: 0,
+    followed_count: 0,
+    rate: null,
+    insufficient_data: true,
+  }), {
+    label: '饮食执行率',
+    value: '暂无数据',
+    detail: '0 条明确记录',
+    insufficient: true,
+  });
+});

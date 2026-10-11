@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from .agent import DemoAgent
 from .config import ROOT, Settings
 from .exporting import ExportFormatError, render_export
+from .history import HistoryQueryError, find_similar_feedback, get_recent_feedback, summarize_recent_trend
 from .knowledge import build_manifest, search_knowledge
 from .knowledge_context import KnowledgeContextService
 from .models import (
@@ -282,6 +283,58 @@ def _export_response(kind: str, export_format: str, rows: list[dict]):
         media_type=document.media_type,
         headers={"Content-Disposition": f'attachment; filename="{document.filename}"'},
     )
+
+
+def _history_end_date(value: date | None) -> date:
+    return value or datetime.now(ZoneInfo(settings.timezone)).date()
+
+
+def _history_error(exc: HistoryQueryError):
+    raise HTTPException(400, {
+        "code": "history_query_invalid",
+        "message": str(exc),
+        "retryable": False,
+    }) from exc
+
+
+@app.get("/api/history/recent")
+def history_recent(
+    days: int = 7,
+    end_date: date | None = None,
+    issue: str | None = None,
+    metric: str | None = None,
+):
+    try:
+        return get_recent_feedback(
+            store.feedback(),
+            end_date=_history_end_date(end_date),
+            days=days,
+            issue=issue,
+            metric=metric,
+        )
+    except HistoryQueryError as exc:
+        _history_error(exc)
+
+
+@app.get("/api/history/trends")
+def history_trends(days: int = 7, end_date: date | None = None):
+    try:
+        return summarize_recent_trend(
+            store.feedback(), end_date=_history_end_date(end_date), days=days
+        )
+    except HistoryQueryError as exc:
+        _history_error(exc)
+
+
+@app.get("/api/history/similar/{feedback_id}")
+def history_similar(feedback_id: str, limit: int = 3):
+    try:
+        current = store.get_feedback(feedback_id)
+        return find_similar_feedback(store.feedback(), current, limit=limit)
+    except HistoryQueryError as exc:
+        _history_error(exc)
+    except NotFound as exc:
+        err(exc)
 
 
 @app.get("/api/export/plan")

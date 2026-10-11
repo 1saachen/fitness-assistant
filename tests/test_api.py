@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from fitness.knowledge_context import KnowledgeContextResult, KnowledgeContextService
-from fitness.models import AdviceData, KnowledgeCitation, StrategySnapshot
+from fitness.models import AdviceData, FeedbackData, KnowledgeCitation, StrategySnapshot
 from fitness.review import ReviewService
 from fitness.storage import Store
 
@@ -472,6 +472,78 @@ def test_export_includes_recent_feedback_and_advice(client, profile_data):
     assert advice_export.status_code == 200
     assert "健身助手建议导出" in advice_export.text
     assert "根据这次反馈给出短期建议" in advice_export.text
+
+
+def seed_confirmed_history(day, **values):
+    data = FeedbackData(date=day, **values).model_dump(mode="json")
+    draft = main.store.create_feedback("历史反馈", data, "demo", {"steps": ["parser"]})
+    return main.store.confirm_feedback(draft["id"], data, 0, trace={"steps": ["parser"]})
+
+
+def test_history_recent_and_trends_api_use_explicit_confirmed_facts(client):
+    seed_confirmed_history(
+        "2026-10-11", sleep_hours=6, weight_kg=79, fatigue="累",
+        training_completed=False, diet_followed_plan=False,
+    )
+    seed_confirmed_history(
+        "2026-10-08", sleep_hours=7, weight_kg=79.5,
+        training_completed=True, diet_followed_plan=True,
+    )
+    seed_confirmed_history("2026-10-05", sleep_hours=5, weight_kg=80, training_completed=True)
+    old = FeedbackData(date="2026-10-04", sleep_hours=9).model_dump(mode="json")
+    old_draft = main.store.create_feedback("窗口外", old, "demo", {"steps": ["parser"]})
+    main.store.confirm_feedback(old_draft["id"], old, 0)
+    draft = FeedbackData(date="2026-10-10", sleep_hours=2).model_dump(mode="json")
+    main.store.create_feedback("未确认", draft, "demo", {"steps": ["parser"]})
+
+    recent = client.get(
+        "/api/history/recent",
+        params={"days": 7, "end_date": "2026-10-11", "metric": "diet_followed_plan"},
+    )
+    assert recent.status_code == 200
+    assert recent.json()["count"] == 2
+    trends = client.get(
+        "/api/history/trends", params={"days": 7, "end_date": "2026-10-11"}
+    )
+    assert trends.status_code == 200
+    assert trends.json()["metrics"]["weight_kg"]["change"] == -1
+    assert trends.json()["metrics"]["diet_execution"]["valid_count"] == 2
+    assert trends.json()["metrics"]["diet_execution"]["rate"] == 0.5
+
+
+def test_similar_history_api_excludes_current_and_returns_previous_advice(client):
+    previous = seed_confirmed_history("2026-10-01", sleep_hours=5.5, fatigue="累")
+    main.store.save_advice(
+        previous["id"],
+        {"summary": "过去先降低训练压力", "suggestions": ["早点休息"]},
+        None,
+        previous["revision"],
+    )
+    current = seed_confirmed_history("2026-10-11", sleep_hours=6, fatigue="很累")
+
+    response = client.get(f"/api/history/similar/{current['id']}", params={"limit": 3})
+
+    assert response.status_code == 200
+    assert response.json()["matches"][0]["id"] == previous["id"]
+    assert response.json()["matches"][0]["previous_advice_summary"] == "过去先降低训练压力"
+    missing = client.get("/api/history/similar/missing")
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "not_found"
+
+
+def test_history_api_rejects_unsupported_windows_and_metrics(client):
+    window = client.get(
+        "/api/history/trends", params={"days": 30, "end_date": "2026-10-11"}
+    )
+    metric = client.get(
+        "/api/history/recent",
+        params={"days": 7, "end_date": "2026-10-11", "metric": "imagined_metric"},
+    )
+
+    assert window.status_code == 400
+    assert window.json()["detail"]["code"] == "history_query_invalid"
+    assert metric.status_code == 400
+    assert metric.json()["detail"]["code"] == "history_query_invalid"
 
 
 def test_knowledge_review_and_publish_flow(client):

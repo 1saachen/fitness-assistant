@@ -6,6 +6,14 @@ from fitness.knowledge_context import KnowledgeContextResult, RetrievalIssue
 from fitness.models import FeedbackData, KnowledgeCitation, Profile, StrategySnapshot
 
 
+def test_feedback_parser_records_only_explicit_diet_adherence():
+    agent = DemoAgent()
+
+    assert agent.parse_feedback("饮食按计划执行，吃食堂", date(2026, 10, 1)).diet_followed_plan is True
+    assert agent.parse_feedback("今天没按计划吃，点了外卖", date(2026, 10, 2)).diet_followed_plan is False
+    assert agent.parse_feedback("今天吃食堂", date(2026, 10, 3)).diet_followed_plan is None
+
+
 def citation(index, *issues, excerpt=None, collection="training"):
     return KnowledgeCitation(
         id=f"knowledge-{index:03d}",

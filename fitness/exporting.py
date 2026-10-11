@@ -83,7 +83,7 @@ def _plan_csv(rows: list[dict]) -> str:
 def _feedback_csv(rows: list[dict]) -> str:
     fields = [
         "feedback_id", "date", "status", "revision", "raw_text", "training_summary",
-        "training_completed", "food_summary", "sleep_hours", "sleep_date", "fatigue", "weight_kg",
+        "training_completed", "food_summary", "diet_followed_plan", "sleep_hours", "sleep_date", "fatigue", "weight_kg",
         "intake_kcal", "uncertainties", "advice_summary", "advice_suggestions", "source_ids", "trace_json",
     ]
     output = io.StringIO(newline="")
@@ -101,6 +101,7 @@ def _feedback_csv(rows: list[dict]) -> str:
             "training_summary": data.get("training_summary", ""),
             "training_completed": data.get("training_completed", ""),
             "food_summary": data.get("food_summary", ""),
+            "diet_followed_plan": data.get("diet_followed_plan", ""),
             "sleep_hours": data.get("sleep_hours", ""),
             "sleep_date": data.get("sleep_date", ""),
             "fatigue": data.get("fatigue", ""),

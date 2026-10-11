@@ -185,6 +185,7 @@ class FeedbackData(Contract):
     training_summary: Text | None = None
     training_completed: bool | None = None
     food_summary: Text | None = None
+    diet_followed_plan: bool | None = None
     sleep_hours: float | None = Field(default=None, ge=0, le=24)
     sleep_date: Date | None = None
     fatigue: Short | None = None

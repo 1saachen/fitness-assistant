@@ -57,11 +57,19 @@ class DemoAgent:
             if any(item in text for item in ("没练", "未训练", "跳过"))
             else None
         )
+        diet_followed_plan = (
+            False
+            if any(item in text for item in ("没按计划吃", "没有按计划吃", "饮食没按计划", "饮食没有按计划"))
+            else True
+            if any(item in text for item in ("饮食按计划", "按饮食计划", "按计划吃"))
+            else None
+        )
         return FeedbackData(
             date=day,
             training_summary=text if completed is not None else None,
             training_completed=completed,
             food_summary="食堂" if "食堂" in text else None,
+            diet_followed_plan=diet_followed_plan,
             sleep_hours=sleep,
             weight_kg=weight,
             fatigue="有点累" if "累" in text else None,
