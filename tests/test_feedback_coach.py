@@ -17,7 +17,8 @@ def candidate(row, **changes):
               'suggestions': ['今晚优先睡眠。'], 'questions': [],
               'memory_updates': [{'key': 'training:report', 'category': 'fact',
                   'text': '10月21日用户报告训练后疲劳。',
-                  'sources': [{'feedback_id': row['id'], 'revision': row['revision']}]}],
+                  'sources': [{'feedback_id': row['id'], 'revision': row['revision']}],
+                  'evidence': [{'feedback_id': row['id'], 'revision': row['revision'], 'quote': row['raw_text']}]}],
               'retire_keys': [], 'decision': {'action': 'keep', 'reason': '日终复盘，无需改动今天。'}}
     result.update(changes)
     return result
@@ -163,8 +164,10 @@ def test_model_compaction_preserves_protected_entries_and_originals(coach):
     row = service.record('花生过敏，以后都不要安排。训练后觉得累。', DAY)
     result = candidate(row)
     result['memory_updates'].append({'key': 'allergy:peanut', 'category': 'restriction',
-        'text': '用户报告花生过敏。', 'sources': result['memory_updates'][0]['sources']})
-    compact = {'entries': result['memory_updates']}
+        'text': '用户报告花生过敏。', 'sources': result['memory_updates'][0]['sources'],
+        'evidence': result['memory_updates'][0]['evidence']})
+    from fitness.memory_lifecycle import dated_entry
+    compact = {'entries': [dated_entry(e, DAY) for e in result['memory_updates']]}
     provider.replies = iter([final(result), final(compact)])
     response = service.analyze(row['id'])
     assert response['coaching']['memory_status'] == 'compacted'

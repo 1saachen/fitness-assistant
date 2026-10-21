@@ -14,8 +14,10 @@ from .agent_runtime import AgentRuntime
 from .config import ROOT
 from .daily_planning import DailyPlanningService
 from .feedback_contracts import FeedbackUnderstanding, MemoryDocument
-from .feedback_memory import PROTECTED, FeedbackMemory, estimated_tokens
+from .feedback_memory import PROTECTED, FeedbackMemory, estimated_tokens, select_recent_reports
+from .history import summarize_recent_trend
 from .knowledge import search_knowledge
+from .memory_lifecycle import merge_memory_updates, validate_memory_updates
 from .plan_store import PlanRepository, fingerprint
 from .provider import OpenAICompatibleProvider
 from .restrictions import resolution_matches
@@ -31,6 +33,9 @@ memory_updates 中 key 稳定：相同主题的更正使用同一 key 更新；r
 fact=用户明确报告；preference=持续偏好；restriction=运动/饮食限制；question=尚未解决的问题；
 pattern=你从多次记录得到的暂定模式，不能声称已证实因果。每条都引用已提供/检索的反馈ID和revision，
 新记忆必须包含本次反馈引用。没有信息价值的内容可以不记。单日疲劳、当天时间限制不能写成永久属性，
+每条新记忆evidence逐项提供feedback_id/revision/quote，quote必须是对应原文的逐字片段，每个sources都需引文。
+event_date注明事件日期（默认本条记录日期），临时fact默认14天、pattern默认21天有效；不延长旧事件的有效期。
+pattern至少引用两个不同日期的实际报告；单日观察用fact。supersedes可列被明确更正的旧key，不能借此解除限制。
 应带日期或expires_on；过敏和未解除伤痛不可自行过期。已得到回答的问题要更新或移除。
 restriction条目一律不设expires_on，临时事项用fact加日期。修改或移除已有restriction时，
 restriction_resolutions[key]必须提供本次原文中明确更正/解除的逐字引文。没有解除时保留原限制文字，
@@ -44,6 +49,8 @@ adjust_remaining=仅在用户选择remaining且反馈日期为今天时，调整
 下一次动作的重量或目标RPE调整可写进conditions，区分用户实际完成RPE和计划目标RPE。
 档案strength_baseline是历史能力起点，计划weight_kg/target_rpe是建议，反馈原话才是实际表现。
 有价值的重量、做组次数（如8/8/7）、末组RPE、动作标准及日期可整理进个人记忆，不强制解析成字段。
+明确的训练表现可写facts.data.exercise_results的sets，每组reps/weight_kg/rpe只填原话实际值；末组RPE不能复制给前几组。
+session_id区分同日不同训练场次，不能编造；form_notes为原文动作质量片段，goal_completed仅用于明确报告是否达到目标。
 近期同动作实做表现用于校准下一次处方，不要求用户追上较高的计划重量；实做组不能直接当作新1RM，不自动更新档案。
 长期目标、循环结构、能量目标变动走propose_long_term；不通过日计划偷偷改变已确认长期目标。
 已完成训练/餐次保持。只有决定调整时conditions才写可执行的后续要求，注明日期与已完成事项。
@@ -70,9 +77,10 @@ def report(row):
 
 
 class FeedbackReadTools:
-    def __init__(self, store, loaded):
+    def __init__(self, store, loaded, end_date):
         self.store = store
         self.retrieved_sources = loaded
+        self.end_date = str(end_date)
 
     def schemas(self):
         return [{'type': 'function', 'function': {'name': 'read_feedback_history',
@@ -100,8 +108,9 @@ class FeedbackReadTools:
         with self.store.connection() as db:
             # Bound the query at the DB rather than loading the archive into the model context.
             rows = db.execute("SELECT * FROM feedback WHERE status='confirmed' AND "
-                              '(? IS NULL OR id=?) AND (?=\'\' OR instr(lower(raw_text),?)>0) '
-                              'ORDER BY date DESC,created_at DESC LIMIT ?', (ident, ident, query, query, limit))
+                              '(? IS NULL OR id=?) AND (?=\'\' OR instr(lower(raw_text),?)>0) AND date<=? '
+                              'ORDER BY date DESC,created_at DESC LIMIT ?',
+                              (ident, ident, query, query, self.end_date, limit))
             items, remaining = [], 6500
             for raw in rows:
                 row = decode_report(raw)
@@ -112,7 +121,8 @@ class FeedbackReadTools:
                 self.retrieved_sources[(row['id'], row['revision'])] = row
                 items.append({**report(row), 'raw_text': raw_text,
                               'truncated': len(raw_text) < len(row['raw_text'])})
-        return {'source_kind': 'user_reports', 'items': items, 'scope': 'matched_originals'}
+        return {'source_kind': 'user_reports', 'items': items, 'scope': 'matched_originals',
+                'end_date': self.end_date}
 
 
 def decode_report(raw):
@@ -149,9 +159,12 @@ class FeedbackCoach:
                       max_output_tokens=max(4096, self.settings.agent_max_output_tokens)), clock=time.monotonic)
 
     def context(self, row):
-        recent = [r for r in self.store.feedback(limit=20) if r['status'] == 'confirmed' and r['id'] != row['id']][:4]
+        anchor = min(self.today(), date.fromisoformat(row['date']))
+        history = self.store.feedback(limit=None)
+        recent = select_recent_reports([r for r in history if r['id'] != row['id']],
+                                       end_date=anchor, limit=4)
         loaded = {(r['id'], r['revision']): r for r in [row, *recent]}
-        memory = self.memory.context(self.today())
+        memory = self.memory.context(anchor)
         # Load cited report metadata so evidence remains checkable even outside the recent window.
         for entry in memory['entries']:
             for source in entry['sources']:
@@ -160,23 +173,26 @@ class FeedbackCoach:
         parent = None
         if row['coaching']['parent_feedback_id']:
             original = self.store.get_feedback(row['coaching']['parent_feedback_id'])
-            old = self.memory.view(original)
-            parent = {**report(original), 'data': old.get('coaching', {}).get('data')}
-            loaded[(original['id'], original['revision'])] = original
+            if original['date'] <= str(anchor):
+                old = self.memory.view(original)
+                parent = {**report(original), 'data': old.get('coaching', {}).get('data')}
+                loaded[(original['id'], original['revision'])] = original
         repo = PlanRepository(self.store)
         active = next((r for r in repo.long_terms() if r['status'] == 'confirmed'
                        and r['start_date'] <= str(self.today())), None)
-        days = list(DailyPlanningService._latest_days(repo.days()).values())[:3]
+        days = list(DailyPlanningService._latest_days(repo.days(anchor)).values())[:3]
         profile = self.store.profile()
         task = {'today': str(self.today()), 'feedback': report(row), 'timing': row['coaching']['timing'],
                 'profile': profile['data'] if profile else {}, 'personal_memory': memory,
                 'recent_reports': [{**report(r), 'raw_text': r['raw_text'][:2000]} for r in recent],
-                'history_scope': 'recent 4 reports; use read_feedback_history for older originals',
+                'history_scope': {'days': 14, 'limit': 4, 'start_date': str(anchor - timedelta(days=13)),
+                                  'end_date': str(anchor), 'older_reports': 'read_feedback_history'},
+                'recent_trend': summarize_recent_trend(history, end_date=anchor, days=14),
                 'parent': parent, 'current_plan': self.compact_long(active),
                 'recent_days': [{'date': r['date'], 'training': r['data']['training'],
                                  'completed_meals': r['data'].get('completed_meals'),
                                  'training_completed': r['data'].get('training_completed')} for r in days]}
-        return task, FeedbackReadTools(self.store, loaded)
+        return task, FeedbackReadTools(self.store, loaded, anchor)
 
     @staticmethod
     def compact_long(row):
@@ -211,10 +227,12 @@ class FeedbackCoach:
                 issue('memory_updates.expires_on', '限制条目不能自动过期；需要用户明确更正或解除。')
         if len({x.key for x in parsed.memory_updates}) != len(parsed.memory_updates):
             issue('memory_updates.key', '同一key只能更新一次。')
+        memory_issues, replaced = validate_memory_updates(parsed, row, sources, self.memory.current()['data']['entries'])
+        issues.extend(memory_issues)
         updates = {e.key: e for e in parsed.memory_updates}
         for old in self.memory.current()['data']['entries']:
             update = updates.get(old['key'])
-            changed = old['key'] in parsed.retire_keys or (update and (
+            changed = old['key'] in replaced or (update and (
                 update.category != 'restriction' or update.text != old['text']))
             if old['category'] == 'restriction' and changed:
                 quote = parsed.restriction_resolutions.get(old['key'], '')
@@ -233,17 +251,23 @@ class FeedbackCoach:
                     issue('facts.' + key, '已有已确认字段优先，不用旧原文覆盖用户的更正。')
                 quote = parsed.facts.evidence.get(key, '')
                 if not quote or quote not in row['raw_text']:
-                    issue('facts.evidence', f'{key}必须附有本条原文引文，不能猜测。')
+                    issue('facts.' + key, f'{key}必须附有本条原文引文，不能猜测。')
                     continue
                 from .safety import _grounded_boolean, _grounded_measurement
-                normalized = unicodedata.normalize('NFKC', quote)
+                # Evidence must survive its original clause, including adjacent negation and tense.
+                position = row['raw_text'].find(quote)
+                left = max(row['raw_text'].rfind(mark, 0, position) for mark in ('。', '！', '？', '\n', '；')) + 1
+                endings = [row['raw_text'].find(mark, position + len(quote)) for mark in ('。', '！', '？', '\n', '；')]
+                right = min((end for end in endings if end >= 0), default=len(row['raw_text']))
+                normalized = unicodedata.normalize('NFKC', row['raw_text'][left:right])
                 if key in {'weight_kg', 'sleep_hours', 'intake_kcal'}:
                     if not _grounded_measurement(normalized, key, value):
                         issue('facts.' + key, '数值及含义必须与所引用的实测原文一致。')
                 elif key in {'training_completed', 'diet_followed_plan'}:
-                    grounded = _grounded_boolean(normalized, key, value)
+                    intention = bool(re.search(r'打算|准备|计划要|明天|后天|下次|希望|如果|假如', normalized))
+                    grounded = not intention and _grounded_boolean(normalized, key, value)
                     if key == 'training_completed' and value is True:
-                        grounded = grounded or (bool(re.search(r'训练(?:已经)?(?:全部|都)?(?:做完|完成)了', normalized))
+                        grounded = grounded or (not intention and bool(re.search(r'训练(?:已经)?(?:全部|都)?(?:做完|完成)了', normalized))
                             and not re.search(r'没|未|不|打算|准备|计划|明天', normalized))
                     if not grounded:
                         issue('facts.' + key, '完成状态必须与原文一致，不将意图或未完成记为已完成。')
@@ -256,7 +280,7 @@ class FeedbackCoach:
                         for step in plan['data']['cycle']:
                             names.update({e['exercise_id']: e['name'] for e in step['exercises']})
                     try:
-                        validate_model_feedback({'exercise_results': value}, quote, date.fromisoformat(row['date']),
+                        validate_model_feedback({'exercise_results': value}, row['raw_text'], date.fromisoformat(row['date']),
                             FeedbackData(date=row['date']), exercise_names=names)
                     except SafetyError:
                         issue('facts.exercise_results', '动作名称、重量和RPE必须与引文中的实际完成记录一致。')
@@ -274,6 +298,8 @@ class FeedbackCoach:
         source_set = {(s['feedback_id'], s['revision']) for e in entries for s in e['sources']}
         categories = {}
         originals = {e['key']: e for e in document['entries']}
+        evidence_set = {(s['feedback_id'], s['revision'], s['quote'])
+                        for e in document['entries'] for s in e.get('evidence', [])}
         for entry in entries:
             categories.setdefault(entry['category'], set()).update(
                 (s['feedback_id'], s['revision']) for s in entry['sources'])
@@ -283,7 +309,22 @@ class FeedbackCoach:
             except ValidationError as exc:
                 return [ValidationIssue('.'.join(map(str, e['loc'])), 'schema', e['msg']) for e in exc.errors()]
             keys = {e['key']: e for e in compacted}
+            def valid_pattern(entry):
+                if entry['category'] != 'pattern':
+                    return True
+                refs = {(s['feedback_id'], s['revision']) for s in entry['sources']}
+                evidence = entry['evidence']
+                supporting = [e for e in originals.values() if any(
+                    (s['feedback_id'], s['revision']) in refs for s in e['sources'])]
+                expiries = [e['expires_on'] for e in supporting if e.get('expires_on')]
+                dates = [e['event_date'] for e in supporting if e.get('event_date')]
+                return (bool(evidence) and {(s['feedback_id'], s['revision']) for s in evidence} == refs
+                    and all((s['feedback_id'], s['revision'], s['quote']) in evidence_set for s in evidence)
+                    and bool(entry['expires_on']) and (not expiries or entry['expires_on'] <= min(expiries))
+                    and bool(entry['event_date']) and (not dates or entry['event_date'] <= max(dates))
+                    and not entry.get('confirmed_at') and not entry.get('supersedes'))
             valid = (len(keys) == len(compacted) and all(keys.get(k) == v for k, v in protected.items())
+                     and all(valid_pattern(e) for e in compacted)
                      and all((s['feedback_id'], s['revision']) in source_set for e in compacted for s in e['sources'])
                      and all((s['feedback_id'], s['revision']) in (
                                  source_set if e['category'] == 'pattern' else categories.get(e['category'], set()))
@@ -298,6 +339,7 @@ class FeedbackCoach:
                 'preference/restriction/question为保护条目，逐字原样保留，不能改key或删除。'
                 'fact只能选择保留或移除原条目，保留时key/text/sources/expires_on全部原样；不得新建fact。'
                 '需要合并时用pattern标记为归纳，并引用原来源，不得把模式变为事实。原始记录另有永久保存。'
+                'pattern保留每个来源逐字evidence、event_date和expires_on，不得延后最早有效期；confirmed_at必须为空，supersedes为空。'
                 '目标尽量控制在预算内；保护项超过预算也保留。最终只输出'
                 '{"status":"draft_ready","candidate":{"entries":[...]},"questions":[]}。契约：'
                 + json.dumps(MemoryDocument.model_json_schema(), ensure_ascii=False))
@@ -315,13 +357,30 @@ class FeedbackCoach:
         ignored_facts = []
         def validate(candidate, sources):
             issues = self.validate(candidate, row, sources)
-            optional = [i for i in issues if i.path == 'facts' or i.path.startswith('facts.')]
-            if optional:
-                # Statistics are supplemental; bad extraction must not suppress the conversation.
+            for _ in range(30):
+                optional = [i for i in issues if i.path == 'facts' or i.path.startswith('facts.')]
+                if not optional:
+                    break
                 ignored_facts.extend(asdict(i) for i in optional)
-                candidate['facts'] = None
-                # Revalidate all other permissions even if fact schema validation stopped early.
-                return self.validate(candidate, row, sources)
+                facts = candidate.get('facts')
+                if not isinstance(facts, dict) or not isinstance(facts.get('data'), dict):
+                    candidate['facts'] = None
+                else:
+                    invalid = set()
+                    for item in optional:
+                        path = item.path.split('.')
+                        field = path[2] if len(path) > 2 and path[1] in {'data', 'evidence'} else (
+                            path[1] if len(path) > 1 else None)
+                        if field and field != 'date' and field in facts['data']:
+                            invalid.add(field)
+                    if invalid:
+                        for field in invalid:
+                            facts['data'].pop(field, None)
+                            if isinstance(facts.get('evidence'), dict):
+                                facts['evidence'].pop(field, None)
+                    else:
+                        candidate['facts'] = None
+                issues = self.validate(candidate, row, sources)
             return issues
         run = self.runtime().run(role=COACH_GUIDE + '\n候选契约：' + json.dumps(
             FeedbackUnderstanding.model_json_schema(), ensure_ascii=False), task=task, tools=tools,
@@ -335,11 +394,9 @@ class FeedbackCoach:
         if decision['action'] != 'keep' and not decision['target_date']:
             decision['target_date'] = str(self.today() if decision['action'] == 'adjust_remaining'
                                            else self.today() + timedelta(days=1))
-        retired = set(understanding['retire_keys'])
-        entries = {e['key']: e for e in snapshot['memory']['data']['entries'] if e['key'] not in retired}
-        entries.update({e['key']: e for e in understanding['memory_updates']})
+        entries = merge_memory_updates(snapshot['memory']['data']['entries'], understanding, row['date'])
         try:
-            compacted, memory_status, compression_trace = self.compact(list(entries.values()))
+            compacted, memory_status, compression_trace = self.compact(entries)
         except ValidationError:
             compacted, memory_status, compression_trace = [], 'failed', {'reason': 'memory_limit'}
         trace = {**run.trace, 'compression': compression_trace}

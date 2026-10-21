@@ -250,15 +250,34 @@ class FeedbackData(Contract):
     uncertainties: list[Short] = Field(default_factory=list, max_length=15)
 
 
-class ExerciseResult(Contract):
-    exercise_id: Short
+class ExerciseSet(Contract):
+    reps: int = Field(gt=0, strict=True)
     weight_kg: float | None = Field(default=None, ge=0, le=1000)
     rpe: float | None = Field(default=None, ge=1, le=10)
+    completed: bool | None = Field(default=None, strict=True)
+
+    @model_validator(mode="after")
+    def valid_set_rpe(self):
+        if self.rpe is not None and self.rpe * 2 != round(self.rpe * 2):
+            raise ValueError("实际RPE需以0.5为步进")
+        return self
+
+
+class ExerciseResult(Contract):
+    exercise_id: Short = Field(min_length=1)
+    exercise_name: Short | None = Field(default=None, min_length=1)
+    session_id: Short | None = Field(default=None, min_length=1)
+    weight_kg: float | None = Field(default=None, ge=0, le=1000)
+    rpe: float | None = Field(default=None, ge=1, le=10)
+    sets: list[ExerciseSet] = Field(default_factory=list, max_length=100)
+    form_notes: Text | None = Field(default=None, min_length=1)
+    goal_completed: bool | None = Field(default=None, strict=True)
 
     @model_validator(mode="after")
     def valid_result(self):
-        if self.weight_kg is None and self.rpe is None:
-            raise ValueError("动作反馈至少记录重量或RPE")
+        if (self.weight_kg is None and self.rpe is None and not self.sets
+                and self.form_notes is None and self.goal_completed is None):
+            raise ValueError("动作反馈至少记录重量、RPE、逐组表现、动作质量或目标状态")
         if self.rpe is not None and self.rpe * 2 != round(self.rpe * 2):
             raise ValueError("实际RPE需以0.5为步进")
         return self

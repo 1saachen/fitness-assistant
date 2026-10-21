@@ -3,7 +3,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from .models import Contract, FeedbackData
 
@@ -13,12 +13,20 @@ class SourceRef(Contract):
     revision: int = Field(ge=1, strict=True)
 
 
+class MemoryEvidence(SourceRef):
+    quote: str = Field(min_length=1, max_length=4000)
+
+
 class MemoryEntry(Contract):
     key: str = Field(min_length=1, max_length=100)
     category: Literal['fact', 'preference', 'restriction', 'question', 'pattern']
     text: str = Field(min_length=1, max_length=2000)
     sources: list[SourceRef] = Field(min_length=1, max_length=30)
     expires_on: date | None = None
+    event_date: date | None = None
+    evidence: list[MemoryEvidence] = Field(default_factory=list, max_length=30)
+    supersedes: list[str] = Field(default_factory=list, max_length=30)
+    confirmed_at: str | None = Field(default=None, max_length=100)
 
 
 class MemoryDocument(Contract):
@@ -54,3 +62,20 @@ class FeedbackSubmit(Contract):
     timing: Literal['review', 'remaining'] = 'review'
     parent_feedback_id: str | None = Field(default=None, max_length=100)
     request_key: str = Field(min_length=1, max_length=100)
+
+
+class CriticalFactsConfirm(Contract):
+    expected_revision: int = Field(ge=1, strict=True)
+    training_completed: bool | None = Field(default=None, strict=True)
+    diet_followed_plan: bool | None = Field(default=None, strict=True)
+
+    @model_validator(mode='after')
+    def nonempty(self):
+        if self.training_completed is None and self.diet_followed_plan is None:
+            raise ValueError('请明确选择训练或饮食执行状态。')
+        return self
+
+
+class PreferenceConfirm(Contract):
+    expected_version: int = Field(ge=1, strict=True)
+    action: Literal['confirm', 'retire']

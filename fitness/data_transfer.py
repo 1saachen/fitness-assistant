@@ -95,6 +95,11 @@ def _fact_from_row(row):
     if unknown:
         raise ValueError(f"未知事实字段：{', '.join(sorted(unknown))}")
     clean = dict(raw)
+    # A blank CSV cell represents an unknown optional fact, rather than an
+    # explicit empty string. List-valued fields need their own JSON decoding.
+    for key in list(clean):
+        if clean[key] == "" and key != "date":
+            clean.pop(key)
     for key in ("training_completed", "diet_followed_plan"):
         if isinstance(clean.get(key), str):
             text = clean[key].strip().lower()
@@ -114,6 +119,11 @@ def _fact_from_row(row):
             clean["uncertainties"] = json.loads(clean["uncertainties"])
         except json.JSONDecodeError:
             clean["uncertainties"] = [clean["uncertainties"]]
+    if isinstance(clean.get("exercise_results"), str):
+        try:
+            clean["exercise_results"] = json.loads(clean["exercise_results"])
+        except json.JSONDecodeError:
+            raise ValueError("exercise_results 必须为 JSON 动作记录列表。") from None
     return FeedbackData.model_validate(clean).model_dump(mode="json")
 
 

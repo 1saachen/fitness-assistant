@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from .history import get_recent_feedback, summarize_recent_trend
+from .history import get_recent_feedback, summarize_exercise_history, summarize_recent_trend
 from .knowledge import search_knowledge
 from .models import Contract
 from .provider import _json_loads
@@ -18,6 +18,11 @@ class Empty(Contract):
 
 class Window(Contract):
     days: Literal[7, 14, 21] = 7
+
+
+class TrainingHistoryQuery(Window):
+    exercise_id: str | None = Field(default=None, min_length=1, max_length=200)
+    session_limit: int = Field(default=3, ge=1, le=8, strict=True)
 
 
 class Search(Contract):
@@ -34,13 +39,13 @@ class Preview(Contract):
     candidate_json: str = Field(min_length=2, max_length=16000)
 
 
-INPUTS = {'get_training_profile': Empty, 'get_training_history': Window,
+INPUTS = {'get_training_profile': Empty, 'get_training_history': TrainingHistoryQuery,
           'get_training_trend': Window, 'search_training_knowledge': Search,
           'list_training_exercises': Exercises, 'preview_training_candidate': Preview}
 
 DESCRIPTIONS = {
     'get_training_profile': '读取本次档案快照；已有完整profile时无需重复查询。',
-    'get_training_history': '读取近期真实训练记录，用于匹配实际重量和RPE。',
+    'get_training_history': '读取7/14/21天实际训练；可用exercise_id查询同动作最近场次、逐组次数、重量和RPE。',
     'get_training_trend': '查看已确认反馈趋势；无历史时无需反复查询。',
     'search_training_knowledge': '按需补充本地知识引用；可用专业知识直接规划，不强制检索。',
     'list_training_exercises': '可选的旧动作目录参考，不是允许动作名单；可直接提出目录外动作并省略ID。',
@@ -69,7 +74,9 @@ class TrainingTools:
                     if r.get('source_kind') != 'conditions']
             if name == 'get_training_trend':
                 return summarize_recent_trend(rows, end_date=self.task.date, **params)
-            data = get_recent_feedback(rows, end_date=self.task.date, **params)
+            data = get_recent_feedback(rows, end_date=self.task.date, days=params['days'])
+            data['exercise_history'] = summarize_exercise_history(data['records'],
+                exercise_id=params['exercise_id'], limit=params['session_limit'])
             data['records'] = [{k: r.get(k) for k in ('id', 'date', 'data', 'raw_text')}
                                for r in data['records'][:30]]
             return data

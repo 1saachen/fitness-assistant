@@ -1339,7 +1339,18 @@ if (typeof document !== "undefined") {
   async function loadPersonalMemory() {
     const root = $('personal-memory-content');
     if (!root) return;
-    try { FeedbackCoachUI.renderMemory(root, await api('/api/personal-memory')); }
+    try { FeedbackCoachUI.renderMemory(root, await api('/api/personal-memory'), document, {
+      confirmPreference: async (key, version, action) => {
+        try {
+          await api(`/api/personal-memory/${encodeURIComponent(key)}/confirm`, {method:'POST',
+            body:JSON.stringify({expected_version:version,action})});
+          await loadPersonalMemory();
+          document.dispatchEvent(new CustomEvent('fitness-state-change', {detail:{
+            profile_version:app.version,feedback_saved:true}}));
+          show(action === 'confirm' ? '偏好已确认，后续规划会采用你的确认。' : '偏好已停用，原始记录和旧版本保留。');
+        } catch (error) { show(error.message,true); }
+      }
+    }); }
     catch (error) { root.textContent = `个人记忆暂时未能加载：${error.message}`; }
   }
   async function understandFeedback(id, refresh = false, retryPlan = false) {
@@ -1361,6 +1372,17 @@ if (typeof document !== "undefined") {
     if (item.coaching) {
       FeedbackCoachUI.render(root, item, {retry: understandFeedback,
         retryPlan: id => understandFeedback(id, false, true),
+        confirmFacts: async (id, revision, facts) => {
+          try {
+            const saved = await api(`/api/feedback/${encodeURIComponent(id)}/facts/confirm`, {
+              method:'POST',body:JSON.stringify({expected_revision:revision,...facts})});
+            putFeedback(saved);
+            document.dispatchEvent(new CustomEvent('fitness-state-change', {detail:{
+              profile_version:app.version,feedback_saved:true}}));
+            await loadPersonalMemory();
+            show('状态已确认保存。可以点击“重试模型理解”，让后续安排采用更正后的记录。');
+          } catch (error) { show(error.message,true); }
+        },
         followup: id => {
           app.feedbackParent = id;
           $('feedback-parent-note').textContent = '正在补充上一条反馈；模型会同时看到先前的回应和问题。';
@@ -1434,11 +1456,14 @@ if (typeof document !== "undefined") {
       card.append(heading, node('p', '填写实际完成重量和各动作的主观用力程度（RPE 1–10）；不确定的项留空。', 'field-hint'));
       const resultGrid = document.createElement('div');
       resultGrid.className = 'field-grid feedback-fields';
-      resultRows.forEach(result => {
+      resultRows.forEach((result, resultIndex) => {
         const exercise = plannedExercises.find(row => row.exercise_id === result.exercise_id);
         const section = document.createElement('section');
         section.className = 'exercise-feedback';
-        section.append(node('strong', exercise?.name || result.exercise_id));
+        section.append(node('strong', exercise?.name || result.exercise_name || result.exercise_id));
+        if (result.session_id) section.append(node('p',`场次：${result.session_id}`,'metadata'));
+        (result.sets || []).forEach((set,index) => section.append(node('p',
+          `第${index+1}组：${set.reps}次${set.weight_kg == null ? '' : ` · ${set.weight_kg} kg`}${set.rpe == null ? '' : ` · RPE ${set.rpe}`}`)));
         if (exercise) {
           const target = [exercise.weight_kg != null ? `计划 ${exercise.weight_kg} kg` : null,
             exercise.target_rpe != null ? `目标 RPE ${exercise.target_rpe}` : null].filter(Boolean).join(' · ');
@@ -1454,6 +1479,7 @@ if (typeof document !== "undefined") {
           input.step = key === 'rpe' ? '0.5' : 'any';
           input.value = result[key] ?? '';
           input.dataset.exerciseId = result.exercise_id;
+          input.dataset.resultIndex = String(resultIndex);
           input.dataset.exerciseField = key;
           input.addEventListener('input', () => { app.feedbackDirty = true; });
           wrap.append(input); fields.append(wrap);
@@ -1481,16 +1507,10 @@ if (typeof document !== "undefined") {
               input.dataset.type,
             );
           });
-          const exerciseResults = new Map();
-          card.querySelectorAll('[data-exercise-id]').forEach(input => {
-            const exerciseId = input.dataset.exerciseId;
-            const result = exerciseResults.get(exerciseId) || {exercise_id: exerciseId};
-            const value = fieldValue(input.value, 'number');
-            if (value != null) result[input.dataset.exerciseField] = value;
-            exerciseResults.set(exerciseId, result);
-          });
-          data.exercise_results = [...exerciseResults.values()].filter(result =>
-            result.weight_kg != null || result.rpe != null);
+          data.exercise_results = FeedbackCoachUI.mergeExerciseEdits(resultRows,
+            [...card.querySelectorAll('[data-exercise-id]')].map(input => ({
+              index:Number(input.dataset.resultIndex),field:input.dataset.exerciseField,
+              value:fieldValue(input.value,'number')})));
           const confirmed = await api(`/api/feedback/${item.id}/confirm`, {
             method: "POST",
             body: JSON.stringify({ data, expected_revision: item.revision }),

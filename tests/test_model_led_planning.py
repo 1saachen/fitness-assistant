@@ -203,6 +203,6 @@ def test_nutrition_uses_recent_feedback_instead_of_oldest_rows(tmp_path, profile
     svc = DailyPlanningService(store, Settings(live_enabled=True), provider=provider)
     svc.create_long_term(day, mode='live')
     history = json.loads(provider.messages[1][1]['content'])['history']
-    assert len(history) == 21
-    assert history[0]['date'] == (day - timedelta(days=21)).isoformat()
+    assert len(history) == 13
+    assert history[0]['date'] == (day - timedelta(days=13)).isoformat()
     assert history[-1]['date'] == (day - timedelta(days=1)).isoformat()

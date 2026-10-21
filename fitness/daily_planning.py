@@ -119,7 +119,7 @@ class DailyPlanningService:
         if mode == 'live':
             self._check_expected(self.repo.snapshot(start_date), snapshot['token'])
             nutrition_run = self.nutrition.plan_live(profile, conditions=conditions or '', training_cycle=cycle,
-                history=compact_feedback_reports(snapshot['feedback']),
+                history=compact_feedback_reports(snapshot['feedback'], end_date=start_date),
                 personal_memory=snapshot['personal_memory'])
             self._require_ready(nutrition_run, snapshot)
             nutrition = nutrition_run.candidate
@@ -306,7 +306,7 @@ class DailyPlanningService:
             eaten_rows = [m for m in current['data']['nutrition']['meal_options']
                           if m['meal'] in completed] if current else []
             nutrition_run = self.nutrition.plan_live(profile, **nutrition_context, lock_daily_targets=True, completed_meals=eaten_rows,
-                history=compact_feedback_reports(snapshot['feedback']),
+                history=compact_feedback_reports(snapshot['feedback'], end_date=day),
                 personal_memory=snapshot['personal_memory'])
             self._require_ready(nutrition_run, snapshot)
             nutrition = nutrition_run.candidate

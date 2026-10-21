@@ -3,6 +3,8 @@
 from datetime import date, timedelta
 from typing import Any
 
+from .feedback_facts import merge_feedback_days
+
 SUPPORTED_WINDOWS = (7, 14, 21)
 SUPPORTED_METRICS = {
     "sleep_hours",
@@ -139,11 +141,13 @@ def _boolean_rate(records: list[dict], field: str, positive_label: str) -> dict:
 def summarize_recent_trend(records: list[dict], *, end_date: date, days: int) -> dict:
     """Summarize explicit measurements; a single point never establishes a trend."""
     recent = get_recent_feedback(records, end_date=end_date, days=days)
-    rows = recent["records"]
+    rows = sorted(merge_feedback_days(recent['records']).values(), key=lambda r: r['date'], reverse=True)
     fatigue_count = sum(bool((record.get("data") or {}).get("fatigue")) for record in rows)
     return {
         "window": recent["window"],
         "record_count": len(rows),
+        "raw_record_count": len(recent['records']),
+        "sample_unit": "day",
         "metrics": {
             "sleep_hours": _numeric_summary(rows, "sleep_hours"),
             "weight_kg": _numeric_summary(rows, "weight_kg", include_change=True),
@@ -154,10 +158,54 @@ def summarize_recent_trend(records: list[dict], *, end_date: date, days: int) ->
                 "reported_count": fatigue_count,
                 "rate": fatigue_count / len(rows) if rows else None,
                 "insufficient_data": len(rows) < 2,
-                "meaning": "有疲劳描述的记录占确认反馈的比例；未描述不等于没有疲劳。",
+                "meaning": "有疲劳描述的日期占有确认反馈日期的比例；同日合并，未描述不等于没有疲劳。",
             },
         },
     }
+
+
+def summarize_exercise_history(records, *, exercise_id=None, limit=3, budget_bytes=20000):
+    """Summarize actual sessions; unknown external loads never become a full volume estimate."""
+    from .feedback_facts import exercise_identity
+    from .storage import encode
+    sessions = []
+    for day, row in sorted(merge_feedback_days(records).items(), reverse=True):
+        for result in row['data'].get('exercise_results', []):
+            if exercise_id and result['exercise_id'] != exercise_id:
+                continue
+            sets = result.get('sets') or []
+            performed = sets
+            known = [s for s in performed if s.get('weight_kg') is not None]
+            sources = list({(s['feedback_id'], s['revision']): s for s in
+                row.get('exercise_sources', {}).get(exercise_identity(result, day), [])}.values())
+            sessions.append({**result, 'date': day,
+                'recorded_at': max(row.get('exercise_updated_at', {}).get(exercise_identity(result, day), {}).values(),
+                                   default=str(row.get('created_at') or '')),
+                'session_id': result.get('session_id') or day,
+                'source_feedback_ids': [s['feedback_id'] for s in sources], 'sources': sources,
+                'total_reps': sum(s['reps'] for s in performed) if sets else None,
+                'known_volume_kg': round(sum(s['reps'] * s['weight_kg'] for s in known), 3) if known else None,
+                'volume_complete': bool(performed) and len(known) == len(performed)})
+    # A separate per-exercise cap keeps another movement from crowding out the requested movement.
+    sessions.sort(key=lambda s: (s['date'], s['recorded_at'], s['session_id']), reverse=True)
+    counts, selected, used, truncated = {}, [], 0, False
+    for session in sessions:
+        ident = session['exercise_id']
+        if counts.get(ident, 0) >= limit:
+            continue
+        counts[ident] = counts.get(ident, 0) + 1
+        item = {**session, 'sets': session.get('sets', [])[:12],
+                'sets_truncated': len(session.get('sets', [])) > 12}
+        size = len(encode(item).encode('utf-8'))
+        if used + size > budget_bytes:
+            truncated = True
+            continue
+        used += size
+        truncated = truncated or item['sets_truncated']
+        selected.append(item)
+    return {'sessions': selected, 'session_count': len(sessions), 'per_exercise_limit': limit,
+            'truncated': truncated, 'budget_bytes': budget_bytes,
+            'meaning': '按动作和场次归并的实际记录；缺失重量保持未知，训练量不是1RM或进步结论。'}
 
 
 def _sleep_bucket(value: Any) -> str | None:

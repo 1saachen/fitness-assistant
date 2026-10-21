@@ -16,7 +16,7 @@ from .daily_planning import DailyPlanningService
 from .data_transfer import confirm_feedback_import, preview_feedback_import
 from .exporting import ExportFormatError, render_export
 from .feedback_coach import FeedbackCoach
-from .feedback_contracts import FeedbackSubmit
+from .feedback_contracts import CriticalFactsConfirm, FeedbackSubmit, PreferenceConfirm
 from .feedback_memory import FeedbackMemory
 from .history import HistoryQueryError, explain_similar_feedback, get_recent_feedback, summarize_recent_trend
 from .knowledge import build_manifest, search_knowledge
@@ -443,12 +443,30 @@ def retry_feedback_plan(ident: str):
         err(exc)
 
 
+@app.post('/api/feedback/{ident}/facts/confirm')
+def confirm_critical_facts(ident: str, req: CriticalFactsConfirm):
+    try:
+        return FeedbackMemory(store).confirm_facts(ident, req.expected_revision,
+            req.model_dump(exclude={'expected_revision'}, exclude_none=True))
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
 @app.get('/api/personal-memory')
 def personal_memory():
     memory = FeedbackMemory(store)
     context = memory.context(_history_end_date(None))
     return {**context, 'compression': memory.current()['trace'].get('compression'),
             'budget_tokens': 6000, 'original_reports_retained': True}
+
+
+@app.post('/api/personal-memory/{key}/confirm')
+def confirm_memory_preference(key: str, req: PreferenceConfirm):
+    try:
+        FeedbackMemory(store).confirm_preference(key, req.expected_version, req.action, _history_end_date(None))
+        return personal_memory()
+    except (Conflict, NotFound) as exc:
+        err(exc)
 
 
 @app.get('/api/feedback/{ident}')
