@@ -19,8 +19,8 @@
 从 GitHub 获取完整项目（包含运行需要的知识库数据）：
 
 ```bash
-git clone https://github.com/1saachen/fitness-assistant.git
-cd fitness-assistant
+git clone https://github.com/1saachen/xunxu.git
+cd xunxu
 ```
 
 运行应用需要 Python 3.11+。Node.js 只用于开发和运行完整前端测试，普通本地使用不需要 Node.js。

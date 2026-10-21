@@ -1,6 +1,6 @@
 # 给 Agent 的本地安装与运行指南
 
-这份文档供接收项目的用户及其 Agent 使用。目标是在接收者自己的电脑上安装、配置、启动并验证 Fitness Assistant。请将本文和完整项目源码一起交付；只有本文、Python 安装包或 `fitness/` 目录不够。
+这份文档供接收项目的用户及其 Agent 使用。目标是在接收者自己的电脑上安装、配置、启动并验证循序（Xunxu）。请将本文和完整项目源码一起交付；只有本文、Python 安装包或 `fitness/` 目录不够。
 
 ## 1. Agent 的执行约定
 
@@ -65,7 +65,7 @@ data/ingest/bilibili-20260916/nutrition-era-catalog.json
 进入实际解压或 clone 后的目录：
 
 ```powershell
-Set-Location 'C:\path\to\fitness-assistant'
+Set-Location 'C:\path\to\xunxu'
 py -0p
 py -3.11 --version
 py -3.11 -m venv .venv
@@ -89,7 +89,7 @@ if (-not (Test-Path -LiteralPath '.env')) {
 ## 4. macOS / Linux 安装
 
 ```bash
-cd '/path/to/fitness-assistant'
+cd '/path/to/xunxu'
 python3 --version
 python3 -m venv .venv
 ./.venv/bin/python -m pip install -e .

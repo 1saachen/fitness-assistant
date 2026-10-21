@@ -65,8 +65,8 @@
 也可以手动启动：
 
 ```bash
-git clone https://github.com/1saachen/fitness-assistant.git
-cd fitness-assistant
+git clone https://github.com/1saachen/xunxu.git
+cd xunxu
 ```
 
 **Windows / PowerShell**
