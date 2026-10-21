@@ -94,12 +94,10 @@ test('optional why explanation renders facts and history safely with no default 
   });
 });
 
-test('refresh preserves live selection only while configured', () => {
-  assert.equal(ui.preservedMode(null, {mode:'live',available_modes:['demo','live']}), 'live');
-  assert.equal(ui.preservedMode(null, {mode:'demo',available_modes:['demo']}), 'demo');
-  assert.equal(ui.preservedMode('demo', {mode:'live',available_modes:['demo','live']}), 'demo');
-  assert.equal(ui.preservedMode('live', {mode:'demo',available_modes:['demo','live']}), 'live');
-  assert.equal(ui.preservedMode('live', {mode:'demo',available_modes:['demo']}), 'demo');
+test('the application always uses model mode, including with legacy state', () => {
+  assert.equal(ui.preservedMode(null, {mode:'live',available_modes:['live']}), 'live');
+  assert.equal(ui.preservedMode(null, {mode:'live',available_modes:[]}), 'live');
+  assert.equal(ui.preservedMode('demo', {mode:'demo',available_modes:['demo']}), 'live');
 });
 
 test('groups one citation under every valid matched feedback issue in input order', () => {

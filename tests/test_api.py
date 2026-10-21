@@ -9,8 +9,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from fitness.config import Settings
 from fitness.knowledge_context import KnowledgeContextResult, KnowledgeContextService
 from fitness.models import AdviceData, FeedbackData, KnowledgeCitation, StrategySnapshot
+from fitness.provider import ProviderReply
 from fitness.review import ReviewService
 from fitness.storage import Store
 
@@ -29,7 +31,7 @@ def legacy_trace(trace):
     """Old trace contract is preserved alongside the new tool/usage metadata."""
     return {key: value for key, value in trace.items()
             if key not in {'tool_calls', 'provider', 'trend', 'similar_history', 'training_adjustment_preview',
-                           'nutrition_planner'}}
+                           'nutrition_planner', 'parser_provider'}}
 
 
 def write_knowledge_library(root):
@@ -86,7 +88,23 @@ def write_knowledge_library(root):
 
 
 def configure_client(tmp_path, monkeypatch, *, missing_strategy=False):
-    monkeypatch.setattr(main.settings, "live_enabled", False)
+    monkeypatch.setattr(main, 'settings', Settings(api_key='synthetic-test-key'))
+
+    class ModelProvider:
+        def complete(self, messages, tools=None, **kwargs):
+            payload = json.loads(messages[1]['content'])
+            if '你是饮食规划 Agent' in messages[0]['content']:
+                from test_agent_runtime import final
+                return final({'approach': '测试模型按当次条件安排单餐',
+                    'daily_targets': payload['reference_targets'], 'questions': [], 'budget_note': '按实际价格核实',
+                    'meal_options': [{'meal': payload.get('meal') or '午餐',
+                        'suggestions': [payload.get('desired_foods') or '米饭配青菜', payload.get('conditions') or '份量按需调整']}]})
+            baseline = payload['baseline']
+            candidate = baseline if 'text' in payload else {'summary': baseline['summary']}
+            return ProviderReply(content=json.dumps(candidate, ensure_ascii=False))
+
+    monkeypatch.setattr('fitness.provider.OpenAICompatibleProvider', lambda _: ModelProvider())
+    monkeypatch.setattr('fitness.nutrition_live.OpenAICompatibleProvider', lambda _: ModelProvider())
     monkeypatch.setattr(main, "store", Store(tmp_path / "test.sqlite3"))
     candidates = tmp_path / "candidates.json"
     candidates.write_text(
@@ -169,9 +187,9 @@ def test_strength_baseline_round_trips_without_becoming_mandatory(client):
 
 
 def test_complete_confirm_correct_flow(client, profile_data):
-    assert client.post("/api/plans", json={"start_date": "2026-09-14", "mode": "demo"}).status_code == 409
+    assert client.post("/api/plans", json={"start_date": "2026-09-14", "mode": "live"}).status_code == 409
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
-    plan = client.post("/api/plans", json={"start_date": "2026-09-14", "mode": "demo"}).json()
+    plan = client.post("/api/plans", json={"start_date": "2026-09-14", "mode": "live"}).json()
     assert plan["status"] == "draft"
     assert plan["data"]["strategy_context"]
     assert plan["data"]["knowledge_context"]
@@ -184,15 +202,15 @@ def test_complete_confirm_correct_flow(client, profile_data):
     assert client.post(f"/api/plans/{plan['id']}/confirm").json()["status"] == "confirmed"
     feedback = client.post(
         "/api/feedback/parse",
-        json={"text": "完成训练，睡了6小时，今天很累，吃食堂", "date": "2026-09-14", "mode": "demo"},
+        json={"text": "完成训练，睡了6小时，今天很累，吃食堂", "date": "2026-09-14", "mode": "live"},
     ).json()
     path = f"/api/feedback/{feedback['id']}"
     assert feedback["data"]["intake_kcal"] is None
-    assert client.post(path + "/advice", json={"mode": "demo"}).status_code == 409
+    assert client.post(path + "/advice", json={"mode": "live"}).status_code == 409
     feedback["data"]["food_summary"] = None
     confirmed = client.post(path + "/confirm", json={"data": feedback["data"], "expected_revision": 0}).json()
     assert confirmed["revision"] == 1
-    advised = client.post(path + "/advice", json={"mode": "demo"}).json()
+    advised = client.post(path + "/advice", json={"mode": "live"}).json()
     assert advised["advice"]["knowledge_context"]
     assert len(advised["advice"]["knowledge_context"]) > 5
     assert legacy_trace(advised["trace"]) == {
@@ -226,12 +244,14 @@ def test_complete_confirm_correct_flow(client, profile_data):
         path + "/confirm", json={"data": confirmed["data"], "expected_revision": 1}
     ).json()
     assert corrected["advice"] is None
-    assert corrected["trace"] == {"steps": ["parser"]}
+    assert corrected['trace']['steps'] == ['parser']
+    assert corrected['trace']['parser_provider']['status'] == 'ok'
     persisted_after_correction = next(
         item for item in client.get("/api/state").json()["feedback"] if item["id"] == feedback["id"]
     )
     assert persisted_after_correction["advice"] is None
-    assert persisted_after_correction["trace"] == {"steps": ["parser"]}
+    assert persisted_after_correction['trace']['steps'] == ['parser']
+    assert persisted_after_correction['trace']['parser_provider']['status'] == 'ok'
     assert len(client.get(path + "/revisions").json()) == 2
 
 
@@ -241,7 +261,7 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
     unavailable_client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
     assert unavailable_client.get("/api/state").json()["knowledge_status"] == "unavailable"
     plan_response = unavailable_client.post(
-        "/api/plans", json={"start_date": "2026-09-21", "mode": "demo"}
+        "/api/plans", json={"start_date": "2026-09-21", "mode": "live"}
     )
     assert plan_response.status_code == 200
     plan = plan_response.json()
@@ -256,11 +276,11 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
 
     feedback = unavailable_client.post(
         "/api/feedback/parse",
-        json={"text": "睡了5小时，很累，吃外卖", "date": "2026-09-21", "mode": "demo"},
+        json={"text": "睡了5小时，很累，吃外卖", "date": "2026-09-21", "mode": "live"},
     ).json()
     path = f"/api/feedback/{feedback['id']}"
     unavailable_client.post(path + "/confirm", json={"data": feedback["data"], "expected_revision": 0})
-    advice_response = unavailable_client.post(path + "/advice", json={"mode": "demo"})
+    advice_response = unavailable_client.post(path + "/advice", json={"mode": "live"})
     assert advice_response.status_code == 200
     advised = advice_response.json()
     assert advised["advice"]["knowledge_context"] == []
@@ -277,7 +297,7 @@ def test_missing_knowledge_artifact_degrades_without_blocking_core_api(
 
 def test_advice_trace_keeps_generation_goal_after_profile_changes(client, profile_data):
     row = confirmed_feedback(client, profile_data)
-    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"}).json()
+    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "live"}).json()
     assert advised["trace"]["profile_goal"] == "fat_loss"
     assert advised["trace"]["issue_goal_context"] == [
         {"issue": "short_sleep", "terms": ["减脂"], "collections": ["fat_loss"]},
@@ -323,7 +343,7 @@ def test_plan_trace_reports_only_context_that_fit_persistence_limits(client, pro
     monkeypatch.setattr(main, "knowledge_context_service", OversizedService())
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
     assert client.get("/api/state").json()["knowledge_status"] == "capacity_exceeded"
-    plan = client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "demo"}).json()
+    plan = client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "live"}).json()
     assert plan["data"]["strategy_context"] == []
     assert plan["data"]["source_ids"] == []
     assert plan["trace"]["strategy_ids"] == []
@@ -349,7 +369,7 @@ def test_advice_trace_reports_atomic_capacity_degradation(client, profile_data, 
 
     monkeypatch.setattr(main, "knowledge_context_service", OversizedService())
     row = confirmed_feedback(client, profile_data)
-    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"}).json()
+    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "live"}).json()
 
     assert advised["advice"]["knowledge_context"] == []
     assert advised["advice"]["source_ids"] == []
@@ -378,7 +398,7 @@ def test_unavailable_plan_trace_takes_precedence_over_capacity(client, profile_d
 
     monkeypatch.setattr(main, "knowledge_context_service", OversizedService())
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
-    plan = client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "demo"}).json()
+    plan = client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "live"}).json()
 
     assert plan["data"]["strategy_context"] == []
     assert plan["trace"]["strategy_ids"] == []
@@ -393,14 +413,14 @@ def test_unexpected_context_programming_error_is_not_hidden(client, profile_data
     monkeypatch.setattr(main, "knowledge_context_service", BrokenService())
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
     with pytest.raises(RuntimeError, match="programming defect"):
-        client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "demo"})
+        client.post("/api/plans", json={"start_date": "2026-09-21", "mode": "live"})
 
 
 def confirmed_feedback(client, profile_data):
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
     feedback = client.post(
         "/api/feedback/parse",
-        json={"text": "睡了6小时", "date": "2026-09-21", "mode": "demo"},
+        json={"text": "睡了6小时", "date": "2026-09-21", "mode": "live"},
     ).json()
     client.post(
         f"/api/feedback/{feedback['id']}/confirm",
@@ -424,7 +444,7 @@ def test_advice_rejects_feedback_changed_during_generation(client, profile_data,
         return AdviceData(summary="陈旧结果", suggestions=["不应覆盖"])
 
     monkeypatch.setattr(main.agent, "advice", mutate_feedback)
-    response = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"})
+    response = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "live"})
     assert response.status_code == 409
     persisted = main.store.get_feedback(row["id"])
     assert persisted["advice"] == concurrent_advice
@@ -441,11 +461,12 @@ def test_advice_rejects_profile_changed_during_generation(client, profile_data, 
         return AdviceData(summary="旧档案结果", suggestions=["不应保存"])
 
     monkeypatch.setattr(main.agent, "advice", mutate_profile)
-    response = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"})
+    response = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "live"})
     assert response.status_code == 409
     persisted = main.store.get_feedback(row["id"])
     assert persisted["advice"] is None
-    assert persisted["trace"] == {"steps": ["parser"]}
+    assert persisted['trace']['steps'] == ['parser']
+    assert persisted['trace']['parser_provider']['status'] == 'ok'
 
 
 def test_state_defaults_to_live_when_configured(client, monkeypatch):
@@ -453,20 +474,25 @@ def test_state_defaults_to_live_when_configured(client, monkeypatch):
     monkeypatch.setattr(main.settings, "api_key", "test-key")
     state = client.get("/api/state").json()
     assert state["mode"] == "live"
-    assert state["available_modes"] == ["demo", "live"]
+    assert state["available_modes"] == ["live"]
+    assert state['model_configured'] is True
     monkeypatch.setattr(main.settings, "api_key", "")
-    assert client.get("/api/state").json()["mode"] == "demo"
+    state = client.get('/api/state').json()
+    assert state['mode'] == 'live'
+    assert state['model_configured'] is False
+    assert state['available_modes'] == []
 
 
-def test_live_is_unavailable_not_disguised_demo(client):
-    assert client.get("/api/state").json()["mode"] == "demo"
+def test_live_is_unavailable_not_disguised_demo(client, monkeypatch):
+    monkeypatch.setattr(main.settings, 'api_key', '')
+    assert client.get('/api/state').json()['model_configured'] is False
     response = client.post(
         "/api/feedback/parse", json={"text": "完成训练", "date": "2026-09-14", "mode": "live"}
     )
     assert response.status_code == 503
     assert response.json()["detail"] == {
-        "code": "mode_unavailable",
-        "message": "在线模型未启用或未配置密钥，请使用演示模式。",
+        "code": "model_not_configured",
+        "message": "请先在 .env 配置自己的模型 API：FITNESS_API_KEY、FITNESS_BASE_URL 和 FITNESS_MODEL，然后重启服务。",
         "retryable": False,
     }
     assert client.get("/api/state").json()["feedback"] == []
@@ -474,7 +500,7 @@ def test_live_is_unavailable_not_disguised_demo(client):
 
 def test_state_exposes_knowledge_status_and_export_endpoints(client, profile_data):
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})
-    plan = client.post("/api/plans", json={"start_date": "2026-09-22", "mode": "demo"}).json()
+    plan = client.post("/api/plans", json={"start_date": "2026-09-22", "mode": "live"}).json()
     assert client.get("/api/state").json()["knowledge_status"] == "ok"
 
     for export_type, query in (
@@ -498,7 +524,7 @@ def test_state_exposes_knowledge_status_and_export_endpoints(client, profile_dat
 
 def test_export_includes_recent_feedback_and_advice(client, profile_data):
     row = confirmed_feedback(client, profile_data)
-    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "demo"}).json()
+    advised = client.post(f"/api/feedback/{row['id']}/advice", json={"mode": "live"}).json()
 
     feedback_export = client.get("/api/export/feedback?format=csv")
     assert feedback_export.status_code == 200

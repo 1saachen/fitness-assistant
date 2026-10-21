@@ -109,6 +109,7 @@ def plan_nutrition_live(profile, settings, provider=None, **context):
         '按用户目标、预算、可用食物、口味和训练/休息状态安排，遵守过敏、不耐受和饮食限制。'
         'suggestions和alternatives仅列实际可吃的食物，避开过敏原、交叉接触等说明写在approach或budget_note中。'
         'personal_memory是带原文引用的个人反馈记忆，优先遵守仍有效的限制和偏好；pattern只是待验证归纳。'
+        '长期自报事实（retention=long_term）与档案共同用于规划，已有就餐方式、预算、过敏、健康和作息回答不重复询问；明确冲突或变化才确认。'
         'history可能包含原文复盘，不能把建议当成已经吃过的食物，也不能从单日记录推出永久偏好。'
         '档案所有字段可选，只依据已知信息；未知不是已确认没有。缺信息时给保守可用方案与假设，'
         '不要仅因字段空白强制追问；确实无法避开明确风险时才needs_input。过敏未知时不承诺食材安全，提醒核实。'

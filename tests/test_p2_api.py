@@ -32,10 +32,10 @@ def test_training_preview_confirm_stale_and_original_snapshot(client, profile_da
     today = date(2026, 10, 11)
     monkeypatch.setattr(main, '_history_end_date', lambda value: value or today)
     client.put('/api/profile', json={'profile':profile_data,'expected_version':0})
-    plan = client.post('/api/plans', json={'start_date':today.isoformat(),'mode':'demo'}).json()
+    plan = client.post('/api/plans', json={'start_date':today.isoformat(),'mode':'live'}).json()
     client.post(f"/api/plans/{plan['id']}/confirm")
     feedback = client.post('/api/feedback/parse', json={'text':'今天很累，没练',
-        'date':today.isoformat(),'mode':'demo'}).json()
+        'date':today.isoformat(),'mode':'live'}).json()
     fid = feedback['id']
     client.post(f'/api/feedback/{fid}/confirm', json={'data':feedback['data'],'expected_revision':0})
     preview = client.get(f'/api/feedback/{fid}/training-adjustment').json()
@@ -54,13 +54,13 @@ def test_training_preview_confirm_stale_and_original_snapshot(client, profile_da
 def test_abnormal_symptom_blocks_adjustment_and_preserves_warning(client, profile_data, monkeypatch):
     monkeypatch.setattr(main, '_history_end_date', lambda value: value or date(2026, 10, 11))
     client.put('/api/profile', json={'profile':profile_data,'expected_version':0})
-    plan = client.post('/api/plans', json={'start_date':'2026-10-11','mode':'demo'}).json()
+    plan = client.post('/api/plans', json={'start_date':'2026-10-11','mode':'live'}).json()
     client.post(f"/api/plans/{plan['id']}/confirm")
     feedback = client.post('/api/feedback/parse', json={'text':'胸痛，很累，没练',
-        'date':'2026-10-11','mode':'demo'}).json()
+        'date':'2026-10-11','mode':'live'}).json()
     fid = feedback['id']
     client.post(f'/api/feedback/{fid}/confirm', json={'data':feedback['data'],'expected_revision':0})
-    response = client.post(f'/api/feedback/{fid}/advice', json={'mode':'demo'})
+    response = client.post(f'/api/feedback/{fid}/advice', json={'mode':'live'})
     assert response.status_code == 200
     assert '立即停止' in response.json()['advice']['suggestions'][0]
     assert client.get(f'/api/feedback/{fid}/training-adjustment').json()['changes'] == []
@@ -70,7 +70,7 @@ def test_nutrition_endpoint_returns_targets_and_daily_conditions(client, profile
     client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0})
     result = client.post('/api/nutrition/plan', json={
         'date': '2026-10-11', 'meal': '午餐', 'conditions': '只能点外卖，预算18元',
-        'available_foods': '黄焖鸡、米饭、青菜', 'desired_foods': '黄焖鸡', 'mode': 'demo',
+        'available_foods': '黄焖鸡、米饭、青菜', 'desired_foods': '黄焖鸡', 'mode': 'live',
     })
     assert result.status_code == 200, result.text
     payload = result.json()
@@ -92,14 +92,14 @@ def test_nutrition_plan_can_consume_confirmed_feedback_conditions(client, profil
     client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0})
     feedback = client.post('/api/feedback/parse', json={
         'text': '今天午餐只能点外卖，能买到米饭和青菜，想吃鸡肉',
-        'date': '2026-10-11', 'mode': 'demo',
+        'date': '2026-10-11', 'mode': 'live',
     }).json()
     feedback['data'].update(meal_to_plan='午餐', meal_conditions='只能点外卖，预算18元',
                              available_foods='米饭、青菜、鸡肉', desired_foods='鸡肉')
     client.post(f"/api/feedback/{feedback['id']}/confirm",
                 json={'data': feedback['data'], 'expected_revision': 0})
     response = client.post('/api/nutrition/plan', json={
-        'date': '2026-10-11', 'feedback_id': feedback['id'], 'mode': 'demo',
+        'date': '2026-10-11', 'feedback_id': feedback['id'], 'mode': 'live',
     })
     assert response.status_code == 200
     assert '鸡肉' in str(response.json()['data']['meal_options'][0]['suggestions'])
@@ -112,10 +112,10 @@ def test_new_current_plan_between_preview_and_write_rejects_adjustment(client, p
     today = date(2026, 10, 11)
     monkeypatch.setattr(main, '_history_end_date', lambda value: value or today)
     client.put('/api/profile', json={'profile':profile_data, 'expected_version':0})
-    plan = client.post('/api/plans', json={'start_date':today.isoformat(), 'mode':'demo'}).json()
+    plan = client.post('/api/plans', json={'start_date':today.isoformat(), 'mode':'live'}).json()
     client.post(f"/api/plans/{plan['id']}/confirm")
     feedback = client.post('/api/feedback/parse', json={'text':'很累，没练',
-        'date':today.isoformat(), 'mode':'demo'}).json()
+        'date':today.isoformat(), 'mode':'live'}).json()
     fid = feedback['id']
     client.post(f'/api/feedback/{fid}/confirm', json={'data':feedback['data'], 'expected_revision':0})
     proposal = client.get(f'/api/feedback/{fid}/training-adjustment').json()

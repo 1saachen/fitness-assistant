@@ -82,6 +82,7 @@ data/knowledge/supplements/items.json
 data/knowledge/training/items.json
 
 # Superseded untracked design notes
+.superpowers/
 docs/plans/2026-09-10-mvp-implementation.md
 docs/specs/mvp-design.md
 docs/superpowers/plans/2026-09-15-batch-curation.md

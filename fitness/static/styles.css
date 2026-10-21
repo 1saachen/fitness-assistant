@@ -11,7 +11,6 @@
  .feedback-response h3 { margin-top: 1.4rem; }
  #personal-memory-content details { margin: .6rem 0; }
 
-.plan-stream-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
 .planning-questions { margin-bottom: 16px; padding: 16px; background: var(--mint); border-radius: 12px; }
 .planning-questions h3 { margin-top: 0; }
 .planning-questions p { margin: 8px 0; line-height: 1.7; }

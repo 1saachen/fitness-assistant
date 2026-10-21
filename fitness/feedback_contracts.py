@@ -20,6 +20,7 @@ class MemoryEvidence(SourceRef):
 class MemoryEntry(Contract):
     key: str = Field(min_length=1, max_length=100)
     category: Literal['fact', 'preference', 'restriction', 'question', 'pattern']
+    retention: Literal['temporary', 'long_term'] = 'temporary'
     text: str = Field(min_length=1, max_length=2000)
     sources: list[SourceRef] = Field(min_length=1, max_length=30)
     expires_on: date | None = None

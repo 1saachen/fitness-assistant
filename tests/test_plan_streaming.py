@@ -85,11 +85,18 @@ def test_readable_draft_arrives_before_extraction_and_counts_against_budget():
 
 def test_stream_routes_preserve_results_and_http_error_details(tmp_path, monkeypatch, profile_data):
     from fastapi.testclient import TestClient
+    from planning_provider import ModelledTestProvider
     from test_api import main
 
+    from fitness.config import Settings
+    from fitness.orchestration import FitnessAgent
     from fitness.storage import Store
 
     monkeypatch.setattr(main, 'store', Store(tmp_path / 'stream.db'))
+    monkeypatch.setattr(main, 'settings', Settings(api_key='synthetic-test-key'))
+    provider = ModelledTestProvider()
+    agent = FitnessAgent(main.store, None, main.settings, provider=provider)
+    monkeypatch.setattr(main, 'planning_service', lambda: agent)
     client = TestClient(main.app)
     client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0})
     result = client.post('/api/long-term-plans/stream', json={'start_date': '2026-10-21'})

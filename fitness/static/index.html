@@ -8,9 +8,9 @@
   <link rel="stylesheet" href="/static/styles.css?v=20261021-1">
   <link rel="stylesheet" href="/static/review.css">
   <link rel="stylesheet" href="/static/export.css">
-  <script src="/static/feedback-coach.js?v=20261021-2" defer></script>
+  <script src="/static/feedback-coach.js?v=20261021-4" defer></script>
   <script src="/static/app.js?v=20261021-6" defer></script>
-    <script src="/static/daily-plans.js?v=20261021-4" defer></script>
+    <script src="/static/daily-plans.js?v=20261021-6" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -27,7 +27,7 @@
     <div class="sidebar-footer"><span class="status-dot" aria-hidden="true"></span>本地 · 单人使用<p>从了解自己开始，<br>把健康融入日常。</p></div>
   </aside>
   <div class="workspace">
-    <header class="topbar"><span id="today-label">日常，也有进步</span><div class="mode-control"><label for="mode">生成模式</label><select id="mode"><option value="demo">演示模式</option><option value="live" disabled>在线模型（尚未接入）</option></select></div></header>
+    <header class="topbar"><span id="today-label">日常，也有进步</span><div class="mode-control"><span id="model-status" role="status">模型 API 待配置</span></div></header>
     <main id="main" tabindex="-1">
       <div id="notice" role="status" aria-live="polite" hidden></div>
       <div id="error" role="alert" hidden></div>
@@ -45,8 +45,8 @@
       </section>
       <section id="view-plan" class="view" aria-labelledby="plan-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">YOUR LONG-TERM DIRECTION</p><h1 id="plan-title">长期计划</h1><p class="subtitle">从已保存档案和训练反馈出发；训练频率、时长、经验、器械或运动限制未填写时，在线 Agent 会先询问你。</p></div></div>
-        <form id="long-term-form" class="card"><p id="planning-message" role="status" aria-live="polite" hidden></p><div id="long-term-questions" class="planning-questions" aria-live="polite" hidden></div><label for="long-term-conditions"><span id="long-term-conditions-label">补充条件</span><textarea id="long-term-conditions" maxlength="2000" rows="3" placeholder="可以补充档案里没填的信息；也可以留空，等在线 Agent 追问。"></textarea></label><button id="long-term-submit" class="button" type="submit">生成长期计划草案</button></form>
-        <div id="long-term-preview" class="card" hidden aria-label="正在生成的计划草稿"></div>
+        <form id="long-term-form" class="card"><p id="planning-message" role="status" aria-live="polite" hidden></p><p id="long-term-memory" role="status" class="field-hint" hidden></p><div id="long-term-questions" class="planning-questions" aria-live="polite" hidden></div><label for="long-term-conditions"><span id="long-term-conditions-label">补充条件</span><textarea id="long-term-conditions" maxlength="2000" rows="3" placeholder="可以补充档案里没填的信息；也可以留空，等在线 Agent 追问。"></textarea></label><button id="long-term-submit" class="button" type="submit">生成长期计划草案</button></form>
+        <div id="long-term-preview" class="card" hidden aria-label="计划正在处理"></div>
         <div id="long-term-history" class="history-selector"></div><div id="long-term-content"></div>
         <details class="card"><summary>历史周计划兼容</summary><p class="field-hint">保留原有周计划历史。请使用长期计划与当天计划安排后续训练和饮食。</p>
           <form id="plan-form" class="inline-form" hidden><label for="plan-date">计划开始日期<input id="plan-date" type="date" required></label><button class="button secondary" type="submit" id="generate-plan">生成旧版周计划草案</button></form>
@@ -56,8 +56,8 @@
       <section id="view-daily" class="view" aria-labelledby="daily-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">ONE DAY AT A TIME</p><h1 id="daily-title">当天计划</h1><p class="subtitle">训练、三餐、饮水和恢复，跟随你的实际反馈调整。</p></div></div>
         <p class="field-hint">打开本页时结合已有信息安排今天。日终复盘不会重写已经结束的一天；只有模型判断需要时才调整后续安排。你也可以主动更新尚未完成的内容。</p>
-        <form id="daily-form" class="card"><p id="daily-message" role="status" aria-live="polite" hidden></p><label for="daily-date">计划日期<input id="daily-date" type="date" required></label><div id="daily-questions" class="planning-questions" aria-live="polite" hidden></div><label for="daily-conditions"><span id="daily-conditions-label">当天条件</span><textarea id="daily-conditions" rows="3" maxlength="2000" placeholder="例如今天很累，想休息；午餐在食堂，预算15元。"></textarea></label><button id="daily-submit" class="button" type="submit">更新当天计划</button><button class="button secondary" type="button" id="daily-today">回到今天</button></form>
-        <div id="daily-preview" class="card" hidden aria-label="正在生成的计划草稿"></div>
+        <form id="daily-form" class="card"><p id="daily-message" role="status" aria-live="polite" hidden></p><label for="daily-date">计划日期<input id="daily-date" type="date" required></label><p id="daily-memory" role="status" class="field-hint" hidden></p><div id="daily-questions" class="planning-questions" aria-live="polite" hidden></div><label for="daily-conditions"><span id="daily-conditions-label">当天条件</span><textarea id="daily-conditions" rows="3" maxlength="2000" placeholder="例如今天很累，想休息；午餐在食堂，预算15元。"></textarea></label><button id="daily-submit" class="button" type="submit">更新当天计划</button><button class="button secondary" type="button" id="daily-today">回到今天</button></form>
+        <div id="daily-preview" class="card" hidden aria-label="计划正在处理"></div>
         <div id="daily-history" class="history-selector"></div><div id="daily-content"></div>
       </section>
       <section id="view-feedback" class="view" aria-labelledby="feedback-title" hidden>

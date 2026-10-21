@@ -22,7 +22,7 @@ class Settings:
     timezone: str = "Asia/Shanghai"
     timeout_seconds: float = 60
     max_steps: int = 5
-    live_enabled: bool = False
+    live_enabled: bool = True
     max_request_bytes: int = 128_000
     max_response_bytes: int = 128_000
     max_tool_calls: int = 1
@@ -43,6 +43,7 @@ class Settings:
             ord(char) < 32 or ord(char) == 127 for char in self.api_key
         ):
             raise ValueError("invalid API key format")
+        self.api_key = self.api_key.strip()
         if not math.isfinite(self.timeout_seconds) or not (0 < self.timeout_seconds <= 300):
             raise ValueError("timeout_seconds must be finite and between 0 and 300")
         if type(self.max_steps) is not int or not (1 <= self.max_steps <= 20):
@@ -83,5 +84,4 @@ class Settings:
             agent_max_revisions=int(os.getenv('FITNESS_AGENT_MAX_REVISIONS', '2')),
             agent_timeout_seconds=float(os.getenv('FITNESS_AGENT_TIMEOUT_SECONDS', '180')),
             agent_max_output_tokens=int(os.getenv('FITNESS_AGENT_MAX_OUTPUT_TOKENS', '4096')),
-            live_enabled=os.getenv("FITNESS_LIVE_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"},
         )

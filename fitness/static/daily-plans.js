@@ -10,7 +10,8 @@
     const detail = payload.detail;
     const base = typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg).join('；') : detail?.message || `请求失败（${status}）`;
     const extra = detail?.status === 'failed' && !base.includes('原有计划尚未按本次条件更新') ? '原有计划尚未按本次条件更新。' : '';
-    const error = new Error([base, ...list(detail?.questions), extra].filter(Boolean).join('\n'));
+    const memory = detail?.conditions_memory?.message;
+    const error = new Error([base, ...list(detail?.questions), memory && !base.includes(memory) ? memory : '', extra].filter(Boolean).join('\n'));
     error.detail = detail;
     error.httpStatus = status;
     return error;
@@ -126,8 +127,8 @@
     if (data.summary) card.append(node(doc, 'p', data.summary, 'plan-summary'));
     lines(doc, card, '训练规划假设', data.assumptions);
     if (!handlers.questionsInForm) lines(doc, card, '需要补充的训练信息', data.training_questions);
-    if (record.trace?.training_source) card.append(node(doc, 'p', `训练来源：${record.trace.training_source === 'model' ? '在线模型' : '本地规则'}`, 'metadata'));
-    if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '本地估算'}`, 'metadata'));
+    if (record.trace?.training_source) card.append(node(doc, 'p', `训练来源：${record.trace.training_source === 'model' ? '在线模型' : '旧版本地规则记录'}`, 'metadata'));
+    if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '旧版本地估算'}`, 'metadata'));
     card.append(node(doc, 'p', list(data.cycle).map(x => x.label).join(' → ') + ' → 循环', 'plan-summary'));
     list(data.cycle).forEach(step => { const section = node(doc, 'section'); training(doc, section, step); card.append(section); });
     nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm});
@@ -164,8 +165,8 @@
       detail.append(form); card.append(detail);
     });
     if (!handlers.questionsInForm) lines(doc, card, '需要补充的训练信息', decision.questions, 'notice-inline');
-    if (decision.provider) card.append(node(doc, 'p', `训练决策来源：${typeof decision.provider === 'string' ? decision.provider : ({demo: '本地规则', ok: '在线模型', live: '在线模型', preserved: '保留已完成记录', fallback: '本地回退', skipped_safety: '本地安全判断'}[decision.provider.status] || decision.provider.status || '未记录')}${decision.provider.reason ? ` · ${decision.provider.reason}` : ''}`, 'metadata'));
-    if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '本地估算'}`, 'metadata'));
+    if (decision.provider) card.append(node(doc, 'p', `训练决策来源：${typeof decision.provider === 'string' ? decision.provider : ({demo: '旧版本地规则记录', ok: '在线模型', live: '在线模型', preserved: '保留已完成记录', fallback: '旧版本地回退记录', skipped_safety: '安全暂停'}[decision.provider.status] || decision.provider.status || '未记录')}${decision.provider.reason ? ` · ${decision.provider.reason}` : ''}`, 'metadata'));
+    if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '旧版本地估算'}`, 'metadata'));
     nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm, completed: data.completed_meals, complete: handlers.complete ? meal => handlers.complete(record.id, meal, record.revision) : null});
     card.append(node(doc, 'h2', '饮水与恢复'));
     if (data.water) {
@@ -184,18 +185,28 @@
     if (!get('daily-form')) return;
     let state = {long_term_plans: [], daily_plans: []}, selectedLong = null, profileVersion, pending = Promise.resolve();
     const followups = new Map();
+    const displayedQuestions = {'long-term': [], daily: []};
     const pendingQuestions = {'long-term': [], daily: []};
     const followupKey = (url, body) => `${url}:${body?.date || body?.start_date || ''}:${body?.mode || ''}`;
     const localToday = () => new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
     get('daily-date').value = localToday();
-    const mode = () => get('mode').value || 'demo';
     const message = (value, error = false, scope = 'daily') => {
       const el = get(scope === 'long-term' ? 'planning-message' : 'daily-message');
       el.textContent = value || ''; el.hidden = !value; el.className = error ? 'notice-inline' : 'field-hint';
     };
+    function showMemory(scope, notice) {
+      const root = get(`${scope}-memory`); root.replaceChildren(); root.hidden = !notice;
+      if (!notice) return;
+      root.append(node(document, 'span', notice.message + ' '));
+      if (notice.feedback_id) {
+        const link = node(document, 'a', notice.status === 'failed' ? '查看原文并重试' : '查看原文与记忆');
+        link.href = `#feedback-${encodeURIComponent(notice.feedback_id)}`; root.append(link);
+      }
+    }
     function showQuestions(scope, groups = []) {
       const root = get(`${scope}-questions`); root.replaceChildren();
       const questions = [...new Set(pendingQuestions[scope].length ? pendingQuestions[scope] : groups.flatMap(list))];
+      displayedQuestions[scope] = questions;
       root.hidden = !questions.length;
       if (questions.length) {
         root.append(node(document, 'h3', '补充这些信息，让计划更适合你'));
@@ -216,29 +227,32 @@
           body.start_date = followup.start_date;
       }
       const generating = body && ['/api/long-term-plans', '/api/daily-plans'].includes(url);
+      if (generating && body.mode === 'live' && body.conditions?.trim()) {
+        body = {...body, answered_questions: [...displayedQuestions[scope]]};
+      }
       const streaming = generating && body.mode === 'live';
       const preview = generating ? get(url === '/api/long-term-plans' ? 'long-term-preview' : 'daily-preview') : null;
-      let status, draft;
+      let status;
       if (preview && streaming) {
         preview.hidden = false;
-        status = node(document, 'p', '正在生成草稿；校验完成后显示最终计划。', 'field-hint');
-        draft = node(document, 'div', '', 'plan-stream-text');
-        preview.replaceChildren(node(document, 'h3', '计划草稿 · 校验完成后以最终计划为准'), status, draft);
+        status = node(document, 'p', '正在生成计划；校验完成后显示最终内容。', 'field-hint');
+        preview.replaceChildren(status);
       } else if (preview) preview.hidden = true;
       try {
         const response = await fetch(streaming ? `${url}/stream` : url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json', ...(streaming ? {Accept: 'text/event-stream'} : {})}, ...(body === null ? {} : {body: JSON.stringify(body)})});
         const payload = response.ok && response.headers?.get('content-type')?.includes('text/event-stream')
           ? await readPlanStream(response, (event, data) => {
-            if (event === 'text' && draft) draft.textContent += data.text;
-            if (event === 'phase' && draft) draft.textContent += `\n\n${data.message}\n`;
+            if (event === 'memory') showMemory(scope, data);
             if ((event === 'status' || event === 'phase') && status) status.textContent = data.message;
           }) : await response.json();
         if (!response.ok) throw planningError(payload, response.status);
         followups.delete(key);
         if (generating) pendingQuestions[scope] = [];
+        if (payload.trace?.conditions_memory) showMemory(scope, payload.trace.conditions_memory);
         if (preview) preview.hidden = true;
         return payload;
       } catch (error) {
+        if (error.detail?.conditions_memory) showMemory(scope, error.detail.conditions_memory);
         if (url.startsWith('/api/long-term-plans') || url.startsWith('/api/daily-plans')) error.planningScope = scope;
         if (error.detail?.status === 'needs_input') {
           pendingQuestions[scope] = list(error.detail.questions);
@@ -263,20 +277,22 @@
       return pending;
     }
     async function load() { state = await request(`/api/planning/state?date=${encodeURIComponent(get('daily-date').value)}`); profileVersion = state.profile_version ?? profileVersion; render(); }
-    async function generate(conditions, generationMode = mode()) {
-      await request('/api/daily-plans', {date: get('daily-date').value, conditions, mode: generationMode});
+    async function generate(conditions) {
+      await request('/api/daily-plans', {date: get('daily-date').value, conditions, mode: 'live'});
       await load(); message('当天计划已更新，已完成的餐次与训练会保留。');
     }
     async function refresh(auto = false) {
       await load();
-      if (auto && shouldRefreshToday(state, get('daily-date').value, profileVersion)) {
-        const current = list(state.daily_plans).find(x => x.date === get('daily-date').value);
-        await generate(null, current?.trace?.mode || mode());
+      if (auto && state.model_configured && shouldRefreshToday(state, get('daily-date').value, profileVersion)) {
+        await generate(null);
       }
     }
     function render() {
       const records = list(state.long_term_plans), long = records.find(x => x.id === selectedLong) || records[0];
       selectedLong = long?.id;
+      get('long-term-submit').disabled = state.model_configured !== true;
+      get('daily-submit').disabled = state.model_configured !== true;
+      showMemory('long-term', long?.trace?.conditions_memory);
       showQuestions('long-term', [long?.data?.training_questions, long?.data?.nutrition?.questions]);
       const longHistory = get('long-term-history'); longHistory.replaceChildren();
       records.forEach(record => longHistory.append(button(document, `${record.start_date} · 版本 ${record.version} · ${record.status === 'confirmed' ? '已确认' : '草稿'}`, () => { selectedLong = record.id; render(); })));
@@ -285,6 +301,7 @@
         await refresh(!get('view-daily').hidden); message('长期计划已确认。', false, 'long-term');
       }, 'long-term')});
       const daily = list(state.daily_plans).find(x => x.date === get('daily-date').value);
+      showMemory('daily', daily?.trace?.conditions_memory);
       showQuestions('daily', [daily?.data?.decision?.questions, daily?.data?.nutrition?.questions]);
       renderDaily(get('daily-content'), daily, {questionsInForm: true, release: (id, area, expected_revision, confirmation_text) => run(async () => {
         const conditions = get('daily-conditions').value;
@@ -309,7 +326,7 @@
       }))));
     }
     get('long-term-form').addEventListener('submit', event => { event.preventDefault();
-      const body = {mode: mode()};
+      const body = {mode: 'live'};
       if (get('long-term-conditions')?.value) body.conditions = get('long-term-conditions').value;
       run(async () => { message('', false, 'long-term'); const created = await request('/api/long-term-plans', body); selectedLong = created.id; await load(); message('长期计划草案已生成，请检查后确认。', false, 'long-term'); }, 'long-term');
     });
@@ -318,7 +335,6 @@
     });
     get('daily-conditions').addEventListener('input', () => { get('daily-conditions').dataset.dirty = 'true'; });
     get('daily-date').addEventListener('change', () => { followups.clear(); pendingQuestions.daily = []; message(''); get('daily-conditions').dataset.dirty = ''; run(() => refresh(get('daily-date').value === state.today)); });
-    get('mode').addEventListener('change', () => { followups.clear(); pendingQuestions.daily = []; pendingQuestions['long-term'] = []; message(''); message('', false, 'long-term'); render(); });
     get('daily-today').addEventListener('click', () => { followups.clear(); pendingQuestions.daily = []; message(''); get('daily-date').value = state.today || localToday(); get('daily-conditions').dataset.dirty = ''; run(() => refresh(true)); });
     document.addEventListener('fitness-view-change', event => {
       if (event.detail?.view === 'daily') run(() => refresh(true));

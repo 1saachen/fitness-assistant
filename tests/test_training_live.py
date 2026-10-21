@@ -124,9 +124,10 @@ def test_conflicting_equipment_is_returned_to_model_for_repair(profile_data):
 
 
 def test_disabled_live_never_calls_provider(profile_data):
+    from fitness.config import Settings
     from fitness.training_agent import TrainingPlannerAgent
     provider = ScriptProvider([])
-    result = TrainingPlannerAgent(provider=provider).plan_day_live(task(profile_data))
+    result = TrainingPlannerAgent(Settings(live_enabled=False), provider).plan_day_live(task(profile_data))
     assert result.status == 'failed' and result.reason_code == 'live_disabled'
     assert provider.messages == []
 

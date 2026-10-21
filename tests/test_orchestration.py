@@ -68,16 +68,16 @@ def test_model_can_select_read_tool_and_only_rephrase_advice(tmp_path, profile_d
     assert any(t['input'].get('days') == 14 for t in result.trace['tool_calls'])
 
 
-def test_unknown_tool_or_unsafe_model_output_falls_back(tmp_path, profile_data):
+def test_unknown_tool_or_unsafe_model_output_is_rejected(tmp_path, profile_data):
     from fitness.orchestration import FitnessAgent
+    from fitness.provider import ProviderError
     store, row, service = setup_history(tmp_path, profile_data)
     class Provider:
         def complete(self, messages, tools=None):
             return SimpleNamespace(content=None, tool_calls=[{'id':'bad','name':'delete_database','arguments':{}}],
                                    usage={})
-    result = FitnessAgent(store, service, Settings(live_enabled=True), provider=Provider()).advise(row, 'live')
-    assert result.trace['provider']['status'] == 'fallback'
-    assert result.trace['provider']['reason'] == 'tool_invalid'
+    with pytest.raises(ProviderError, match='tool_invalid'):
+        FitnessAgent(store, service, Settings(live_enabled=True), provider=Provider()).advise(row, 'live')
     assert store.get_feedback(row['id'])['advice'] is None
 
 
@@ -114,13 +114,17 @@ def test_live_parse_chinese_numeral_is_grounded_and_not_saved(tmp_path, profile_
 
 def test_model_step_limit_cannot_loop_forever(tmp_path, profile_data):
     from fitness.orchestration import FitnessAgent
+    from fitness.provider import ProviderError
     store, row, service = setup_history(tmp_path, profile_data)
     class Provider:
+        count = 0
         def complete(self, messages, tools=None):
+            self.count += 1
             return SimpleNamespace(content=None, tool_calls=[{'id':'one', 'name':'get_profile', 'arguments':{}}], usage={})
-    result = FitnessAgent(store, service, Settings(live_enabled=True, max_steps=2), provider=Provider()).advise(row, 'live')
-    assert result.trace['provider']['reason'] == 'step_limit'
-    assert result.trace['provider']['calls'] == 2
+    provider = Provider()
+    with pytest.raises(ProviderError, match='step_limit'):
+        FitnessAgent(store, service, Settings(live_enabled=True, max_steps=2), provider=provider).advise(row, 'live')
+    assert provider.count == 2
 
 
 def test_live_timeout_counts_attempt_and_keeps_failed_tool_trace(tmp_path, profile_data):
@@ -130,9 +134,9 @@ def test_live_timeout_counts_attempt_and_keeps_failed_tool_trace(tmp_path, profi
     class Provider:
         def complete(self, messages, tools=None):
             raise ProviderError('timeout')
-    result = FitnessAgent(store, service, Settings(live_enabled=True), provider=Provider()).advise(row, 'live')
-    assert result.trace['provider']['calls'] == 1
-    assert result.trace['provider']['reason'] == 'timeout'
+    with pytest.raises(ProviderError, match='timeout'):
+        FitnessAgent(store, service, Settings(live_enabled=True), provider=Provider()).advise(row, 'live')
+    assert store.get_feedback(row['id'])['advice'] is None
 
 
 def test_multiple_adjustments_replay_chronologically(tmp_path, profile_data):

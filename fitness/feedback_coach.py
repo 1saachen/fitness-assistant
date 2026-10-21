@@ -31,6 +31,9 @@ COACH_GUIDE = '''你是持续陪伴用户的训练和饮食教练。反馈是对
 个人记忆是用户报告及你的归纳，专业知识是另一类来源，二者不可混为一谈。
 memory_updates 中 key 稳定：相同主题的更正使用同一 key 更新；retire_keys 仅用于当前原话明确否定/解除的旧条目。
 fact=用户明确报告；preference=持续偏好；restriction=运动/饮食限制；question=尚未解决的问题；
+由你判断是否值得保存，无信息价值可不记。retention=long_term用于明确可跨日复用的自报事实，
+例如主要就餐方式、日/周预算及币种、通常训练时间、健康和用药信息；expires_on留空，持续保留到用户更正。
+fact默认retention=temporary，单日状态和一次意愿不可标成长期；限制与持续偏好按原规则保留。
 pattern=你从多次记录得到的暂定模式，不能声称已证实因果。每条都引用已提供/检索的反馈ID和revision，
 新记忆必须包含本次反馈引用。没有信息价值的内容可以不记。单日疲劳、当天时间限制不能写成永久属性，
 每条新记忆evidence逐项提供feedback_id/revision/quote，quote必须是对应原文的逐字片段，每个sources都需引文。
@@ -192,6 +195,9 @@ class FeedbackCoach:
                 'recent_days': [{'date': r['date'], 'training': r['data']['training'],
                                  'completed_meals': r['data'].get('completed_meals'),
                                  'training_completed': r['data'].get('training_completed')} for r in days]}
+        source_context = row.get('trace', {}).get('source_context') or {}
+        task['source_context'] = source_context
+        task['answered_questions'] = source_context.get('answered_questions', [])
         return task, FeedbackReadTools(self.store, loaded, anchor)
 
     @staticmethod
@@ -294,7 +300,8 @@ class FeedbackCoach:
         document = MemoryDocument.model_validate({'entries': entries}).model_dump(mode='json')
         if estimated_tokens(entries) <= self.memory_budget:
             return document['entries'], 'updated', None
-        protected = {e['key']: e for e in document['entries'] if e['category'] in PROTECTED}
+        protected = {e['key']: e for e in document['entries']
+                     if e['category'] in PROTECTED or e.get('retention') == 'long_term'}
         source_set = {(s['feedback_id'], s['revision']) for e in entries for s in e['sources']}
         categories = {}
         originals = {e['key']: e for e in document['entries']}
@@ -336,7 +343,7 @@ class FeedbackCoach:
             return [] if valid else [ValidationIssue('entries', 'memory_compaction',
                 '保留所有保护条目及完整来源；fact只能保留原条目，不能新建或改写。汇总用pattern，不得编造来源。')]
         role = ('压缩个人记忆的上下文。合并重复事实和模式，保留时间、更正和证据来源；'
-                'preference/restriction/question为保护条目，逐字原样保留，不能改key或删除。'
+                'preference/restriction/question和retention=long_term为保护条目，逐字原样保留，不能改key或删除。'
                 'fact只能选择保留或移除原条目，保留时key/text/sources/expires_on全部原样；不得新建fact。'
                 '需要合并时用pattern标记为归纳，并引用原来源，不得把模式变为事实。原始记录另有永久保存。'
                 'pattern保留每个来源逐字evidence、event_date和expires_on，不得延后最早有效期；confirmed_at必须为空，supersedes为空。'
@@ -351,11 +358,15 @@ class FeedbackCoach:
 
     def analyze(self, ident, *, force=False):
         row, snapshot, claim = self.memory.begin(ident, force=force)
+        memory_only = row.get('trace', {}).get('source_context', {}).get('kind') in {'long_term_conditions', 'daily_conditions'}
         if snapshot is None:
-            return self.apply_decision(row)
+            return row if memory_only else self.apply_decision(row)
         task, tools = self.context(row)
         ignored_facts = []
         def validate(candidate, sources):
+            if memory_only:
+                candidate['decision'] = {'action': 'keep', 'reason': '补充信息已用于本次计划生成，不另行调整计划。'}
+                candidate['facts'] = None
             issues = self.validate(candidate, row, sources)
             for _ in range(30):
                 optional = [i for i in issues if i.path == 'facts' or i.path.startswith('facts.')]
@@ -382,7 +393,13 @@ class FeedbackCoach:
                         candidate['facts'] = None
                 issues = self.validate(candidate, row, sources)
             return issues
-        run = self.runtime().run(role=COACH_GUIDE + '\n候选契约：' + json.dumps(
+        guide = COACH_GUIDE
+        if memory_only:
+            guide += ('\n本次是计划表单补充，只理解并整理记忆，decision必须keep，facts必须null。'
+                      'answered_questions是被回答的问题，仅帮助理解简短回答；问题内容不是用户事实，不能作为引文。'
+                      '长期计划的开始日期不等于临时状态持续时间。明确习惯或可复用事实由你判断是否长期保存。'
+                      '已有回答不重复追问；不确定或缺失不能写成已确认没有。')
+        run = self.runtime().run(role=guide + '\n候选契约：' + json.dumps(
             FeedbackUnderstanding.model_json_schema(), ensure_ascii=False), task=task, tools=tools,
             validate=validate)
         if ignored_facts:
@@ -404,7 +421,7 @@ class FeedbackCoach:
             saved = self.memory.commit(row, snapshot, claim, understanding, compacted, memory_status, trace)
         except Conflict:
             return self.memory.fail(ident, claim, 'input_changed', trace)
-        return self.apply_decision(saved)
+        return saved if memory_only else self.apply_decision(saved)
 
     def apply_decision(self, row):
         coaching = row['coaching']

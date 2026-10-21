@@ -182,9 +182,42 @@ test('long-term form sends profile-led request without a date or fixed cycle and
   assert.ok(request);
   assert.equal(request.options.headers.Accept, 'text/event-stream');
   assert.equal(get('long-term-preview').hidden, true);
-  assert.deepEqual(JSON.parse(request.options.body), {
-    mode: 'live', conditions: '每周训练3次，每次45分钟；有杠铃和器械；目前没有运动限制',
+  const body = JSON.parse(request.options.body);
+  assert.equal(body.mode, 'live');
+  assert.equal(body.conditions, '每周训练3次，每次45分钟；有杠铃和器械；目前没有运动限制');
+  assert.deepEqual(body.answered_questions, []);
+});
+
+test('live planning keeps model draft text hidden until the validated result arrives', async () => {
+  const nodes = new Map();
+  const get = id => { if (!nodes.has(id)) nodes.set(id, new Element()); return nodes.get(id); };
+  get('view-daily').hidden = true;
+  get('mode').value = 'live';
+  get('long-term-conditions').value = '';
+  const listeners = {}, state = {today: '2026-10-20', profile_version: 3, long_term_plans: [], daily_plans: []};
+  let controller, pulls = 0;
+  const stream = new ReadableStream({
+    start(value) { controller = value; },
+    pull(value) {
+      if (pulls++ === 0) value.enqueue(new TextEncoder().encode('event: text\ndata: {"text":"不要显示的未校验草稿"}\n\n'));
+    },
   });
+  const document = {createElement: tag => new Element(tag), getElementById: get, querySelectorAll: () => [],
+    addEventListener: (name, fn) => { listeners[name] = fn; }};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../fitness/static/daily-plans.js'), 'utf8'),
+    {document, Intl, Date, console, TextDecoder, fetch: async url => url === '/api/long-term-plans/stream'
+      ? new Response(stream, {headers: {'content-type': 'text/event-stream'}})
+      : {ok: true, json: async () => state}});
+  const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
+  listeners.DOMContentLoaded(); await settle();
+  const submission = get('long-term-form').listeners.submit({preventDefault() {}});
+  await settle();
+  assert.equal(get('long-term-preview').hidden, false);
+  assert.match(get('long-term-preview').textContent, /正在生成计划/);
+  assert.ok(!get('long-term-preview').textContent.includes('不要显示的未校验草稿'));
+  controller.enqueue(new TextEncoder().encode('event: result\ndata: {"id":"long-new"}\n\n'));
+  controller.close();
+  await submission; await settle();
 });
 
 test('long-term follow-up reuses the asked date and snapshot token after an answer', async () => {
@@ -220,16 +253,18 @@ test('long-term follow-up reuses the asked date and snapshot token after an answ
   get('long-term-conditions').value = '每周3次，每次45分钟';
   await form.listeners.submit({preventDefault() {}}); await settle();
   assert.deepEqual(posts[0], {mode: 'live'});
-  assert.deepEqual(posts[1], {mode: 'live', conditions: '每周3次，每次45分钟',
+  assert.deepEqual(posts[1].answered_questions, ['每周能训练几次？']);
+  const {answered_questions, ...submitted} = posts[1];
+  assert.deepEqual(submitted, {mode: 'live', conditions: '每周3次，每次45分钟',
     expected_snapshot_token: 'a'.repeat(64), start_date: '2026-10-20'});
   assert.equal(get('long-term-questions').hidden, true);
 });
 
 async function planningPage(state, respond = async () => daily) {
+  state = {model_configured: true, ...state};
   const nodes = new Map(), listeners = {}, calls = [];
   const get = id => {if (!nodes.has(id)) nodes.set(id,new Element()); return nodes.get(id);};
   get('view-daily').hidden = true;
-  get('mode').value = 'demo';
   const document = {createElement:tag=>new Element(tag),getElementById:get,querySelectorAll:()=>[],
     addEventListener:(name,fn)=>{listeners[name]=fn;}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../fitness/static/daily-plans.js'),'utf8'),
@@ -257,23 +292,23 @@ test('saved training and nutrition questions appear together in their own plan f
 });
 
 test('recovery confirmation saves the release then regenerates that day', async () => {
-  const state = {today:'2026-10-20',long_term_plans:[],daily_plans:[daily]};
+  const state = {today:'2026-10-20',model_configured:true,long_term_plans:[],daily_plans:[daily]};
   const {get,calls,settle} = await planningPage(state);
   get('daily-conditions').value='今天可训练40分钟';
   const nodes = get('daily-content').children.flatMap(function walk(x){return [x,...x.children.flatMap(walk)];});
   nodes.find(x=>x.tagName==='textarea').value='肩部目前已无症状，医生允许逐步恢复';
   await nodes.find(x=>x.tagName==='form').listeners.submit({preventDefault(){}}); await settle();
   const writes=calls.filter(x=>x.options.method==='POST');
-  assert.deepEqual(writes.map(x=>x.url),['/api/daily-plans/day-1/restrictions/release','/api/daily-plans']);
+  assert.deepEqual(writes.map(x=>x.url),['/api/daily-plans/day-1/restrictions/release','/api/daily-plans/stream']);
   assert.equal(JSON.parse(writes[1].options.body).date,'2026-10-20');
   assert.equal(JSON.parse(writes[1].options.body).conditions,'今天可训练40分钟');
   assert.equal(get('planning-message').textContent,'');
 });
 
 test('recovery keeps the saved release when regeneration fails and explains the partial result', async () => {
-  const state = {today:'2026-10-20',long_term_plans:[],daily_plans:[daily]};
+  const state = {today:'2026-10-20',model_configured:true,long_term_plans:[],daily_plans:[daily]};
   const {get,settle} = await planningPage(state, async url => {
-    if (url === '/api/daily-plans') throw Error('模型暂时不可用');
+    if (url === '/api/daily-plans/stream') throw Error('模型暂时不可用');
     return daily;
   });
   const nodes = get('daily-content').children.flatMap(function walk(x){return [x,...x.children.flatMap(walk)];});
@@ -306,9 +341,8 @@ test('opening today preserves an existing plan, creates a missing plan, and futu
   const nodes = new Map();
   const get = id => { if (!nodes.has(id)) nodes.set(id, new Element()); return nodes.get(id); };
   get('view-daily').hidden = true;
-  get('mode').value = 'demo';
   const listeners = {}, calls = [];
-  const state = {today: '2026-10-20', profile_version: 2, long_term_plans: [{id: 'long-1', version: 1, profile_version: 2, status: 'confirmed', start_date: '2026-10-19', data: {}}], daily_plans: [{...daily, trace: {mode: 'live'}}]};
+  const state = {today: '2026-10-20', model_configured: true, profile_version: 2, long_term_plans: [{id: 'long-1', version: 1, profile_version: 2, status: 'confirmed', start_date: '2026-10-19', data: {}}], daily_plans: [{...daily, trace: {mode: 'live'}}]};
   const document = {createElement: tag => new Element(tag), getElementById: get, querySelectorAll: () => [], addEventListener: (name, fn) => { listeners[name] = fn; }};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../fitness/static/daily-plans.js'), 'utf8'), {document, Intl, Date, console, fetch: async (url, options = {}) => {
     calls.push({url, options});
@@ -324,8 +358,8 @@ test('opening today preserves an existing plan, creates a missing plan, and futu
   listeners['fitness-view-change']({detail: {view: 'daily'}}); await settle();
   const writes = calls.filter(x => x.options.method === 'POST');
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].url, '/api/daily-plans');
-  assert.deepEqual(JSON.parse(writes[0].options.body), {date: '2026-10-20', conditions: null, mode: 'demo'});
+  assert.equal(writes[0].url, '/api/daily-plans/stream');
+  assert.deepEqual(JSON.parse(writes[0].options.body), {date: '2026-10-20', conditions: null, mode: 'live'});
   listeners['fitness-state-change']({detail: {profile_version: 2, planning_update: {status: 'failed', message: '模型超时'}}}); await settle();
   assert.equal(calls.filter(x => x.options.method === 'POST').length, 1, 'saved feedback must not trigger an automatic model retry');
   assert.match(get('daily-message').textContent, /反馈已保存.*计划调整未完成.*模型超时/);
@@ -334,12 +368,12 @@ test('opening today preserves an existing plan, creates a missing plan, and futu
   assert.equal(calls.filter(x => x.options.method === 'POST').length, 1);
 });
 
-test('model training and local nutrition sources and assumptions are displayed separately', () => {
+test('model training and historical local nutrition sources are displayed separately', () => {
   const root = new Element();
   const record = {...daily, trace: {nutrition_source: 'deterministic_local'}, data: {...daily.data,
     decision: {...daily.data.decision, summary: '模型选择今天恢复', assumptions: ['时间按估算'], provider: {status: 'ok'}}}};
   ui.renderDaily(root, record, {}, doc);
-  for (const value of ['模型选择今天恢复', '时间按估算', '在线模型', '饮食来源：本地估算']) assert.ok(root.textContent.includes(value), value);
+  for (const value of ['模型选择今天恢复', '时间按估算', '在线模型', '饮食来源：旧版本地估算']) assert.ok(root.textContent.includes(value), value);
 });
 
 test('planning failure keeps questions and marks old plans as not updated', () => {
@@ -352,4 +386,10 @@ test('planning failure keeps questions and marks old plans as not updated', () =
   assert.ok(failed.message.includes('尚未按本次条件更新'));
   const existing = ui.planningError({detail: {status: 'failed', message: '工具调用格式不兼容。原有计划尚未按本次条件更新。'}}, 502);
   assert.equal((existing.message.match(/原有计划尚未按本次条件更新/g) || []).length, 1);
+});
+
+test('planning failure reports that the original answer was saved', () => {
+  const error = ui.planningError({detail: {status: 'failed', message: '生成失败',
+    conditions_memory: {status: 'failed', feedback_id: 'feedback-1', message: '补充原文已保存'}}}, 502);
+  assert.match(error.message, /补充原文已保存/);
 });
