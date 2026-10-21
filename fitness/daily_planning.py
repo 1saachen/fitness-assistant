@@ -94,7 +94,7 @@ class DailyPlanningService:
         self.nutrition = NutritionPlannerAgent(settings, provider)
 
     def create_long_term(self, start_date, labels=None, mode='demo', conditions=None, expected_snapshot_token=None,
-                         feedback_action_id=None):
+                         feedback_action_id=None, *, answered_questions=None):
         if feedback_action_id:
             saved = next((r for r in self.repo.long_terms() if r['trace'].get('feedback_action_id') == feedback_action_id), None)
             if saved:
@@ -104,6 +104,12 @@ class DailyPlanningService:
         record = snapshot['profile']
         if record is None:
             raise Conflict('请先保存档案。')
+        conditions_memory = None
+        if mode == 'live' and conditions and conditions.strip() and not feedback_action_id:
+            from .planning_memory import remember_conditions
+            snapshot, conditions_memory = remember_conditions(self, snapshot, start_date, conditions,
+                'long_term_conditions', answered_questions)
+            record = snapshot['profile']
         profile = Profile.model_validate(record['data'])
         run = None
         if mode == 'live':
@@ -111,7 +117,7 @@ class DailyPlanningService:
                 restrictions=self._restrictions(snapshot), conditions=conditions or '', conditions_recorded_at=now())
             task = self._task(snapshot, start_date, 'cycle', profile, conditions or '', state, cycle_labels=labels)
             run = self.training.plan_cycle_live(task, knowledge=self.knowledge)
-            self._require_ready(run, snapshot)
+            self._require_ready(run, snapshot, conditions_memory)
             cycle = run.candidate['cycle']
         else:
             cycle = self.training.build_cycle(profile, labels)
@@ -121,7 +127,7 @@ class DailyPlanningService:
             nutrition_run = self.nutrition.plan_live(profile, conditions=conditions or '', training_cycle=cycle,
                 history=compact_feedback_reports(snapshot['feedback'], end_date=start_date),
                 personal_memory=snapshot['personal_memory'])
-            self._require_ready(nutrition_run, snapshot)
+            self._require_ready(nutrition_run, snapshot, conditions_memory)
             nutrition = nutrition_run.candidate
         else:
             nutrition = self.nutrition.plan(profile).model_dump(mode='json')
@@ -132,6 +138,7 @@ class DailyPlanningService:
                        'general_health': '健康与体能'}
         data = {'title': goal_titles.get(profile.goals.primary, '个性化训练') + ' · 长期计划',
                 'goals': profile.goals.model_dump(mode='json'), 'cycle': cycle, 'nutrition': nutrition,
+                'conditions': conditions or '',
                 'review_after': (start_date + timedelta(days=14)).isoformat(),
                 'review_rules': ['结合连续体重、饥饿感、训练表现和执行情况复盘；单日波动不改写长期目标。',
                                  '持续疲劳、伤痛或难以执行时重新评估训练循环；长期修改保存新版本并确认。'],
@@ -150,6 +157,7 @@ class DailyPlanningService:
              'nutrition_provider': nutrition_run.trace if nutrition_run else {'status': 'demo'},
              'provider': run.trace if run else {'status': 'demo'},
              'mode': mode, 'feedback_action_id': feedback_action_id,
+             'conditions_memory': conditions_memory,
              'knowledge_status': context_persistence_status(context) if context else 'unavailable'},
             record['version'], expected_token=snapshot['token'] if run else None)
 
@@ -159,9 +167,11 @@ class DailyPlanningService:
             raise Conflict('输入已经变化，请刷新后重新评估。')
 
     @staticmethod
-    def _require_ready(run, snapshot):
+    def _require_ready(run, snapshot, conditions_memory=None):
         if run.status != 'draft_ready':
-            raise PlanningRunError(run, snapshot['token'])
+            error = PlanningRunError(run, snapshot['token'])
+            error.conditions_memory = conditions_memory
+            raise error
 
     @staticmethod
     def _restrictions(snapshot):
@@ -208,7 +218,8 @@ class DailyPlanningService:
             latest.setdefault(row['date'], row)
         return latest
 
-    def generate_day(self, day, conditions=None, mode='demo', expected_snapshot_token=None, feedback_action_id=None):
+    def generate_day(self, day, conditions=None, mode='demo', expected_snapshot_token=None, feedback_action_id=None,
+                     *, answered_questions=None):
         if feedback_action_id:
             saved = next((r for r in self.repo.days() if r['trace'].get('feedback_action_id') == feedback_action_id), None)
             if saved:
@@ -220,10 +231,16 @@ class DailyPlanningService:
             raise Conflict('请先保存档案并确认生效的长期计划。')
         if long['profile_version'] != record['version']:
             raise Conflict('档案已改变，请重新生成并确认长期计划。')
+        explicit_conditions = conditions is not None
+        conditions_memory = None
+        if explicit_conditions and mode == 'live' and conditions and conditions.strip() and not feedback_action_id:
+            from .planning_memory import remember_conditions
+            snapshot, conditions_memory = remember_conditions(self, snapshot, day, conditions,
+                'daily_conditions', answered_questions)
+            record, long = snapshot['profile'], snapshot['long_term']
         profile = Profile.model_validate(record['data'])
         latest = self._latest_days(snapshot['days'])
         current = latest.get(day.isoformat())
-        explicit_conditions = conditions is not None
         if conditions is None:
             conditions = current['data'].get('conditions', '') if current else ''
         conditions_recorded_at = (current.get('trace', {}).get('conditions_recorded_at', current['created_at'])
@@ -287,7 +304,7 @@ class DailyPlanningService:
                 restrictions=restrictions, conditions=conditions, conditions_recorded_at=conditions_recorded_at)
             task = self._task(snapshot, day, 'day', profile, conditions, state, cycle=cycle, cycle_index=index)
             run = self.training.plan_day_live(task, knowledge=self.knowledge)
-            self._require_ready(run, snapshot)
+            self._require_ready(run, snapshot, conditions_memory)
             candidate = run.candidate
             decision = {**candidate, 'cycle_index': index,
                 'next_cycle_index': (index + 1) % len(cycle) if candidate['action'] == 'skip' else index,
@@ -308,7 +325,7 @@ class DailyPlanningService:
             nutrition_run = self.nutrition.plan_live(profile, **nutrition_context, lock_daily_targets=True, completed_meals=eaten_rows,
                 history=compact_feedback_reports(snapshot['feedback'], end_date=day),
                 personal_memory=snapshot['personal_memory'])
-            self._require_ready(nutrition_run, snapshot)
+            self._require_ready(nutrition_run, snapshot, conditions_memory)
             nutrition = nutrition_run.candidate
         else:
             nutrition = self.nutrition.plan(profile, **nutrition_context).model_dump(mode='json')
@@ -351,6 +368,7 @@ class DailyPlanningService:
                 'recovery_guidance': long['data']['recovery_guidance'], 'review_suggestions': review}
         trace = {'steps': ['long_term_plan', 'confirmed_history', 'training_planner', 'nutrition_planner'],
                  'feedback_action_id': feedback_action_id,
+                 'conditions_memory': conditions_memory,
                  'mode': mode, 'training_source': 'model' if mode == 'live' else 'deterministic_local',
                  'nutrition_source': 'model' if nutrition_run else 'deterministic_local',
                  'nutrition_provider': nutrition_run.trace if nutrition_run else {'status': 'demo'},

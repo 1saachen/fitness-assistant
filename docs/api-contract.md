@@ -1,5 +1,13 @@
 # MVP HTTP contract
 
+## Required user model configuration (2026-10-21)
+
+All generation requests accept only `mode: "live"`, which is also the default when omitted. `demo` is rejected with 422. Long-term, daily, legacy weekly, nutrition, feedback parsing/advice, feedback understanding and plan retry endpoints require the user's configured model API. Missing configuration returns 503 with `detail.code: "model_not_configured"` before generation starts, including for streaming endpoints. Set `FITNESS_API_KEY`, `FITNESS_BASE_URL` and `FITNESS_MODEL` in `.env` and restart; the old `FITNESS_LIVE_ENABLED` environment switch is no longer used.
+
+`GET /api/state` always returns `mode: "live"`, plus `model_configured: boolean` and `available_modes: ["live"]` when configured or `[]` otherwise. `/api/planning/state` also includes `model_configured`. These fields indicate local configuration presence, not a successful upstream authentication check. Neither endpoint exposes the key.
+
+Profile/history access and original feedback recording remain available without a model. Model errors preserve existing plans and reports, and never return a locally generated replacement. Legacy provider failures return 502 (504 for timeout) with a safe reason code; current planning failures retain their structured error contract. Local validation and urgent-symptom safety stops remain active.
+
 ## Model-led daily feedback and personal memory (2026-10-21)
 
 Profiles accept optional `training.strength_baseline` fields: `squat_1rm_kg`, `bench_press_1rm_kg`, `deadlift_1rm_kg` (positive kg, total including bar), `pull_up_max_reps` (nonnegative integer for strict bodyweight pull-ups), `recorded_on` and `notes`. Missing measurements stay null, including for existing profiles. Notes identify estimated versus tested 1RM and differences in dates/technique. These user-reported starting references remain separate from planned `weight_kg` / `target_rpe` and feedback's actual performance. Planning models receive all three sources and prioritize comparable recent performance when calibrating future loads; feedback never silently overwrites profile 1RM. The feedback page no longer displays or fetches the trend panel; historical APIs and model read tools remain available.
@@ -18,7 +26,7 @@ All endpoints are same-origin JSON under `/api`. This release runs locally as a 
 
 ## Profile
 
-- `GET /api/state`: `{profile, profile_version, plans, feedback, mode, available_modes, model, plan_changes, example_available, knowledge_status, today}`. Profile may be null; plans/feedback are newest first. Default reports `mode: "demo"`, `available_modes: ["demo"]`, and `model: null`; explicit provider enablement and key add live availability. Today uses Asia/Shanghai by default. `knowledge_status` is `unknown` before a profile exists, otherwise `ok`, `unavailable`, or `capacity_exceeded`.
+- `GET /api/state`: `{profile, profile_version, plans, feedback, mode, available_modes, model, model_configured, plan_changes, example_available, knowledge_status, today}`. Profile may be null; plans/feedback are newest first. Always reports `mode: "live"`; `model_configured` shows whether an API key is present, and `available_modes` is `["live"]` or `[]`. Today uses Asia/Shanghai by default. `knowledge_status` is `unknown` before a profile exists, otherwise `ok`, `unavailable`, or `capacity_exceeded`.
 - `GET /api/example-profile`: the raw nested local example JSON, only on explicit click. No automatic database import.
 - `PUT /api/profile`: `{profile: <nested JSON>, expected_version: <0 for first save>}` → `{version, data, created_at}`. Profile retains the structure of `data/examples/demo-profile.json`. Extra fields rejected. Nullable fields stay null. Conflict returns 409.
 
@@ -45,7 +53,7 @@ The client reads an existing **today** plan on opening the daily view, and can g
 
 ## Weekly plans (compatibility)
 
-- `POST /api/plans`: `{start_date: "YYYY-MM-DD", mode: "demo" | "live"}` → plan record.
+- `POST /api/plans`: `{start_date: "YYYY-MM-DD", mode?: "live"}` → model-generated plan record. Missing API configuration returns 503; `demo` is rejected.
 - `POST /api/plans/{id}/confirm`: no body → confirmed record; repeat confirmation is idempotent. If profile changed since generation, returns 409.
 - Plan record: `{id, version, profile_version, status: "draft"|"confirmed", created_at, data, trace, mode}`.
 - Plan data: `{title, summary, days, nutrition, questions, source_ids, strategy_context, knowledge_context}`.
@@ -78,7 +86,7 @@ The client reads an existing **today** plan on opening the daily view, and can g
 
 ## Knowledge availability and compatibility
 
-Knowledge loading and validation are optional enrichment. If approved knowledge or the reviewed strategy artifact is missing, unreadable, or invalid, plan and advice generation still return 200 using the core rule-based behavior. Their nested context lists and trace ID lists are empty and `trace.knowledge_status` is `"unavailable"`. Storage failures, request validation failures, and unexpected programming errors are not converted to this fallback.
+Knowledge loading is optional context enrichment. If approved knowledge or the reviewed strategy artifact is missing, unreadable, or invalid, model planning can proceed without that context and reports `trace.knowledge_status: "unavailable"`; it never substitutes a locally generated plan. Storage failures, request validation failures, and unexpected programming errors are not converted to a knowledge fallback.
 
 ## Personal History
 
@@ -96,7 +104,7 @@ Five tabs: 概览, 我的档案, 长期计划, 当天计划, 每日反馈 (histo
 Do not hard-code user profile numbers into tracked HTML/JS; obtain them only when the user clicks import. Use an honest mode selector, visible save confirmations, reversible draft edits, loading buttons, dates, friendly errors and source links where supported. Source IDs are resolved using `GET /api/sources` → list of `{id, title, url, note}`. Exercise IDs resolved server-side. Treat all generated content as untrusted text, never raw HTML.
 # P1/P2 additions (2026-10-11)
 
-`GET /api/state` returns `available_modes`, optional configured `model`, and `plan_changes`. `demo` never calls a provider. `live` requires explicit enablement and a key; provider errors fall back to deterministic results with `trace.provider.status="fallback"` and a sanitized reason.
+`GET /api/state` returns `available_modes`, `model_configured`, optional configured `model`, and `plan_changes`. All generation uses the configured provider; provider errors return a sanitized explicit error and never substitute local generated content.
 
 The single agent saves ordered `trace.tool_calls`, deterministic trend and prior-only similar-history results, validated explanations, provider token totals and any parser provider metadata. Source snapshots and the previous optimistic revision/profile guards remain in place.
 
@@ -114,13 +122,13 @@ Plan data adds optional `recovery_guidance` and `supplement_guidance`; advice ad
 
 ## Model-led training requests and errors (phase 1)
 
-Long-term generation additionally accepts optional conditions (up to 10000 characters). Both long-term and daily generation accept expected_snapshot_token (64 hexadecimal characters). Submit the token from a needs-input response together with new conditions to establish a fresh run. Input changes return 409; no hidden model conversation is resumed. The default fixed cycle described above applies to demo; live produces a complete model candidate.
+Long-term generation additionally accepts optional conditions (up to 10000 characters). Both long-term and daily generation accept expected_snapshot_token (64 hexadecimal characters). Submit the token from a needs-input response together with new conditions to establish a fresh run. Input changes return 409; no hidden model conversation is resumed. The model produces the complete cycle candidate.
 
 Success retains existing record shapes. Long-term data adds summary, assumptions and training_questions. Daily decision adds model explanations, assumptions, optional scheduled_time and load_description. Trace records training_source, nutrition_source, mode, provider calls/usage, tool sequence, revisions, validation errors and retrieved source snapshots. Preserved completed training retains its original source; missing historical provenance is unknown.
 
 Errors return detail: {code, status, run_id, message, questions, retryable, snapshot_token}. Needs information returns 422 (planning_needs_input, retryable=false); provider/output failures return 502; timeouts return 504. Stale inputs remain 409. Failures never append a formal plan. Users can manually retry transient provider failures or answer questions through conditions.
 
-Legacy feedback confirmation returns `planning_update: {status: "none"}` and does not regenerate a daily plan. New live feedback uses the model-led decision flow described above. The UI shows planning failure separately, preserves the saved response and offers explicit retry. Earlier general fallback statements describe legacy weekly/advice/feedback paths only.
+Legacy feedback confirmation returns `planning_update: {status: "none"}` and does not regenerate a daily plan. The UI shows model-planning failure separately, preserves the saved response and offers explicit retry. Generation failures are never replaced by local generated output.
 
 ## Readable plan streaming (2026-10-21)
 

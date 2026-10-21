@@ -4,7 +4,7 @@ from typing import Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -37,6 +37,7 @@ from .orchestration import FitnessAgent
 from .plan_store import PlanRepository
 from .plan_streaming import stream_plan
 from .planning import context_persistence_status
+from .provider import ProviderError
 from .review import ReviewNotFound, ReviewService
 from .storage import Conflict, NotFound, Store
 from .tools import LocalTools
@@ -94,6 +95,9 @@ def planning_error_detail(exc, start_date=None):
             'message': '需要补充信息，请在条件中回答后重新生成。' if result.status == 'needs_input'
                 else f"本次模型规划未完成（{result.reason_code or result.status}），原有计划尚未按本次条件更新。",
             'retryable': retryable, 'snapshot_token': exc.snapshot_token}
+    if getattr(exc, 'conditions_memory', None):
+        detail['conditions_memory'] = exc.conditions_memory
+        detail['message'] += ' ' + exc.conditions_memory['message']
     if start_date is not None:
         detail['start_date'] = start_date.isoformat()
     return detail
@@ -112,16 +116,18 @@ def planning_state(date: date | None = None):
     return {'long_term_plans': repo.long_terms(),
             'daily_plans': list(DailyPlanningService._latest_days(repo.days()).values()),
             'profile_version': profile['version'] if profile else 0,
+            'model_configured': bool(settings.live_enabled and settings.api_key),
             'today': _history_end_date(None).isoformat()}
 
 
 @app.post('/api/long-term-plans')
 def long_term_plan(req: LongTermRequest):
-    require_demo(req.mode)
+    require_model()
     start_date = req.start_date or _history_end_date(None)
     try:
         return planning_service().create_long_term(start_date, req.cycle_labels, req.mode,
-            conditions=req.conditions, expected_snapshot_token=req.expected_snapshot_token)
+            conditions=req.conditions, expected_snapshot_token=req.expected_snapshot_token,
+            answered_questions=req.answered_questions)
     except PlanningRunError as exc:
         planning_http_error(exc, start_date)
     except (Conflict, NotFound) as exc:
@@ -140,16 +146,17 @@ def long_term_confirm(ident: str):
 
 @app.post('/api/long-term-plans/stream')
 def long_term_plan_stream(req: LongTermRequest):
-    require_demo(req.mode)
+    require_model()
     return stream_plan(lambda: long_term_plan(req))
 
 
 @app.post('/api/daily-plans')
 def daily_plan(req: DailyRequest):
-    require_demo(req.mode)
+    require_model()
     try:
         return planning_service().generate_day(req.date, req.conditions, req.mode,
-            expected_snapshot_token=req.expected_snapshot_token)
+            expected_snapshot_token=req.expected_snapshot_token,
+            answered_questions=req.answered_questions)
     except PlanningRunError as exc:
         planning_http_error(exc)
     except (Conflict, NotFound) as exc:
@@ -158,7 +165,7 @@ def daily_plan(req: DailyRequest):
 
 @app.post('/api/daily-plans/stream')
 def daily_plan_stream(req: DailyRequest):
-    require_demo(req.mode)
+    require_model()
     return stream_plan(lambda: daily_plan(req))
 
 
@@ -199,7 +206,7 @@ def import_preview(req: ImportRequest):
 
 @app.post('/api/nutrition/plan')
 def nutrition_plan_endpoint(req: NutritionPlanRequest):
-    require_demo(req.mode)
+    require_model()
     profile_record = store.profile()
     if not profile_record:
         raise HTTPException(409, '请先保存档案')
@@ -225,21 +232,18 @@ def nutrition_plan_endpoint(req: NutritionPlanRequest):
         'available_foods': req.available_foods, 'desired_foods': req.desired_foods,
         'already_eaten': req.already_eaten, 'budget_amount': req.budget_amount,
     }
-    if req.mode == 'live':
-        run = NutritionPlannerAgent(settings).plan_live(profile, **nutrition_context)
-        if run.status != 'draft_ready':
-            planning_http_error(PlanningRunError(run, ''))
-        if store.profile()['version'] != profile_record['version']:
-            raise HTTPException(409, '档案已经变化，请按新档案重新规划。')
-        return {'profile_version': profile_record['version'], 'data': run.candidate,
-                'source': 'model', 'trace': run.trace}
-    result = nutrition_agent.plan(profile, **nutrition_context)
-    return {'profile_version': profile_record['version'], 'data': result.model_dump(mode='json'),
-            'source': 'deterministic_local'}
+    run = NutritionPlannerAgent(settings).plan_live(profile, **nutrition_context)
+    if run.status != 'draft_ready':
+        planning_http_error(PlanningRunError(run, ''))
+    if store.profile()['version'] != profile_record['version']:
+        raise HTTPException(409, '档案已经变化，请按新档案重新规划。')
+    return {'profile_version': profile_record['version'], 'data': run.candidate,
+            'source': 'model', 'trace': run.trace}
 
 
 @app.post('/api/nutrition/memory/preview')
 def nutrition_memory_preview(req: NutritionMemoryPreviewRequest):
+    require_model()
     profile_record = store.profile()
     if not profile_record:
         raise HTTPException(409, '请先保存档案')
@@ -260,6 +264,7 @@ def import_confirm(req: ImportRequest):
 
 @app.get('/api/feedback/{ident}/training-adjustment')
 def adjustment_preview(ident: str):
+    require_model()
     try:
         row = store.get_feedback(ident)
         if row['status'] != 'confirmed':
@@ -272,6 +277,7 @@ def adjustment_preview(ident: str):
 
 @app.post('/api/feedback/{ident}/training-adjustment/confirm')
 def adjustment_confirm(ident: str, req: AdjustmentConfirm):
+    require_model()
     if not req.confirmed:
         raise HTTPException(400, '需要明确确认局部调整。')
     proposal = adjustment_preview(ident)
@@ -338,8 +344,9 @@ def state():
         "profile_version": record["version"] if record else 0,
         "plans": store.plans(),
         "feedback": _feedback_state(),
-        "mode": "live" if settings.live_enabled and settings.api_key else "demo",
-        "available_modes": ["demo", "live"] if settings.live_enabled and settings.api_key else ["demo"],
+        "mode": "live",
+        "available_modes": ["live"] if settings.live_enabled and settings.api_key else [],
+        "model_configured": bool(settings.live_enabled and settings.api_key),
         "model": settings.model if settings.live_enabled and settings.api_key else None,
         "plan_changes": store.plan_changes(),
         "example_available": settings.example_path.exists(),
@@ -360,13 +367,22 @@ def _feedback_state():
     return [memory.view(row) for row in rows]
 
 
-def require_demo(mode):
-    if mode != "demo" and not (settings.live_enabled and settings.api_key):
+def require_model():
+    if not (settings.live_enabled and settings.api_key):
         raise HTTPException(503, {
-            "code": "mode_unavailable",
-            "message": "在线模型未启用或未配置密钥，请使用演示模式。",
+            "code": "model_not_configured",
+            "message": "请先在 .env 配置自己的模型 API：FITNESS_API_KEY、FITNESS_BASE_URL 和 FITNESS_MODEL，然后重启服务。",
             "retryable": False,
         })
+
+
+@app.exception_handler(ProviderError)
+async def provider_error_handler(request, exc):
+    retryable = exc.reason_code in {'timeout', 'network_error', 'http_error'}
+    return JSONResponse(status_code=504 if exc.reason_code == 'timeout' else 502,
+        content={'detail': {'code': exc.reason_code,
+            'message': f'模型调用未完成（{exc.reason_code}），请检查自己的 API 配置后重试。',
+            'retryable': retryable}})
 
 
 @app.get("/api/example-profile")
@@ -386,7 +402,7 @@ def profile(req: ProfileSave):
 
 @app.post("/api/plans")
 def plan(req: PlanRequest):
-    require_demo(req.mode)
+    require_model()
     p = store.profile()
     if not p:
         raise HTTPException(409, "请先保存档案")
@@ -410,7 +426,7 @@ def confirm_plan(ident: str):
 
 @app.post("/api/feedback/parse")
 def parse(req: ParseRequest):
-    require_demo(req.mode)
+    require_model()
     run = FitnessAgent(store, knowledge_context_service, settings, rules=agent).parse(req.text, req.date, req.mode)
     return store.create_feedback(req.text, run.data.model_dump(mode='json'), req.mode, run.trace)
 
@@ -429,6 +445,7 @@ def record_feedback(req: FeedbackSubmit):
 
 @app.post('/api/feedback/{ident}/understand')
 def understand_feedback(ident: str, refresh: bool = False):
+    require_model()
     try:
         return feedback_coach().analyze(ident, force=refresh)
     except (Conflict, NotFound) as exc:
@@ -437,6 +454,7 @@ def understand_feedback(ident: str, refresh: bool = False):
 
 @app.post('/api/feedback/{ident}/retry-plan')
 def retry_feedback_plan(ident: str):
+    require_model()
     try:
         return feedback_coach().retry_plan(ident)
     except (Conflict, NotFound) as exc:
@@ -485,7 +503,7 @@ def confirm_feedback(ident: str, req: FeedbackConfirm):
         if not parser_usage and row['status'] == 'draft':
             parser_usage = (row.get('trace') or {}).get('provider')
         trace = {'steps':['parser']}
-        if parser_usage and parser_usage.get('status') != 'demo':
+        if parser_usage:
             trace['parser_provider'] = parser_usage
         saved = store.confirm_feedback(
             ident,
@@ -502,7 +520,7 @@ def confirm_feedback(ident: str, req: FeedbackConfirm):
 
 @app.post("/api/feedback/{ident}/advice")
 def advice(ident: str, req: ModeRequest):
-    require_demo(req.mode)
+    require_model()
     try:
         row = store.get_feedback(ident)
         if row["status"] != "confirmed":

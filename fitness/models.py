@@ -9,7 +9,7 @@ Text = Annotated[str, Field(max_length=2000)]
 Short = Annotated[str, Field(max_length=200)]
 KnowledgeTitle = Annotated[str, Field(max_length=300)]
 VideoTitle = Annotated[str, Field(max_length=500)]
-Mode = Literal["demo", "live"]
+Mode = Literal["live"]
 Equipment = Literal["bodyweight", "dumbbell", "barbell", "machine"]
 KnowledgeCollection = Literal["training", "fat_loss", "supplements", "sleep_recovery"]
 
@@ -306,13 +306,13 @@ class ProfileSave(Contract):
 
 class PlanRequest(Contract):
     start_date: Date
-    mode: Mode
+    mode: Mode = "live"
 
 
 class ParseRequest(Contract):
     text: str = Field(min_length=1, max_length=4000)
     date: Date
-    mode: Mode
+    mode: Mode = "live"
 
 
 class FeedbackConfirm(Contract):
@@ -321,7 +321,7 @@ class FeedbackConfirm(Contract):
 
 
 class ModeRequest(Contract):
-    mode: Mode
+    mode: Mode = "live"
 
 
 class NutritionPlanRequest(Contract):
@@ -333,7 +333,7 @@ class NutritionPlanRequest(Contract):
     desired_foods: Text | None = None
     already_eaten: Text | None = None
     budget_amount: float | None = Field(default=None, ge=0, le=1000)
-    mode: Mode = "demo"
+    mode: Mode = "live"
 
 
 class NutritionMemoryPreviewRequest(Contract):

@@ -149,7 +149,7 @@ class FeedbackMemory:
                 (memory['version'] + 1, encode({'entries': entries}), encode(trace), stamp))
             return self.current(db)
 
-    def record(self, text, day, *, timing='review', request_key=None, parent_feedback_id=None):
+    def record(self, text, day, *, timing='review', request_key=None, parent_feedback_id=None, source_context=None):
         key = request_key or str(uuid4())
         with self.store.connection() as db:
             db.execute('BEGIN IMMEDIATE')
@@ -157,7 +157,8 @@ class FeedbackMemory:
             if old:
                 row = self.store_row(db, old['feedback_id'])
                 if (row['raw_text'] != text or row['date'] != str(day) or old['timing'] != timing
-                        or old['parent_feedback_id'] != parent_feedback_id):
+                        or old['parent_feedback_id'] != parent_feedback_id
+                        or row['trace'].get('source_context') != source_context):
                     raise Conflict('同一提交标识的内容已变化，请使用新的提交。')
                 return self.view(row, db)
             if parent_feedback_id:
@@ -167,6 +168,8 @@ class FeedbackMemory:
             ident, stamp = str(uuid4()), now()
             data = FeedbackData(date=day).model_dump(mode='json')
             trace = {'steps': ['raw_feedback'], 'source': 'user_report'}
+            if source_context is not None:
+                trace['source_context'] = source_context
             db.execute('INSERT INTO feedback VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
                        (ident, str(day), text, 'confirmed', 1, encode(data), None, None,
                         'live', encode(trace), stamp, stamp))
@@ -284,6 +287,8 @@ class FeedbackMemory:
                 memory_version += 1
                 db.execute('INSERT INTO personal_memory VALUES (?,?,?,?)',
                            (memory_version, encode({'entries': entries}), encode(trace), now()))
+            elif memory_status != 'failed':
+                memory_status = 'unchanged'
             # Optional structured facts supplement the narrative; the original report is immutable.
             if understanding.get('facts'):
                 facts = {**row['data'], **{key: value for key, value in understanding['facts']['data'].items()

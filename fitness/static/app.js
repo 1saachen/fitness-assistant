@@ -1,6 +1,5 @@
-function preservedMode(current, payload) {
-  const available = payload.available_modes || ['demo'];
-  return available.includes(current) ? current : (payload.mode || 'demo');
+function preservedMode() {
+  return 'live';
 }
 
 function renderBriefExplanation(advice = {}, trace = {}) {
@@ -1155,12 +1154,12 @@ if (typeof document !== "undefined") {
     card.append(
       node(
         "p",
-        `${fmt(plan.start_date)} 起 · ${plan.mode === 'live' ? '在线辅助草案' : '演示草案'} · 使用档案版本 ${plan.profile_version}`,
+        `${fmt(plan.start_date)} 起 · ${plan.mode === 'live' ? '模型草案' : '历史草案'} · 使用档案版本 ${plan.profile_version}`,
         "metadata",
       ),
       renderExportActions("plan", plan.id),
     );
-    if (plan.trace?.provider?.status === 'fallback') card.append(node('p', '在线模型未完成，已使用本地规则生成。', 'notice-inline'));
+    if (plan.trace?.provider?.status === 'fallback') card.append(node('p', '历史记录：该计划由旧版本本地规则生成。', 'notice-inline'));
     if (plan.status === "draft" && plan.profile_version !== app.version)
       card.append(
         node(
@@ -1561,7 +1560,7 @@ if (typeof document !== "undefined") {
           try {
             const updated = await api(`/api/feedback/${item.id}/advice`, {
               method: "POST",
-              body: JSON.stringify({ mode: $("mode").value }),
+              body: JSON.stringify({ mode: 'live' }),
             });
             app.feedback = app.feedback.map((x) =>
               x.id === updated.id ? updated : x,
@@ -1586,7 +1585,7 @@ if (typeof document !== "undefined") {
         const target = event.currentTarget; busy(target, true);
         try {
           const response = await api('/api/nutrition/plan', {method:'POST', body:JSON.stringify({
-            date:item.date, feedback_id:item.id, mode:$("mode").value,
+            date:item.date, feedback_id:item.id, mode:'live',
           })});
           const data = response.data;
           const panel = document.createElement('section'); panel.className = 'advice-panel';
@@ -1660,7 +1659,7 @@ if (typeof document !== "undefined") {
       );
       const adviceStatusMessage = knowledgeStatusMessage(item.trace?.knowledge_status);
       if (adviceStatusMessage) advice.append(node("p", adviceStatusMessage, "notice-inline"));
-      if (item.trace?.provider?.status === 'fallback') advice.append(node('p', '在线模型未完成，已回退为本地规则建议。', 'notice-inline'));
+      if (item.trace?.provider?.status === 'fallback') advice.append(node('p', '历史记录：该建议由旧版本本地规则生成。', 'notice-inline'));
       const list = document.createElement("ul");
       item.advice.suggestions.forEach((x) => list.append(node("li", x)));
       advice.append(list);
@@ -1704,19 +1703,16 @@ if (typeof document !== "undefined") {
       app.plans.find((x) => x.id === app.plan?.id) || app.plans[0] || null;
     app.selectedFeedback =
       app.feedback.find((x) => x.id === app.selectedFeedback?.id) || null;
-    $("mode").value = app.mode;
-    [...$("mode").options].find(option => option.value === 'live').textContent = '在线模型';
-    [...$("mode").options].forEach((option) => {
-      option.disabled = !(payload.available_modes || ["demo"]).includes(
-        option.value,
-      );
-    });
+    const configured = payload.model_configured === true;
+    $("model-status").textContent = configured ? `模型：${payload.model}` : '模型 API 待配置';
+    for (const id of ['long-term-submit', 'daily-submit', 'generate-plan']) $(id).disabled = !configured;
+    $('memory-preview-form').querySelector('button[type="submit"]').disabled = !configured;
     $("import-profile").disabled = !payload.example_available;
     $("today-label").textContent = `今天是 ${payload.today || today()}`;
     $("mode-note").textContent =
-      app.mode === "live"
+      configured
         ? `在线模型：${payload.model || "已配置"}。长期计划草稿需确认；反馈先保存，再由模型理解回应。`
-        : "演示模式：使用本地规则生成，不调用外部模型。";
+        : "请先在 .env 配置自己的模型 API：FITNESS_API_KEY、FITNESS_BASE_URL 和 FITNESS_MODEL，然后重启服务。配置前可填写档案、保存反馈和查看历史，智能生成暂不可用。";
     const globalKnowledgeStatus = knowledgeStatusMessage(app.knowledgeStatus);
     if (globalKnowledgeStatus) $("mode-note").textContent += ` ${globalKnowledgeStatus}`;
     renderProfile();
@@ -1726,7 +1722,7 @@ if (typeof document !== "undefined") {
     renderFeedbackEditor(app.selectedFeedback);
     renderKnowledgeList();
     renderKnowledgeDetail();
-    document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {profile_version: app.version}}));
+    document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {profile_version: app.version, model_configured: configured}}));
   }
   document.addEventListener("DOMContentLoaded", async () => {
     $('plan-content').addEventListener('submit', async (event) => {
@@ -1824,19 +1820,6 @@ if (typeof document !== "undefined") {
     document
       .querySelectorAll("[data-go]")
       .forEach((el) => el.addEventListener("click", () => go(el.dataset.go)));
-    $("mode").addEventListener("change", () => {
-      app.mode = $("mode").value;
-      $("mode-note").textContent = app.mode === "live"
-        ? "在线模型：使用本地工具读取事实；失败或输出未通过校验时回退本地结果，并显示原因。"
-        : "演示模式：使用本地规则生成，不调用外部模型。";
-      const status = knowledgeStatusMessage(app.knowledgeStatus);
-      if (status) $("mode-note").textContent += ` ${status}`;
-      show(
-        app.mode === "live"
-          ? "已切换到在线模型；失败时将保留本地结果并显示回退原因。"
-          : "已切换到演示模式。",
-      );
-    });
     $("import-profile").addEventListener("click", async (event) => {
       const target = event.currentTarget;
       busy(target, true);
@@ -1885,7 +1868,7 @@ if (typeof document !== "undefined") {
           method: "POST",
           body: JSON.stringify({
             start_date: $("plan-date").value,
-            mode: $("mode").value,
+            mode: 'live',
           }),
         });
         app.plans.unshift(plan);
@@ -1907,34 +1890,16 @@ if (typeof document !== "undefined") {
       const target = $("parse-feedback");
       busy(target, true);
       try {
-        if ($('mode').value === 'live') {
-          const body = {text: $('feedback-text').value, date: $('feedback-date').value,
-            timing: $('feedback-timing').value, parent_feedback_id: null};
-          const signature = JSON.stringify(body);
-          if (app.feedbackSubmission?.signature !== signature) app.feedbackSubmission = {
-            signature, key: crypto.randomUUID()};
-          const item = await api('/api/feedback/record', {method:'POST',
-            body:JSON.stringify({...body, request_key:app.feedbackSubmission.key})});
-          putFeedback(item);
-          show('原文已保存，模型正在结合以往反馈与个人记忆理解。');
-          await understandFeedback(item.id);
-          return;
-        }
-        const item = await api("/api/feedback/parse", {
-          method: "POST",
-          body: JSON.stringify({
-            text: $("feedback-text").value,
-            date: $("feedback-date").value,
-            mode: $("mode").value,
-          }),
-        });
-        await loadDailyPlans().catch(() => {});
-        app.feedback.unshift(item);
-        app.selectedFeedback = item;
-        renderFeedbackHistory();
-        renderFeedbackEditor(item);
-        renderOverview();
-        show("反馈草稿已生成，请核对字段后保存。");
+        const body = {text: $('feedback-text').value, date: $('feedback-date').value,
+          timing: $('feedback-timing').value, parent_feedback_id: null};
+        const signature = JSON.stringify(body);
+        if (app.feedbackSubmission?.signature !== signature) app.feedbackSubmission = {
+          signature, key: crypto.randomUUID()};
+        const item = await api('/api/feedback/record', {method:'POST',
+          body:JSON.stringify({...body, request_key:app.feedbackSubmission.key})});
+        putFeedback(item);
+        show('原文已保存，模型正在结合以往反馈与个人记忆理解。');
+        await understandFeedback(item.id);
       } catch (error) {
         show(error.message, true);
       } finally {

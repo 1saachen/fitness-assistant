@@ -117,8 +117,9 @@ test('memory view explains event dates, expiry, evidence and legacy verification
   const root=new Element('div');
   ui.renderMemory(root,{version:2,expired_keys:['old'],entries:[{key:'x',category:'fact',text:'今天很累',
     event_date:'2026-10-21',expires_on:'2026-11-03',verification:'legacy_unverified',sources:[],
-    evidence:[{quote:'我今天有点累'}],supersedes:['old-fatigue']}]},doc);
-  for(const phrase of ['2026-10-21','2026-11-03','我今天有点累','待核实','已过期','old-fatigue'])
+    evidence:[{quote:'我今天有点累'}],supersedes:['old-fatigue']},
+    {key:'budget',category:'fact',retention:'long_term',text:'伙食预算50元/天',sources:[],evidence:[]}]},doc);
+  for(const phrase of ['2026-10-21','2026-11-03','我今天有点累','长期保留','待核实','已过期','old-fatigue'])
     assert.ok(root.textContent.includes(phrase),phrase);
 });
 

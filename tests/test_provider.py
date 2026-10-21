@@ -32,11 +32,11 @@ TOOLS = [{"type": "function", "function": {"name": "get_profile", "parameters": 
     "type": "object", "properties": {}, "additionalProperties": False}}}]
 
 
-def test_default_live_is_disabled_and_no_transport_is_called():
+def test_default_requires_api_key_and_no_transport_is_called():
     p = provider_module()
     calls = []
     transport = httpx.MockTransport(lambda request: calls.append(request))
-    with pytest.raises(p.ProviderError, match="live_disabled"):
+    with pytest.raises(p.ProviderError, match="missing_api_key"):
         p.OpenAICompatibleProvider(Settings(), transport=transport).complete([])
     assert calls == []
 
@@ -132,7 +132,7 @@ def test_env_explicit_enablement_and_key_endpoint_boundary(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek-secret")
     monkeypatch.setenv("FITNESS_BASE_URL", "https://other.example/v1")
     assert Settings.from_env().api_key == ""
-    assert Settings.from_env().live_enabled is False
+    assert Settings.from_env().live_enabled is True
     monkeypatch.setenv("FITNESS_LIVE_ENABLED", "true")
     monkeypatch.setenv("FITNESS_TIMEOUT_SECONDS", "12")
     monkeypatch.setenv("FITNESS_MAX_STEPS", "3")

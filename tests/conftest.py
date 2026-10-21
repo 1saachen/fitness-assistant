@@ -1,6 +1,16 @@
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def block_real_model_network(monkeypatch):
+    import httpx
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('Tests must use a mock model transport, never a real API key')
+
+    monkeypatch.setattr(httpx.HTTPTransport, 'handle_request', forbidden)
+
+
 @pytest.fixture
 def profile_data():
     """Synthetic test profile, independent from the user's local example."""

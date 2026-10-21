@@ -7,6 +7,21 @@ from fitness.models import Profile
 from fitness.storage import Conflict, Store
 
 
+def configure_model_api(monkeypatch, store):
+    from planning_provider import ModelledTestProvider
+    from test_api import main
+
+    from fitness.orchestration import FitnessAgent
+
+    settings = Settings(api_key='synthetic-test-key')
+    provider = ModelledTestProvider()
+    agent = FitnessAgent(store, main.knowledge_context_service, settings, provider=provider)
+    monkeypatch.setattr(main, 'settings', settings)
+    monkeypatch.setattr(main, 'planning_service', lambda: agent)
+    monkeypatch.setattr('fitness.provider.OpenAICompatibleProvider', lambda *args, **kwargs: provider)
+    monkeypatch.setattr('fitness.nutrition_live.OpenAICompatibleProvider', lambda *args, **kwargs: provider)
+
+
 @pytest.fixture
 def planner(tmp_path, profile_data):
     from fitness.daily_planning import DailyPlanningService
@@ -207,7 +222,9 @@ def test_daily_revision_rejects_stale_meal_completion(planner):
 def test_new_api_full_loop_and_feedback_refresh(tmp_path, monkeypatch, profile_data):
     from fastapi.testclient import TestClient
     from test_api import main
-    monkeypatch.setattr(main, 'store', Store(tmp_path / 'api.db'))
+    store = Store(tmp_path / 'api.db')
+    monkeypatch.setattr(main, 'store', store)
+    configure_model_api(monkeypatch, store)
     monkeypatch.setattr(main, '_history_end_date', lambda value: value or date(2026, 10, 20))
     client = TestClient(main.app)
     assert client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0}).status_code == 200
@@ -216,7 +233,7 @@ def test_new_api_full_loop_and_feedback_refresh(tmp_path, monkeypatch, profile_d
     assert client.post(f"/api/long-term-plans/{draft.json()['id']}/confirm").status_code == 200
     daily = client.post('/api/daily-plans', json={'date':'2026-10-20'}).json()
     assert daily['data']['training']['label'] == '推'
-    parsed = client.post('/api/feedback/parse', json={'date':'2026-10-20', 'text':'今天很累不想练', 'mode':'demo'}).json()
+    parsed = client.post('/api/feedback/parse', json={'date':'2026-10-20', 'text':'今天很累不想练', 'mode':'live'}).json()
     assert client.post(f"/api/feedback/{parsed['id']}/confirm", json={
         'data': parsed['data'], 'expected_revision': parsed['revision']}).status_code == 200
     state = client.get('/api/planning/state?date=2026-10-20').json()
@@ -229,7 +246,9 @@ def test_new_api_full_loop_and_feedback_refresh(tmp_path, monkeypatch, profile_d
 def test_planning_state_keeps_complete_history_and_real_today(tmp_path, monkeypatch, profile_data):
     from fastapi.testclient import TestClient
     from test_api import main
-    monkeypatch.setattr(main, 'store', Store(tmp_path / 'state.db'))
+    store = Store(tmp_path / 'state.db')
+    monkeypatch.setattr(main, 'store', store)
+    configure_model_api(monkeypatch, store)
     monkeypatch.setattr(main, '_history_end_date', lambda value: date(2026, 10, 20) if value is None else value)
     client = TestClient(main.app)
     assert client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0}).status_code == 200
@@ -245,7 +264,9 @@ def test_planning_state_keeps_complete_history_and_real_today(tmp_path, monkeypa
 def test_restriction_release_api_records_a_revision(tmp_path, monkeypatch, profile_data):
     from fastapi.testclient import TestClient
     from test_api import main
-    monkeypatch.setattr(main, 'store', Store(tmp_path / 'release.db'))
+    store = Store(tmp_path / 'release.db')
+    monkeypatch.setattr(main, 'store', store)
+    configure_model_api(monkeypatch, store)
     client = TestClient(main.app)
     assert client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0}).status_code == 200
     draft = client.post('/api/long-term-plans', json={'start_date': '2026-10-20'}).json()

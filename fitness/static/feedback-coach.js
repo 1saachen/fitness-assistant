@@ -104,6 +104,7 @@
       link.href = update.plan_id ? `#plan-${encodeURIComponent(update.plan_id)}` : '#plan'; panel.append(link);
     }
     const memoryLabels = {failed: '本次个人记忆未更新，保留之前的版本；原始反馈和本次回应仍已保存。',
+      unchanged: '模型判断本次没有需要新增或修改的个人记忆。',
       compacted: '个人记忆已整理并压缩，原始反馈和旧记忆版本继续保留。', updated: '个人记忆已整理，保留原文引用。'};
     panel.append(make('p', memoryLabels[coach.memory_status] || '本次无需新增记忆。', 'field-hint'));
     if (coach.memory_status === 'failed' && handlers.retry) panel.append(button('重新理解并整理记忆', () => handlers.retry(item.id, true)));
@@ -125,6 +126,7 @@
     list(memory.entries).forEach(entry => {
       const detail = make('details', ''); detail.append(make('summary', `${names[entry.category] || entry.category} · ${entry.text}`));
       if (entry.event_date) detail.append(make('p', `事件日期：${entry.event_date}${entry.expires_on ? ` · 有效至 ${entry.expires_on}` : ''}`));
+      if (entry.retention === 'long_term') detail.append(make('p', '长期保留，后续计划会继续参考；可通过补充反馈更正。'));
       if (entry.verification === 'legacy_unverified') detail.append(make('p','旧记忆，原文依据待核实；可通过补充反馈更正。'));
       if (entry.verification === 'source_changed_recheck') detail.append(make('p','来源已更正，待重新理解；限制保留到明确解除。'));
       if (entry.verification === 'user_confirmed') detail.append(make('p','这条偏好已由你明确确认。'));

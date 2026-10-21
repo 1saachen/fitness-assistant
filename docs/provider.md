@@ -1,6 +1,6 @@
-# Optional provider adapter
+# Required model provider
 
-The provider is an opt-in OpenAI-compatible HTTP adapter. `FITNESS_LIVE_ENABLED=false` is the default and is checked before constructing any network request. Set it to `true` only in a local environment with a deliberate provider endpoint and API key. HTTPS is required for remote endpoints; HTTP is accepted only for localhost test transports. A DeepSeek key is used only when `FITNESS_BASE_URL` is a DeepSeek endpoint, so changing the endpoint cannot accidentally send that key elsewhere.
+The application requires the user's OpenAI-compatible model API for all AI generation. Configure `FITNESS_API_KEY`, `FITNESS_BASE_URL` and `FITNESS_MODEL`, then restart. Missing credentials block generation; the page and original local records remain accessible. There is no demo mode or failure fallback in the HTTP API. The old `FITNESS_LIVE_ENABLED` environment variable is ignored. HTTPS is required for remote endpoints; HTTP is accepted only for localhost test transports. A DeepSeek key is used only when `FITNESS_BASE_URL` is a DeepSeek endpoint, so changing the endpoint cannot accidentally send that key elsewhere.
 
 The Python contract is:
 
@@ -28,11 +28,11 @@ has_urgent_symptoms(text) -> bool
 
 Advice can change only its natural-language summary and suggestions. A plan can change only its summary. Sources, citations, exercises, sets, reps, nutrition fields, guidance, explanations, and every other structured field remain immutable. The feedback validator permits a newly extracted sleep, weight, intake, or completion value only when a bounded deterministic pattern finds the same explicit fact in the original text; ambiguous or ungrounded values are rejected. New narrative fact fields must be exact excerpts from the input. `health_guardrails` always handles known conditions, medications, pregnancy/postpartum context, and abnormal symptoms even when no provider is available.
 
-New plan/advice wording cannot add quantified facts absent from the rule wording or claim personal outcomes and causality. Such content produces `SafetyError("ungrounded_claim")` so orchestration retains the validated baseline. This is a conservative wording filter, not a general proof that arbitrary prose is true.
+New legacy plan/advice wording cannot add quantified facts absent from the rule wording or claim personal outcomes and causality. Such content produces `SafetyError("ungrounded_claim")`; orchestration rejects the result and the API returns an explicit error. This is a conservative wording filter, not a general proof that arbitrary prose is true.
 
 DeepSeek `prompt_cache_hit_tokens` and `prompt_cache_miss_tokens` are accepted only as bounded nonnegative integer counters and included in usage accounting. No pricing or cost is inferred from cache counters. New feedback uncertainty entries must be original-text excerpts or narrow generic extraction ambiguity messages; they cannot introduce new medications or health facts.
 
-Tests inject `httpx.MockTransport` and do not call a real API. Keep live mode off in CI and demos.
+Tests inject mock providers or `httpx.MockTransport` and block real model HTTP transports. They do not use a real API key or make billed requests.
 
 ## Model-led training (phase 1)
 
@@ -40,4 +40,4 @@ The long-term/daily live training role returns complete candidates, independentl
 
 Provider timeout overrides use the remaining run time capped by the per-call configuration. The transport checks elapsed time during response streaming; the runtime also checks after provider/validation work. Synchronous interruption remains limited by underlying blocking transport timeouts; arbitrary custom providers are not forcibly interrupted.
 
-Training candidates pass structure, equipment, estimated-time, restriction, execution-fact and source-ID checks. Failed runs never call the demo planner as a substitute. Urgent symptoms cause a local safety stop with zero provider calls and skipped_safety provenance. Unresolved activity restrictions conservatively prevent new training. Ordinary fatigue remains model input. Time validation assumes four seconds per repetition, prescribed between-set rest and three minutes warm-up; unilateral/timed movements, transitions and actual pace still need review. Nutrition remains deterministic_local and main-model delegation is a later phase. Earlier wording/fallback descriptions apply to legacy weekly/advice/feedback paths.
+Training candidates pass structure, equipment, estimated-time, restriction, execution-fact and source-ID checks. Failed runs never call a local planner as a substitute. Urgent symptoms cause a local safety stop with zero provider calls and skipped_safety provenance; API generation still requires model configuration first. Unresolved activity restrictions conservatively prevent new training. Ordinary fatigue remains model input. Time validation assumes four seconds per repetition, prescribed between-set rest and three minutes warm-up; unilateral/timed movements, transitions and actual pace still need review. Training and nutrition are model generated, with local validation, target calculations and preservation of completed content.

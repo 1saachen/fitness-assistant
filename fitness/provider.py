@@ -1,4 +1,4 @@
-"""Opt-in, bounded OpenAI-compatible transport. It never executes tools."""
+"""Bounded OpenAI-compatible model transport. It never executes tools."""
 
 import codecs
 import json
