@@ -159,6 +159,69 @@ def test_streamed_usage_and_response_size_limits_are_preserved():
         provider.complete([], on_text=lambda _: None)
 
 
+@pytest.mark.parametrize('combined', [False, True])
+@pytest.mark.parametrize('limit,text', [(128_000, '今天练腿' * 256), (1024, 'x' * 1024)],
+                         ids=['normal_chinese_plan', 'exact_text_limit'])
+def test_stream_metadata_does_not_consume_the_plan_text_budget(combined, limit, text):
+    seen = []
+    frames = [('data: ' + json.dumps({
+        'id': 'completion-example', 'object': 'chat.completion.chunk',
+        'created': 1792540800, 'model': 'test-model', 'system_fingerprint': 'test',
+        'choices': [{'index': 0, 'delta': {'content': char}, 'finish_reason': None}],
+    }, ensure_ascii=False) + '\n\n').encode() for char in text]
+    frames.extend([sse(finish='stop'),
+        b'data: {"choices":[],"usage":{"total_tokens":1024}}\n\n', b'data: [DONE]\n\n'])
+    assert sum(map(len, frames)) > limit
+
+    class Stream(httpx.SyncByteStream):
+        def __iter__(self):
+            if combined:
+                yield b''.join(frames)
+            else:
+                yield frames[0]
+                assert seen == [text[0]]
+                yield from frames[1:]
+
+    provider = OpenAICompatibleProvider(
+        Settings(live_enabled=True, api_key='test', max_response_bytes=limit),
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, stream=Stream())))
+    reply = provider.complete([], on_text=seen.append)
+    assert reply.content == ''.join(seen) == text
+    assert reply.usage == provider.usage_totals == {'total_tokens': 1024}
+
+
+def test_stream_text_budget_counts_utf8_bytes_before_emitting_overflow():
+    seen = []
+
+    class Stream(httpx.SyncByteStream):
+        def __iter__(self):
+            yield sse({'content': '今' * 341})
+            yield sse({'content': '天'})
+            pytest.fail('must stop reading when the text budget is exceeded')
+
+    provider = OpenAICompatibleProvider(
+        Settings(live_enabled=True, api_key='test', max_response_bytes=1024),
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, stream=Stream())))
+    with pytest.raises(ProviderError, match='response_too_large'):
+        provider.complete([], on_text=seen.append)
+    assert seen == ['今' * 341]
+
+
+def test_stream_transport_budget_stops_excessive_metadata_without_text():
+    class Stream(httpx.SyncByteStream):
+        def __iter__(self):
+            for _ in range(300):
+                yield b':' + b'x' * 1024 + b'\n\n'
+            pytest.fail('metadata must have a finite transport budget')
+
+    provider = OpenAICompatibleProvider(
+        Settings(live_enabled=True, api_key='test', max_response_bytes=1024),
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, stream=Stream())))
+    with pytest.raises(ProviderError, match='response_too_large'):
+        provider.complete([], max_output_tokens=256,
+            on_text=lambda _: pytest.fail('metadata must not be emitted as text'))
+
+
 def test_provider_stops_reading_at_done_even_if_upstream_keeps_connection_open():
     class Stream(httpx.SyncByteStream):
         def __iter__(self):

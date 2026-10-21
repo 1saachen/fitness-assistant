@@ -14,6 +14,8 @@ OpenAICompatibleProvider.complete(messages, tools=None, *, timeout_seconds=None,
 
 Stable reason codes include `live_disabled`, `missing_api_key`, `invalid_request`, `request_too_large`, `response_too_large`, `timeout`, `network_error`, `http_error`, `invalid_response`, and `invalid_tool_call`. Error messages and logs never include prompts, response bodies, authorization headers, cookies, or API keys. The request log contains only model, latency, HTTP status, and provider-reported token counters. Cost is omitted when the provider does not supply it.
 
+Non-streaming responses are bounded by `Settings.max_response_bytes` (128,000 bytes by default). For streaming text, that same limit applies to the accumulated UTF-8 content, checked before each fragment is emitted. Repeated SSE metadata has a separate transport budget of `max_response_bytes + max_output_tokens * 1024` bytes; raw SSE data is parsed incrementally rather than retained in a second response buffer. This allows ordinary token-by-token plans without removing the bounds on oversized text, metadata-only streams, or incomplete responses.
+
 Model wording is independently checked by `fitness.safety` before it can be applied:
 
 ```python
