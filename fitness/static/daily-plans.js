@@ -112,7 +112,7 @@
     });
     root.append(grid);
     if (data.budget_note) root.append(node(doc, 'p', data.budget_note, 'field-hint'));
-    lines(doc, root, '需要补充的信息', data.questions, 'notice-inline');
+    if (!options.questionsInForm) lines(doc, root, '需要补充的信息', data.questions, 'notice-inline');
   }
   function renderLongTerm(root, record, handlers = {}, doc = document) {
     root.replaceChildren();
@@ -125,12 +125,12 @@
     card.append(node(doc, 'h2', '训练循环'));
     if (data.summary) card.append(node(doc, 'p', data.summary, 'plan-summary'));
     lines(doc, card, '训练规划假设', data.assumptions);
-    lines(doc, card, '需要补充的训练信息', data.training_questions);
+    if (!handlers.questionsInForm) lines(doc, card, '需要补充的训练信息', data.training_questions);
     if (record.trace?.training_source) card.append(node(doc, 'p', `训练来源：${record.trace.training_source === 'model' ? '在线模型' : '本地规则'}`, 'metadata'));
     if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '本地估算'}`, 'metadata'));
     card.append(node(doc, 'p', list(data.cycle).map(x => x.label).join(' → ') + ' → 循环', 'plan-summary'));
     list(data.cycle).forEach(step => { const section = node(doc, 'section'); training(doc, section, step); card.append(section); });
-    nutrition(doc, card, data.nutrition);
+    nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm});
     card.append(node(doc, 'h3', `下次复盘参考日期：${text(data.review_after)}`));
     lines(doc, card, '复盘原则', data.review_rules);
     lines(doc, card, '恢复安排', data.recovery_guidance);
@@ -163,10 +163,10 @@
       form.addEventListener('submit', event => {event.preventDefault(); const statement = String(input.value || '').trim(); if (statement.length >= 5 && statement.length <= 1000) return handlers.release(record.id, restriction.area, record.revision, statement);});
       detail.append(form); card.append(detail);
     });
-    lines(doc, card, '需要补充的训练信息', decision.questions, 'notice-inline');
+    if (!handlers.questionsInForm) lines(doc, card, '需要补充的训练信息', decision.questions, 'notice-inline');
     if (decision.provider) card.append(node(doc, 'p', `训练决策来源：${typeof decision.provider === 'string' ? decision.provider : ({demo: '本地规则', ok: '在线模型', live: '在线模型', preserved: '保留已完成记录', fallback: '本地回退', skipped_safety: '本地安全判断'}[decision.provider.status] || decision.provider.status || '未记录')}${decision.provider.reason ? ` · ${decision.provider.reason}` : ''}`, 'metadata'));
     if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '本地估算'}`, 'metadata'));
-    nutrition(doc, card, data.nutrition, {completed: data.completed_meals, complete: handlers.complete ? meal => handlers.complete(record.id, meal, record.revision) : null});
+    nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm, completed: data.completed_meals, complete: handlers.complete ? meal => handlers.complete(record.id, meal, record.revision) : null});
     card.append(node(doc, 'h2', '饮水与恢复'));
     if (data.water) {
       if (data.water.base_ml != null) card.append(node(doc, 'p', `基础饮水参考 ${text(data.water.base_ml)} 毫升`, 'nutrition-targets'));
@@ -184,14 +184,30 @@
     if (!get('daily-form')) return;
     let state = {long_term_plans: [], daily_plans: []}, selectedLong = null, profileVersion, pending = Promise.resolve();
     const followups = new Map();
+    const pendingQuestions = {'long-term': [], daily: []};
     const followupKey = (url, body) => `${url}:${body?.date || body?.start_date || ''}:${body?.mode || ''}`;
     const localToday = () => new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
     get('daily-date').value = localToday();
     const mode = () => get('mode').value || 'demo';
-    const message = (value, error = false) => {
-      ['planning-message', 'daily-message'].forEach(id => { const el = get(id); el.textContent = value || ''; el.hidden = !value; el.className = error ? 'notice-inline' : 'field-hint'; });
+    const message = (value, error = false, scope = 'daily') => {
+      const el = get(scope === 'long-term' ? 'planning-message' : 'daily-message');
+      el.textContent = value || ''; el.hidden = !value; el.className = error ? 'notice-inline' : 'field-hint';
     };
+    function showQuestions(scope, groups = []) {
+      const root = get(`${scope}-questions`); root.replaceChildren();
+      const questions = [...new Set(pendingQuestions[scope].length ? pendingQuestions[scope] : groups.flatMap(list))];
+      root.hidden = !questions.length;
+      if (questions.length) {
+        root.append(node(document, 'h3', '补充这些信息，让计划更适合你'));
+        questions.forEach(question => root.append(node(document, 'p', question)));
+      }
+      get(`${scope}-conditions-label`).textContent = questions.length ? '回答以上问题，也可以补充其他条件' : scope === 'daily' ? '当天条件' : '补充条件';
+      get(`${scope}-conditions`).placeholder = questions.length ? '可以按顺序回答；不确定的内容请说明“暂不清楚”。'
+        : scope === 'daily' ? '例如今天很累，想休息；午餐在食堂，预算15元。' : '可以补充档案里没填的信息；也可以留空，规划时会按需询问。';
+      get(`${scope}-submit`).textContent = questions.length ? '提交补充并继续生成' : scope === 'daily' ? '更新当天计划' : '生成长期计划草案';
+    }
     const request = async (url, body) => {
+      const scope = url.startsWith('/api/long-term-plans') ? 'long-term' : 'daily';
       const key = followupKey(url, body);
       const followup = followups.get(key);
       if (body && followup) {
@@ -219,9 +235,17 @@
           }) : await response.json();
         if (!response.ok) throw planningError(payload, response.status);
         followups.delete(key);
+        if (generating) pendingQuestions[scope] = [];
         if (preview) preview.hidden = true;
         return payload;
       } catch (error) {
+        if (url.startsWith('/api/long-term-plans') || url.startsWith('/api/daily-plans')) error.planningScope = scope;
+        if (error.detail?.status === 'needs_input') {
+          pendingQuestions[scope] = list(error.detail.questions);
+          error.message = error.detail.message || '请回答以下问题后继续生成。';
+          showQuestions(scope);
+          if (preview) preview.hidden = true;
+        }
         if (error.detail?.status === 'needs_input' && error.detail.snapshot_token)
           followups.set(key, {snapshot_token: error.detail.snapshot_token, start_date: error.detail.start_date});
         if (error.httpStatus === 409) followups.delete(key);
@@ -229,11 +253,11 @@
         throw error;
       }
     };
-    function run(work) {
+    function run(work, scope = 'daily') {
       pending = pending.catch(() => {}).then(async () => {
         const controls = [...document.querySelectorAll('#long-term-form input, #long-term-form textarea, #long-term-form button, #long-term-content button, #daily-form input, #daily-form textarea, #daily-form button, #daily-content button, #daily-history button, #long-term-history button')].map(el => [el, el.disabled]);
         controls.forEach(([el]) => { el.disabled = true; });
-        try { await work(); } catch (error) { message(error.message, true); }
+        try { await work(); } catch (error) { message(error.message, true, error.planningScope || scope); }
         finally { controls.forEach(([el, disabled]) => { el.disabled = disabled; }); }
       });
       return pending;
@@ -253,16 +277,26 @@
     function render() {
       const records = list(state.long_term_plans), long = records.find(x => x.id === selectedLong) || records[0];
       selectedLong = long?.id;
+      showQuestions('long-term', [long?.data?.training_questions, long?.data?.nutrition?.questions]);
       const longHistory = get('long-term-history'); longHistory.replaceChildren();
       records.forEach(record => longHistory.append(button(document, `${record.start_date} · 版本 ${record.version} · ${record.status === 'confirmed' ? '已确认' : '草稿'}`, () => { selectedLong = record.id; render(); })));
-      renderLongTerm(get('long-term-content'), long, {confirm: id => run(async () => {
+      renderLongTerm(get('long-term-content'), long, {questionsInForm: true, confirm: id => run(async () => {
         await request(`/api/long-term-plans/${encodeURIComponent(id)}/confirm`, null);
-        await refresh(!get('view-daily').hidden); message('长期计划已确认。');
-      })});
+        await refresh(!get('view-daily').hidden); message('长期计划已确认。', false, 'long-term');
+      }, 'long-term')});
       const daily = list(state.daily_plans).find(x => x.date === get('daily-date').value);
-      renderDaily(get('daily-content'), daily, {release: (id, area, expected_revision, confirmation_text) => run(async () => {
+      showQuestions('daily', [daily?.data?.decision?.questions, daily?.data?.nutrition?.questions]);
+      renderDaily(get('daily-content'), daily, {questionsInForm: true, release: (id, area, expected_revision, confirmation_text) => run(async () => {
+        const conditions = get('daily-conditions').value;
         await request(`/api/daily-plans/${encodeURIComponent(id)}/restrictions/release`, {area, expected_revision, confirmation_text});
-        await load(); message('恢复确认已保存。请点击“更新当天计划”重新评估训练安排，后续仍会结合反馈检查。');
+        await load();
+        try {
+          await generate(conditions);
+          message('恢复确认已保存，当天训练安排已重新评估。');
+        } catch (error) {
+          error.message = '恢复确认已保存，但训练安排重新评估未完成。' + error.message;
+          throw error;
+        }
       }), complete: (id, meal, expected_revision) => run(async () => {
         await request(`/api/daily-plans/${encodeURIComponent(id)}/meals/complete`, {meal, expected_revision});
         await load(); message(`${meal}已记录为完成，后续更新保留这餐。`);
@@ -277,16 +311,30 @@
     get('long-term-form').addEventListener('submit', event => { event.preventDefault();
       const body = {mode: mode()};
       if (get('long-term-conditions')?.value) body.conditions = get('long-term-conditions').value;
-      run(async () => { const created = await request('/api/long-term-plans', body); selectedLong = created.id; await load(); message('长期计划草案已生成，请检查后确认。'); });
+      run(async () => { message('', false, 'long-term'); const created = await request('/api/long-term-plans', body); selectedLong = created.id; await load(); message('长期计划草案已生成，请检查后确认。', false, 'long-term'); }, 'long-term');
     });
     get('daily-form').addEventListener('submit', event => { event.preventDefault(); const conditions = get('daily-conditions').value;
-      run(async () => { await generate(conditions); get('daily-conditions').dataset.dirty = ''; });
+      run(async () => { message(''); await generate(conditions); get('daily-conditions').dataset.dirty = ''; });
     });
     get('daily-conditions').addEventListener('input', () => { get('daily-conditions').dataset.dirty = 'true'; });
-    get('daily-date').addEventListener('change', () => { followups.clear(); get('daily-conditions').dataset.dirty = ''; run(() => refresh(get('daily-date').value === state.today)); });
-    get('mode').addEventListener('change', () => followups.clear());
-    get('daily-today').addEventListener('click', () => { get('daily-date').value = state.today || localToday(); get('daily-conditions').dataset.dirty = ''; run(() => refresh(true)); });
-    document.addEventListener('fitness-view-change', event => { if (event.detail?.view === 'daily') run(() => refresh(true)); });
+    get('daily-date').addEventListener('change', () => { followups.clear(); pendingQuestions.daily = []; message(''); get('daily-conditions').dataset.dirty = ''; run(() => refresh(get('daily-date').value === state.today)); });
+    get('mode').addEventListener('change', () => { followups.clear(); pendingQuestions.daily = []; pendingQuestions['long-term'] = []; message(''); message('', false, 'long-term'); render(); });
+    get('daily-today').addEventListener('click', () => { followups.clear(); pendingQuestions.daily = []; message(''); get('daily-date').value = state.today || localToday(); get('daily-conditions').dataset.dirty = ''; run(() => refresh(true)); });
+    document.addEventListener('fitness-view-change', event => {
+      if (event.detail?.view === 'daily') run(() => refresh(true));
+      if (event.detail?.view === 'plan' && event.detail.long_term_id) run(async () => {
+        selectedLong = event.detail.long_term_id;
+        await load();
+        const found = list(state.long_term_plans).some(plan => plan.id === event.detail.long_term_id);
+        if (!found) {
+          get('long-term-content').replaceChildren();
+          get('long-term-questions').hidden = true;
+        }
+        message(found
+          ? '已打开本次生成的长期计划草稿，请检查后确认。' : '这份长期计划已不存在，请检查计划历史。',
+          !found, 'long-term');
+      }, 'long-term');
+    });
     document.addEventListener('fitness-state-change', event => {
       profileVersion = event.detail?.profile_version;
       run(async () => {

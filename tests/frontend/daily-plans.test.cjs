@@ -211,14 +211,95 @@ test('long-term follow-up reuses the asked date and snapshot token after an answ
   listeners.DOMContentLoaded(); await settle();
   const form = get('long-term-form');
   await form.listeners.submit({preventDefault() {}}); await settle();
-  assert.ok(get('planning-message').textContent.includes('每周能训练几次？'));
-  assert.equal(get('long-term-preview').hidden, false);
-  assert.match(get('long-term-preview').textContent, /仍是草稿/);
+  assert.match(get('planning-message').textContent, /需要补充信息/);
+  assert.ok(!get('planning-message').textContent.includes('每周能训练几次？'), 'questions appear once next to the answer');
+  assert.equal(get('daily-message').textContent, '', 'a long-term question must not appear on the daily page');
+  assert.equal(get('long-term-preview').hidden, true);
+  assert.match(get('long-term-questions').textContent, /每周能训练几次？/);
+  assert.match(get('long-term-submit').textContent, /补充.*继续/);
   get('long-term-conditions').value = '每周3次，每次45分钟';
   await form.listeners.submit({preventDefault() {}}); await settle();
   assert.deepEqual(posts[0], {mode: 'live'});
   assert.deepEqual(posts[1], {mode: 'live', conditions: '每周3次，每次45分钟',
     expected_snapshot_token: 'a'.repeat(64), start_date: '2026-10-20'});
+  assert.equal(get('long-term-questions').hidden, true);
+});
+
+async function planningPage(state, respond = async () => daily) {
+  const nodes = new Map(), listeners = {}, calls = [];
+  const get = id => {if (!nodes.has(id)) nodes.set(id,new Element()); return nodes.get(id);};
+  get('view-daily').hidden = true;
+  get('mode').value = 'demo';
+  const document = {createElement:tag=>new Element(tag),getElementById:get,querySelectorAll:()=>[],
+    addEventListener:(name,fn)=>{listeners[name]=fn;}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../fitness/static/daily-plans.js'),'utf8'),
+    {document,Intl,Date,console,fetch:async(url,options={})=>{
+      calls.push({url,options});
+      return {ok:true,json:async()=>url.startsWith('/api/planning/state')?state:await respond(url,options)};
+    }});
+  const settle = async()=>{for(let i=0;i<8;i++) await new Promise(resolve=>setImmediate(resolve));};
+  listeners.DOMContentLoaded(); await settle();
+  get('daily-date').value = state.today;
+  listeners['fitness-state-change']({detail:{feedback_saved:true}}); await settle();
+  return {get,listeners,calls,settle};
+}
+
+test('saved training and nutrition questions appear together in their own plan form', async () => {
+  const state = {today:'2026-10-20',long_term_plans:[{id:'l',version:1,status:'confirmed',
+    data:{training_questions:['每周几次？'],nutrition:{questions:['有没有过敏？']}}}],daily_plans:[daily]};
+  const {get} = await planningPage(state);
+  assert.match(get('long-term-questions').textContent,/每周几次？/);
+  assert.match(get('long-term-questions').textContent,/有没有过敏？/);
+  assert.match(get('daily-questions').textContent,/肩部情况如何？/);
+  assert.match(get('daily-questions').textContent,/确认过敏信息/);
+  assert.ok(!get('long-term-content').textContent.includes('每周几次？'));
+  assert.ok(!get('daily-content').textContent.includes('肩部情况如何？'));
+});
+
+test('recovery confirmation saves the release then regenerates that day', async () => {
+  const state = {today:'2026-10-20',long_term_plans:[],daily_plans:[daily]};
+  const {get,calls,settle} = await planningPage(state);
+  get('daily-conditions').value='今天可训练40分钟';
+  const nodes = get('daily-content').children.flatMap(function walk(x){return [x,...x.children.flatMap(walk)];});
+  nodes.find(x=>x.tagName==='textarea').value='肩部目前已无症状，医生允许逐步恢复';
+  await nodes.find(x=>x.tagName==='form').listeners.submit({preventDefault(){}}); await settle();
+  const writes=calls.filter(x=>x.options.method==='POST');
+  assert.deepEqual(writes.map(x=>x.url),['/api/daily-plans/day-1/restrictions/release','/api/daily-plans']);
+  assert.equal(JSON.parse(writes[1].options.body).date,'2026-10-20');
+  assert.equal(JSON.parse(writes[1].options.body).conditions,'今天可训练40分钟');
+  assert.equal(get('planning-message').textContent,'');
+});
+
+test('recovery keeps the saved release when regeneration fails and explains the partial result', async () => {
+  const state = {today:'2026-10-20',long_term_plans:[],daily_plans:[daily]};
+  const {get,settle} = await planningPage(state, async url => {
+    if (url === '/api/daily-plans') throw Error('模型暂时不可用');
+    return daily;
+  });
+  const nodes = get('daily-content').children.flatMap(function walk(x){return [x,...x.children.flatMap(walk)];});
+  nodes.find(x=>x.tagName==='textarea').value='肩部已恢复，医生允许逐步恢复';
+  await nodes.find(x=>x.tagName==='form').listeners.submit({preventDefault(){}}); await settle();
+  assert.match(get('daily-message').textContent,/恢复确认已保存.*重新评估未完成.*模型暂时不可用/);
+  assert.equal(get('planning-message').textContent,'');
+});
+
+test('a draft navigation selects its exact version instead of the previous selection', async () => {
+  const old = {id:'old',version:1,status:'confirmed',data:{title:'旧计划'}};
+  const draft = {id:'new',version:2,status:'draft',data:{title:'本次生成的新草稿'}};
+  const {get,listeners,settle} = await planningPage({today:'2026-10-20',long_term_plans:[old,draft],daily_plans:[]});
+  assert.match(get('long-term-content').textContent,/旧计划/);
+  listeners['fitness-view-change']({detail:{view:'plan',long_term_id:'new'}}); await settle();
+  assert.match(get('long-term-content').textContent,/本次生成的新草稿/);
+  assert.ok(!get('long-term-content').textContent.includes('旧计划'));
+});
+
+test('an unavailable linked draft does not leave the previous plan visible for confirmation', async () => {
+  const old = {id:'old',version:1,status:'draft',data:{title:'无关的旧草稿'}};
+  const {get,listeners,settle} = await planningPage({today:'2026-10-20',long_term_plans:[old],daily_plans:[]});
+  listeners['fitness-view-change']({detail:{view:'plan',long_term_id:'missing'}}); await settle();
+  assert.match(get('planning-message').textContent,/不存在/);
+  assert.ok(!get('long-term-content').textContent.includes('确认并启用'));
+  assert.ok(!get('long-term-content').textContent.includes('无关的旧草稿'));
 });
 
 test('opening today preserves an existing plan, creates a missing plan, and future dates never auto-write', async () => {
