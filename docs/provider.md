@@ -7,7 +7,7 @@ The Python contract is:
 ```python
 ProviderReply(content: str | None, tool_calls: list[dict], usage: dict)
 OpenAICompatibleProvider(settings, *, transport=None, client=None)
-OpenAICompatibleProvider.complete(messages, tools=None) -> ProviderReply
+OpenAICompatibleProvider.complete(messages, tools=None, *, timeout_seconds=None, max_output_tokens=None) -> ProviderReply
 ```
 
 `tool_calls` is normalized to `{"id": str, "name": str, "arguments": dict}`. The adapter accepts at most one call in a reply, sends `parallel_tool_calls=false`, and only validates tool arguments against the declared JSON schema. It never executes a tool. Responses, requests, message fields, tool names, and token counters are bounded; malformed JSON, unknown tools, extra response fields, redirects, and non-finite values produce stable `ProviderError.reason_code` values.
@@ -31,3 +31,11 @@ New plan/advice wording cannot add quantified facts absent from the rule wording
 DeepSeek `prompt_cache_hit_tokens` and `prompt_cache_miss_tokens` are accepted only as bounded nonnegative integer counters and included in usage accounting. No pricing or cost is inferred from cache counters. New feedback uncertainty entries must be original-text excerpts or narrow generic extraction ambiguity messages; they cannot introduce new medications or health facts.
 
 Tests inject `httpx.MockTransport` and do not call a real API. Keep live mode off in CI and demos.
+
+## Model-led training (phase 1)
+
+The long-term/daily live training role returns complete candidates, independently of the legacy weekly-plan summary validator above. AgentRuntime supports read-only tools and bounded candidate repair. Defaults are 12 provider calls, 20 tool executions, 2 repairs, 180 seconds per run and 4096 output tokens per call. Configure FITNESS_AGENT_MAX_CALLS, FITNESS_AGENT_MAX_TOOLS, FITNESS_AGENT_MAX_REVISIONS, FITNESS_AGENT_TIMEOUT_SECONDS and FITNESS_AGENT_MAX_OUTPUT_TOKENS. Legacy advice continues using FITNESS_MAX_STEPS.
+
+Provider timeout overrides use the remaining run time capped by the per-call configuration. The transport checks elapsed time during response streaming; the runtime also checks after provider/validation work. Synchronous interruption remains limited by underlying blocking transport timeouts; arbitrary custom providers are not forcibly interrupted.
+
+Training candidates pass structure, equipment, estimated-time, restriction, execution-fact and source-ID checks. Failed runs never call the demo planner as a substitute. Urgent symptoms cause a local safety stop with zero provider calls and skipped_safety provenance. Unresolved activity restrictions conservatively prevent new training. Ordinary fatigue remains model input. Time validation assumes four seconds per repetition, prescribed between-set rest and three minutes warm-up; unilateral/timed movements, transitions and actual pace still need review. Nutrition remains deterministic_local and main-model delegation is a later phase. Earlier wording/fallback descriptions apply to legacy weekly/advice/feedback paths.

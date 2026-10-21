@@ -200,7 +200,8 @@ def _counts(path: Path):
             tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             return {name: db.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0] if name in tables else 0
                     for name in ("profiles", "plans", "feedback", "feedback_revisions", "plan_changes",
-                                 "import_batches", "import_items")}
+                                 "import_batches", "import_items", "long_term_plans", "daily_plans",
+                                 "personal_memory", "feedback_coaching")}
         except sqlite3.Error as exc:
             raise ValueError("不是有效的 fitness 数据库。") from exc
 
@@ -217,6 +218,13 @@ def _validate_database(path: Path):
                          "feedback_revision", "changes", "trigger_issues", "evidence", "created_at"},
         "import_batches": {"batch_id", "result", "created_at"},
         "import_items": {"fingerprint", "feedback_id", "batch_id"},
+        "long_term_plans": {"id", "version", "profile_version", "start_date", "status",
+                            "data", "trace", "created_at"},
+        "daily_plans": {"id", "date", "revision", "long_term_id", "profile_version",
+                        "data", "trace", "input_fingerprint", "created_at"},
+        "personal_memory": {"version", "data", "trace", "created_at"},
+        "feedback_coaching": {"feedback_id", "request_key", "parent_feedback_id", "timing",
+                              "status", "input_token", "data", "trace", "updated_at"},
     }
     try:
         with _sqlite(path.resolve().as_uri() + "?mode=ro", uri=True) as db:
@@ -228,6 +236,10 @@ def _validate_database(path: Path):
                 required.add("plan_changes")
             if version >= 3:
                 required.update(("import_batches", "import_items"))
+            if version >= 4:
+                required.update(("long_term_plans", "daily_plans"))
+            if version >= 5:
+                required.update(("personal_memory", "feedback_coaching"))
             tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if not required <= tables or tables - set(columns):
                 raise ValueError("数据库缺少 fitness 必需表。")

@@ -9,9 +9,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .agent import DemoAgent
+from .agent_contracts import PlanningRunError
 from .config import ROOT, Settings
+from .daily_models import DailyRequest, LongTermRequest, MealCompleteRequest
+from .daily_planning import DailyPlanningService
 from .data_transfer import confirm_feedback_import, preview_feedback_import
 from .exporting import ExportFormatError, render_export
+from .feedback_coach import FeedbackCoach
+from .feedback_contracts import FeedbackSubmit
+from .feedback_memory import FeedbackMemory
 from .history import HistoryQueryError, explain_similar_feedback, get_recent_feedback, summarize_recent_trend
 from .knowledge import build_manifest, search_knowledge
 from .knowledge_context import KnowledgeContextService
@@ -19,12 +25,17 @@ from .models import (
     Contract,
     FeedbackConfirm,
     ModeRequest,
+    NutritionMemoryPreviewRequest,
+    NutritionPlanRequest,
     ParseRequest,
     PlanRequest,
     Profile,
     ProfileSave,
 )
+from .nutrition_agent import NutritionPlannerAgent
 from .orchestration import FitnessAgent
+from .plan_store import PlanRepository
+from .plan_streaming import stream_plan
 from .planning import context_persistence_status
 from .review import ReviewNotFound, ReviewService
 from .storage import Conflict, NotFound, Store
@@ -45,6 +56,7 @@ knowledge_context_service = KnowledgeContextService(
     ROOT / "data/knowledge",
     ROOT / "data/knowledge/baseline-strategies.json",
 )
+nutrition_agent = NutritionPlannerAgent()
 
 
 class KnowledgeReviewRequest(BaseModel):
@@ -64,12 +76,175 @@ class AdjustmentConfirm(Contract):
     confirmed: bool = False
 
 
+def planning_service():
+    return FitnessAgent(store, knowledge_context_service, settings, rules=agent)
+
+
+def feedback_coach():
+    return FeedbackCoach(store, settings,
+        planner=DailyPlanningService(store, settings, knowledge_context_service),
+        today=lambda: _history_end_date(None))
+
+
+def planning_error_detail(exc, start_date=None):
+    result = exc.result
+    retryable = result.reason_code in {'timeout', 'run_timeout', 'network_error', 'http_error'}
+    detail = {'code': result.reason_code or result.status, 'status': result.status,
+            'run_id': result.run_id, 'questions': result.questions,
+            'message': '需要补充信息，请在条件中回答后重新生成。' if result.status == 'needs_input'
+                else f"本次模型规划未完成（{result.reason_code or result.status}），原有计划尚未按本次条件更新。",
+            'retryable': retryable, 'snapshot_token': exc.snapshot_token}
+    if start_date is not None:
+        detail['start_date'] = start_date.isoformat()
+    return detail
+
+
+def planning_http_error(exc, start_date=None):
+    code = 422 if exc.result.status == 'needs_input' else (
+        504 if exc.result.reason_code in {'timeout', 'run_timeout'} else 502)
+    raise HTTPException(code, planning_error_detail(exc, start_date)) from exc
+
+
+@app.get('/api/planning/state')
+def planning_state(date: date | None = None):
+    repo = PlanRepository(store)
+    profile = store.profile()
+    return {'long_term_plans': repo.long_terms(),
+            'daily_plans': list(DailyPlanningService._latest_days(repo.days()).values()),
+            'profile_version': profile['version'] if profile else 0,
+            'today': _history_end_date(None).isoformat()}
+
+
+@app.post('/api/long-term-plans')
+def long_term_plan(req: LongTermRequest):
+    require_demo(req.mode)
+    start_date = req.start_date or _history_end_date(None)
+    try:
+        return planning_service().create_long_term(start_date, req.cycle_labels, req.mode,
+            conditions=req.conditions, expected_snapshot_token=req.expected_snapshot_token)
+    except PlanningRunError as exc:
+        planning_http_error(exc, start_date)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post('/api/long-term-plans/{ident}/confirm')
+def long_term_confirm(ident: str):
+    try:
+        return planning_service().confirm_long_term(ident)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
+@app.post('/api/long-term-plans/stream')
+def long_term_plan_stream(req: LongTermRequest):
+    require_demo(req.mode)
+    return stream_plan(lambda: long_term_plan(req))
+
+
+@app.post('/api/daily-plans')
+def daily_plan(req: DailyRequest):
+    require_demo(req.mode)
+    try:
+        return planning_service().generate_day(req.date, req.conditions, req.mode,
+            expected_snapshot_token=req.expected_snapshot_token)
+    except PlanningRunError as exc:
+        planning_http_error(exc)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
+@app.post('/api/daily-plans/stream')
+def daily_plan_stream(req: DailyRequest):
+    require_demo(req.mode)
+    return stream_plan(lambda: daily_plan(req))
+
+
+@app.post('/api/daily-plans/{ident}/meals/complete')
+def meal_complete(ident: str, req: MealCompleteRequest):
+    try:
+        return planning_service().complete_meal(ident, req.meal, req.expected_revision)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+    except ValueError as exc:
+        raise HTTPException(400, {'code': 'meal_invalid', 'message': str(exc), 'retryable': False}) from exc
+
+
+class RestrictionReleaseRequest(BaseModel):
+    area: str = Field(min_length=1, max_length=50)
+    expected_revision: int = Field(ge=1)
+    confirmation_text: str = Field(min_length=5, max_length=1000)
+
+
+@app.post('/api/daily-plans/{ident}/restrictions/release')
+def restriction_release(ident: str, req: RestrictionReleaseRequest):
+    try:
+        return planning_service().release_restriction(ident, req.area, req.expected_revision, req.confirmation_text)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+    except ValueError as exc:
+        raise HTTPException(400, {'code': 'restriction_release_invalid', 'message': str(exc),
+                                  'retryable': False}) from exc
+
+
 @app.post('/api/import/feedback/preview')
 def import_preview(req: ImportRequest):
     try:
         return preview_feedback_import(req.content, req.format)
     except ValueError as exc:
         raise HTTPException(400, {'code':'import_invalid', 'message':str(exc), 'retryable':False}) from exc
+
+
+@app.post('/api/nutrition/plan')
+def nutrition_plan_endpoint(req: NutritionPlanRequest):
+    require_demo(req.mode)
+    profile_record = store.profile()
+    if not profile_record:
+        raise HTTPException(409, '请先保存档案')
+    profile = Profile.model_validate(profile_record['data'])
+    feedback = None
+    if req.feedback_id:
+        try:
+            feedback = store.get_feedback(req.feedback_id)
+        except NotFound as exc:
+            err(exc)
+        if feedback['status'] != 'confirmed':
+            raise HTTPException(409, '请先确认反馈，再按当天条件规划。')
+        facts = feedback['data']
+        req = req.model_copy(update={
+            'meal': req.meal or facts.get('meal_to_plan'),
+            'conditions': req.conditions or facts.get('meal_conditions'),
+            'available_foods': req.available_foods or facts.get('available_foods'),
+            'desired_foods': req.desired_foods or facts.get('desired_foods'),
+            'already_eaten': req.already_eaten or facts.get('already_eaten') or facts.get('food_summary'),
+        })
+    nutrition_context = {
+        'meal': req.meal, 'conditions': req.conditions,
+        'available_foods': req.available_foods, 'desired_foods': req.desired_foods,
+        'already_eaten': req.already_eaten, 'budget_amount': req.budget_amount,
+    }
+    if req.mode == 'live':
+        run = NutritionPlannerAgent(settings).plan_live(profile, **nutrition_context)
+        if run.status != 'draft_ready':
+            planning_http_error(PlanningRunError(run, ''))
+        if store.profile()['version'] != profile_record['version']:
+            raise HTTPException(409, '档案已经变化，请按新档案重新规划。')
+        return {'profile_version': profile_record['version'], 'data': run.candidate,
+                'source': 'model', 'trace': run.trace}
+    result = nutrition_agent.plan(profile, **nutrition_context)
+    return {'profile_version': profile_record['version'], 'data': result.model_dump(mode='json'),
+            'source': 'deterministic_local'}
+
+
+@app.post('/api/nutrition/memory/preview')
+def nutrition_memory_preview(req: NutritionMemoryPreviewRequest):
+    profile_record = store.profile()
+    if not profile_record:
+        raise HTTPException(409, '请先保存档案')
+    profile = Profile.model_validate(profile_record['data'])
+    return nutrition_agent.memory_preview(profile, req.text)
 
 
 @app.post('/api/import/feedback/confirm')
@@ -163,7 +338,7 @@ def state():
         "profile_version": record["version"] if record else 0,
         "plans": store.plans(),
         "feedback": _feedback_state(),
-        "mode": "demo",
+        "mode": "live" if settings.live_enabled and settings.api_key else "demo",
         "available_modes": ["demo", "live"] if settings.live_enabled and settings.api_key else ["demo"],
         "model": settings.model if settings.live_enabled and settings.api_key else None,
         "plan_changes": store.plan_changes(),
@@ -181,7 +356,8 @@ def _feedback_state():
         if preview and any(c['feedback_id'] == row['id'] and c['changes'] == preview.get('changes')
                            for c in changes):
             row['trace'].pop('training_adjustment_preview', None)
-    return rows
+    memory = FeedbackMemory(store)
+    return [memory.view(row) for row in rows]
 
 
 def require_demo(mode):
@@ -239,6 +415,50 @@ def parse(req: ParseRequest):
     return store.create_feedback(req.text, run.data.model_dump(mode='json'), req.mode, run.trace)
 
 
+@app.post('/api/feedback/record')
+def record_feedback(req: FeedbackSubmit):
+    # Commit the user's report before attempting any model/network work.
+    try:
+        return feedback_coach().record(req.text, req.date, timing=req.timing,
+            request_key=req.request_key, parent_feedback_id=req.parent_feedback_id)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post('/api/feedback/{ident}/understand')
+def understand_feedback(ident: str, refresh: bool = False):
+    try:
+        return feedback_coach().analyze(ident, force=refresh)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
+@app.post('/api/feedback/{ident}/retry-plan')
+def retry_feedback_plan(ident: str):
+    try:
+        return feedback_coach().retry_plan(ident)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
+@app.get('/api/personal-memory')
+def personal_memory():
+    memory = FeedbackMemory(store)
+    context = memory.context(_history_end_date(None))
+    return {**context, 'compression': memory.current()['trace'].get('compression'),
+            'budget_tokens': 6000, 'original_reports_retained': True}
+
+
+@app.get('/api/feedback/{ident}')
+def feedback_original(ident: str):
+    try:
+        return FeedbackMemory(store).view(store.get_feedback(ident))
+    except NotFound as exc:
+        err(exc)
+
+
 @app.post("/api/feedback/{ident}/confirm")
 def confirm_feedback(ident: str, req: FeedbackConfirm):
     try:
@@ -249,12 +469,15 @@ def confirm_feedback(ident: str, req: FeedbackConfirm):
         trace = {'steps':['parser']}
         if parser_usage and parser_usage.get('status') != 'demo':
             trace['parser_provider'] = parser_usage
-        return store.confirm_feedback(
+        saved = store.confirm_feedback(
             ident,
             req.data.model_dump(mode="json"),
             req.expected_revision,
             trace=trace,
         )
+        saved['planning_update'] = {'status': 'none', 'message': '复盘已保存，当天计划保留。'}
+        saved = FeedbackMemory(store).view(saved)
+        return saved
     except (Conflict, NotFound) as e:
         err(e)
 

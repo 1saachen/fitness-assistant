@@ -28,7 +28,8 @@ else:
 def legacy_trace(trace):
     """Old trace contract is preserved alongside the new tool/usage metadata."""
     return {key: value for key, value in trace.items()
-            if key not in {'tool_calls', 'provider', 'trend', 'similar_history', 'training_adjustment_preview'}}
+            if key not in {'tool_calls', 'provider', 'trend', 'similar_history', 'training_adjustment_preview',
+                           'nutrition_planner'}}
 
 
 def write_knowledge_library(root):
@@ -85,6 +86,7 @@ def write_knowledge_library(root):
 
 
 def configure_client(tmp_path, monkeypatch, *, missing_strategy=False):
+    monkeypatch.setattr(main.settings, "live_enabled", False)
     monkeypatch.setattr(main, "store", Store(tmp_path / "test.sqlite3"))
     candidates = tmp_path / "candidates.json"
     candidates.write_text(
@@ -146,6 +148,24 @@ def test_profile_version_survives_reload(client, profile_data):
         "message": "档案已有更新，请刷新后再保存。",
         "retryable": True,
     }
+
+
+def test_profile_endpoint_accepts_an_empty_optional_profile(client):
+    response = client.put('/api/profile', json={'profile': {}, 'expected_version': 0})
+    assert response.status_code == 200
+    assert response.json()['data']['personal']['weight_kg'] is None
+    assert response.json()['data']['goals']['primary'] is None
+
+
+def test_strength_baseline_round_trips_without_becoming_mandatory(client):
+    baseline = {'bench_press_1rm_kg': 80, 'pull_up_max_reps': 0,
+                'recorded_on': '2026-10-21', 'notes': '估算，含杆总重'}
+    response = client.put('/api/profile', json={'profile': {
+        'training': {'strength_baseline': baseline}}, 'expected_version': 0})
+    assert response.status_code == 200
+    saved = client.get('/api/state').json()['profile']['training']['strength_baseline']
+    assert saved.items() >= baseline.items()
+    assert saved['squat_1rm_kg'] is None
 
 
 def test_complete_confirm_correct_flow(client, profile_data):
@@ -426,6 +446,16 @@ def test_advice_rejects_profile_changed_during_generation(client, profile_data, 
     persisted = main.store.get_feedback(row["id"])
     assert persisted["advice"] is None
     assert persisted["trace"] == {"steps": ["parser"]}
+
+
+def test_state_defaults_to_live_when_configured(client, monkeypatch):
+    monkeypatch.setattr(main.settings, "live_enabled", True)
+    monkeypatch.setattr(main.settings, "api_key", "test-key")
+    state = client.get("/api/state").json()
+    assert state["mode"] == "live"
+    assert state["available_modes"] == ["demo", "live"]
+    monkeypatch.setattr(main.settings, "api_key", "")
+    assert client.get("/api/state").json()["mode"] == "demo"
 
 
 def test_live_is_unavailable_not_disguised_demo(client):

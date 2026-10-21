@@ -88,7 +88,7 @@ def test_training_adjustment_preview_does_not_write_base_plan(tmp_path, profile_
     plan = store.create_plan(DemoAgent().generate_plan(profile, date(2026, 10, 11)).model_dump(mode='json'),
                              1, '2026-10-11', 'demo', {})
     store.confirm_plan(plan['id'])
-    tools = LocalTools(store, service, row)
+    tools = LocalTools(store, service, row, today=date(2026, 10, 11))
     proposal = tools.call('adjust_today_training', {}).payload
     assert proposal['changes'][0]['old_value'] == 3
     assert proposal['changes'][0]['new_value'] == 2

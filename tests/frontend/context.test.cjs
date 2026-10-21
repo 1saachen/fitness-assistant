@@ -95,6 +95,9 @@ test('optional why explanation renders facts and history safely with no default 
 });
 
 test('refresh preserves live selection only while configured', () => {
+  assert.equal(ui.preservedMode(null, {mode:'live',available_modes:['demo','live']}), 'live');
+  assert.equal(ui.preservedMode(null, {mode:'demo',available_modes:['demo']}), 'demo');
+  assert.equal(ui.preservedMode('demo', {mode:'live',available_modes:['demo','live']}), 'demo');
   assert.equal(ui.preservedMode('live', {mode:'demo',available_modes:['demo','live']}), 'live');
   assert.equal(ui.preservedMode('live', {mode:'demo',available_modes:['demo']}), 'demo');
 });

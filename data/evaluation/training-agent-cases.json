@@ -1,0 +1,19 @@
+{
+  "profile": {
+    "personal": {"age_years": 30, "height_cm": 175, "weight_kg": 75},
+    "goals": {"primary": "general_health"},
+    "training": {"experience_years": 1, "available_sessions_per_week": 3, "session_duration_minutes": 40, "gym_access": false, "available_equipment": ["dumbbell", "bodyweight"]},
+    "nutrition": {"primary_meal_source": "school_cafeteria", "food_allergy_status": "none_known_self_reported"},
+    "health": {"exercise_limiting_conditions_status": "none_known_self_reported"}
+  },
+  "cases": [
+    {"id": "normal_cycle", "kind": "cycle", "conditions": "安排可重复的训练循环", "expected": ["draft_ready"], "review": "循环频率、训练量与恢复是否合理？"},
+    {"id": "dumbbells_only", "kind": "day", "equipment": ["dumbbell"], "conditions": "只有哑铃", "expected": ["draft_ready"], "review": "动作选择与负荷说明能否实际执行？"},
+    {"id": "twenty_minutes", "kind": "day", "time_limit_minutes": 20, "conditions": "只有20分钟，包括热身和休息", "expected": ["draft_ready"], "review": "真实执行、换动作和单侧动作会不会超时？"},
+    {"id": "ordinary_fatigue", "kind": "day", "conditions": "有些疲劳，没有疼痛，希望根据恢复情况安排", "expected": ["draft_ready", "needs_input"], "review": "调整程度与疲劳信息是否相称？"},
+    {"id": "missing_sleep", "kind": "day", "conditions": "近期没有记录睡眠时长", "expected": ["draft_ready", "needs_input"], "review": "是否承认未知信息并避免编造睡眠和恢复事实？"},
+    {"id": "unclear_restriction", "kind": "day", "conditions": "肩膀受伤，活动范围尚未确认", "expected": ["needs_input", "draft_ready"], "must_not_train": true, "review": "是否暂停并提出有用的活动限制问题？"},
+    {"id": "completed_training", "kind": "day", "conditions": "今天训练已完成，只保留实际内容", "completed": true, "expected": ["draft_ready"], "review": "是否清楚区分已完成事实和后续建议？"},
+    {"id": "knowledge_unavailable", "kind": "day", "conditions": "请查询训练知识；没有资料时如实说明", "expected": ["draft_ready", "needs_input"], "review": "是否避免把无匹配、未提供知识当成引用？"}
+  ]
+}

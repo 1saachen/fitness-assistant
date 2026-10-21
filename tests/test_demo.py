@@ -54,7 +54,7 @@ def test_initialize_demo_profile_seeds_empty_store_once(tmp_path):
 
 def test_initialize_demo_profile_refuses_invalid_profile(tmp_path):
     profile_path = tmp_path / "demo-profile.json"
-    profile_path.write_text(json.dumps({"personal": {}}), encoding="utf-8")
+    profile_path.write_text(json.dumps({"personal": {"age_years": -1}}), encoding="utf-8")
 
     with pytest.raises(DemoDataError, match="演示档案无效"):
         initialize_demo_profile(Store(tmp_path / "fitness.sqlite3"), profile_path)

@@ -6,10 +6,52 @@ local application. The database uses WAL journaling and a monotonic
 before any migration runs. Migrations are additive and retain the four original
 tables (`profiles`, `plans`, `feedback`, and `feedback_revisions`). The current
 schema also contains `plan_changes`, `import_batches`, and `import_items`.
+Schema version 4 adds `long_term_plans` and `daily_plans`. Existing weekly
+`plans` and their adjustment history are retained; the migration does not
+reinterpret an old seven-day plan as a new long-term strategy.
+
+## Long-term strategy and daily execution
+
+Long-term records contain the confirmed profile version, goals, cycle steps,
+nutrition targets and review rules. Confirmation checks the current profile
+and newer effective confirmed versions. Revisions of a strategy create a new
+long-term record; previous daily records retain their original long-term ID.
+Daily records are append-only revisions per date, with an input fingerprint
+and generation trace. Generation checks profile, applicable long-term plan,
+confirmed feedback and daily snapshots inside an immediate writer transaction.
+Changed dependencies produce a conflict rather than overwriting newer facts.
+Replaying identical generation inputs returns the current revision.
+
+Cycle position follows actual confirmed training and explicit skip decisions,
+independent of weekdays. An unfinished workout normally remains pending;
+deferral does not count as completion. Confirmed completed training and meal
+snapshots stay intact when unfinished portions of the day are regenerated.
+An absent completion fact remains unknown. Daily food conditions never become
+permanent profile preferences without the existing explicit confirmation flow.
+
+Injury restrictions carry source dates and reasons and persist across days and
+long-term versions. A new plan does not imply recovery. Explicit release uses
+the current daily ID/revision, area and a 5–1000 character user confirmation;
+the resulting revision preserves the release event for audit. Release records
+a user statement and is not a diagnosis, rehabilitation prescription or medical
+clearance. New injury reports may activate restrictions again. Release does not
+silently regenerate training; the user can request a new daily evaluation.
+Condition source times remain stable during automatic refresh. Explicitly
+resubmitting a previously released condition counts as a new report; clearing
+the text does not release injuries recorded in earlier daily revisions.
+Feedback symptom fields retain their own last-change times from revision
+history, so editing weight or food does not reactivate an unchanged old injury.
+
+`GET /api/planning/state` is read-only. The browser explicitly requests today's
+generation on opening the daily view and after relevant saved-state changes
+while that view is open. There is no scheduler running while the application is
+closed. History/future dates require an explicit generation request. Backups
+must include both new tables, including source traces and release audit fields;
+legacy weekly export endpoints retain their original scope.
 
 Every write checks the expected profile version or feedback revision inside an
 immediate transaction where the operation depends on a mutable snapshot.
-Feedback advice also checks its expected update timestamp. Confirmed plans are immutable. A plan adjustment stores
+Feedback advice also checks its expected update timestamp. Confirmed legacy weekly plans are immutable. A legacy weekly plan adjustment stores
 an audit record containing the plan and feedback IDs, date, old and new values,
 trigger issues, evidence, and the optimistic versions. Only a reduction in
 exercise sets for the matching day of a seven-day plan is accepted. Repeating

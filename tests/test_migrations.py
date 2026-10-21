@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from fitness.storage import Store
+from fitness.storage import SCHEMA_VERSION, Store
 
 
 def test_existing_unversioned_database_migrates_without_losing_facts(tmp_path):
@@ -17,7 +17,7 @@ def test_existing_unversioned_database_migrates_without_losing_facts(tmp_path):
     migrated = Store(path)
     assert migrated.profile() == saved
     with migrated.connection() as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
         assert {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")} >= {
             "profiles", "plans", "feedback", "feedback_revisions", "plan_changes", "import_batches", "import_items"
         }

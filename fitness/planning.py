@@ -107,22 +107,16 @@ def generate_plan(profile, start_date, context=None):
     nutrition, nutrition_questions = nutrition_plan(profile)
     questions.extend(nutrition_questions)
     strategies, citations = persistent_context_snapshots(context)
-    strategy_summary = (
-        f" 方案依据（共{len(strategies)}个模块）："
-        f"{'、'.join(_strategy_title_preview(strategy.title) for strategy in strategies)}。"
-        if strategies
-        else ""
-    )
     goal_title, goal_summary = {
         "fat_loss": ("减脂保力量", "减脂并维持力量，建立可持续的饮食与训练习惯。"),
         "muscle_gain": ("增肌与力量", "增肌并改善力量，结合饮食、训练和恢复反馈调整。"),
         "general_health": ("健康与体能", "维持基本健康，逐步建立规律运动、饮食和作息。"),
-    }[profile.goals.primary]
+    }.get(profile.goals.primary, ("个性化训练", "根据已提供的档案与反馈生成保守起始安排。"))
+    age_context = f"{profile.personal.age_years}岁，" if profile.personal.age_years is not None else ""
     return PlanData(
         title=f"{goal_title} · 一周草案",
         summary=(
-            f"{profile.personal.age_years}岁，目标为{goal_summary}"
-            f"{strategy_summary}"
+            f"{age_context}{goal_summary}"
         ),
         days=days,
         nutrition=nutrition,

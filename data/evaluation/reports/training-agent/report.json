@@ -1,0 +1,367 @@
+{
+  "mode": "scripted",
+  "synthetic_profiles_only": true,
+  "model_quality": "not_evaluated",
+  "cases": [
+    {
+      "id": "normal_cycle",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "cycle": [
+          {
+            "label": "拉",
+            "kind": "training",
+            "exercises": [
+              {
+                "exercise_id": "dumbbell_row",
+                "sets": 4,
+                "reps_min": 8,
+                "reps_max": 12,
+                "rest_seconds": 90,
+                "name": "单臂哑铃划船"
+              }
+            ],
+            "estimated_minutes": 15
+          },
+          {
+            "label": "恢复",
+            "kind": "rest",
+            "exercises": [],
+            "estimated_minutes": 0
+          }
+        ]
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "循环频率、训练量与恢复是否合理？"
+      }
+    },
+    {
+      "id": "dumbbells_only",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "action": "train",
+        "training": {
+          "label": "拉",
+          "kind": "training",
+          "exercises": [
+            {
+              "exercise_id": "dumbbell_row",
+              "sets": 4,
+              "reps_min": 8,
+              "reps_max": 12,
+              "rest_seconds": 90,
+              "name": "单臂哑铃划船"
+            }
+          ],
+          "estimated_minutes": 15
+        },
+        "reasons": [
+          "合成样例"
+        ],
+        "scheduled_time": null,
+        "load_description": ""
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "动作选择与负荷说明能否实际执行？"
+      }
+    },
+    {
+      "id": "twenty_minutes",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "action": "train",
+        "training": {
+          "label": "拉",
+          "kind": "training",
+          "exercises": [
+            {
+              "exercise_id": "dumbbell_row",
+              "sets": 4,
+              "reps_min": 8,
+              "reps_max": 12,
+              "rest_seconds": 90,
+              "name": "单臂哑铃划船"
+            }
+          ],
+          "estimated_minutes": 15
+        },
+        "reasons": [
+          "合成样例"
+        ],
+        "scheduled_time": null,
+        "load_description": ""
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "真实执行、换动作和单侧动作会不会超时？"
+      }
+    },
+    {
+      "id": "ordinary_fatigue",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "action": "train",
+        "training": {
+          "label": "拉",
+          "kind": "training",
+          "exercises": [
+            {
+              "exercise_id": "dumbbell_row",
+              "sets": 4,
+              "reps_min": 8,
+              "reps_max": 12,
+              "rest_seconds": 90,
+              "name": "单臂哑铃划船"
+            }
+          ],
+          "estimated_minutes": 15
+        },
+        "reasons": [
+          "合成样例"
+        ],
+        "scheduled_time": null,
+        "load_description": ""
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "调整程度与疲劳信息是否相称？"
+      }
+    },
+    {
+      "id": "missing_sleep",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "action": "train",
+        "training": {
+          "label": "拉",
+          "kind": "training",
+          "exercises": [
+            {
+              "exercise_id": "dumbbell_row",
+              "sets": 4,
+              "reps_min": 8,
+              "reps_max": 12,
+              "rest_seconds": 90,
+              "name": "单臂哑铃划船"
+            }
+          ],
+          "estimated_minutes": 15
+        },
+        "reasons": [
+          "合成样例"
+        ],
+        "scheduled_time": null,
+        "load_description": ""
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "是否承认未知信息并避免编造睡眠和恢复事实？"
+      }
+    },
+    {
+      "id": "unclear_restriction",
+      "status": "needs_input",
+      "reason": "planning_needs_input",
+      "engineering_pass": true,
+      "constraints_satisfied": null,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 4,
+      "candidate": null,
+      "questions": [
+        "是否已评估肩部活动限制？"
+      ],
+      "human_review": {
+        "status": "pending",
+        "question": "是否暂停并提出有用的活动限制问题？"
+      }
+    },
+    {
+      "id": "completed_training",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 1,
+      "tools": 0,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "action": "train",
+        "training": {
+          "label": "拉",
+          "kind": "training",
+          "exercises": [
+            {
+              "exercise_id": "dumbbell_row",
+              "sets": 4,
+              "reps_min": 8,
+              "reps_max": 12,
+              "rest_seconds": 90,
+              "name": "哑铃划船"
+            }
+          ],
+          "estimated_minutes": 15
+        },
+        "reasons": [
+          "合成样例"
+        ],
+        "scheduled_time": null,
+        "load_description": ""
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "是否清楚区分已完成事实和后续建议？"
+      }
+    },
+    {
+      "id": "knowledge_unavailable",
+      "status": "draft_ready",
+      "reason": null,
+      "engineering_pass": true,
+      "constraints_satisfied": true,
+      "constraint_errors": [],
+      "source_support": "no_sources_claimed",
+      "calls": 2,
+      "tools": 1,
+      "revisions": 0,
+      "usage": {},
+      "elapsed_ms": 3,
+      "candidate": {
+        "summary": "合成受控候选，用于验证工程管线",
+        "assumptions": [
+          "时长仅为估算"
+        ],
+        "source_ids": [],
+        "questions": [],
+        "action": "train",
+        "training": {
+          "label": "拉",
+          "kind": "training",
+          "exercises": [
+            {
+              "exercise_id": "dumbbell_row",
+              "sets": 4,
+              "reps_min": 8,
+              "reps_max": 12,
+              "rest_seconds": 90,
+              "name": "单臂哑铃划船"
+            }
+          ],
+          "estimated_minutes": 15
+        },
+        "reasons": [
+          "合成样例"
+        ],
+        "scheduled_time": null,
+        "load_description": ""
+      },
+      "questions": [],
+      "human_review": {
+        "status": "pending",
+        "question": "是否避免把无匹配、未提供知识当成引用？"
+      }
+    }
+  ]
+}

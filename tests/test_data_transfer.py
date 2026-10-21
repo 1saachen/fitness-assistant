@@ -7,7 +7,7 @@ import pytest
 
 from fitness.exporting import render_export
 from fitness.models import FeedbackData
-from fitness.storage import Conflict, Store
+from fitness.storage import SCHEMA_VERSION, Conflict, Store
 
 
 def transfer_module():
@@ -228,7 +228,7 @@ def test_legacy_backup_restore_migrates_and_preview_accepts_four_tables(tmp_path
     transfer.restore_backup(legacy.path, target, preview["source_fingerprint"], confirmed=True)
     assert Store(target).profile() == profile
     with Store(target).connection() as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert db.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
 
 
 def test_markdown_json_facts_are_validated_and_wrong_export_kind_rejected():

@@ -10,7 +10,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 5
 
 
 class Conflict(Exception):
@@ -98,6 +98,33 @@ class Store:
                 CREATE TABLE IF NOT EXISTS import_items (
                     fingerprint TEXT PRIMARY KEY, feedback_id TEXT NOT NULL REFERENCES feedback(id),
                     batch_id TEXT NOT NULL REFERENCES import_batches(batch_id)
+                );
+            """, """
+                CREATE TABLE IF NOT EXISTS long_term_plans (
+                    id TEXT PRIMARY KEY, version INTEGER UNIQUE NOT NULL,
+                    profile_version INTEGER NOT NULL REFERENCES profiles(version),
+                    start_date TEXT NOT NULL, status TEXT NOT NULL,
+                    data TEXT NOT NULL, trace TEXT NOT NULL, created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS daily_plans (
+                    id TEXT PRIMARY KEY, date TEXT NOT NULL, revision INTEGER NOT NULL,
+                    long_term_id TEXT NOT NULL REFERENCES long_term_plans(id),
+                    profile_version INTEGER NOT NULL REFERENCES profiles(version),
+                    data TEXT NOT NULL, trace TEXT NOT NULL, input_fingerprint TEXT NOT NULL,
+                    created_at TEXT NOT NULL, UNIQUE(date, revision)
+                );
+            """, """
+                CREATE TABLE IF NOT EXISTS personal_memory (
+                    version INTEGER PRIMARY KEY, data TEXT NOT NULL,
+                    trace TEXT NOT NULL, created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS feedback_coaching (
+                    feedback_id TEXT PRIMARY KEY REFERENCES feedback(id),
+                    request_key TEXT UNIQUE NOT NULL,
+                    parent_feedback_id TEXT REFERENCES feedback(id),
+                    timing TEXT NOT NULL, status TEXT NOT NULL,
+                    input_token TEXT, data TEXT NOT NULL, trace TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
                 );
             """]
             for index in range(version, SCHEMA_VERSION):

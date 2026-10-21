@@ -66,6 +66,45 @@ def test_abnormal_symptom_blocks_adjustment_and_preserves_warning(client, profil
     assert client.get(f'/api/feedback/{fid}/training-adjustment').json()['changes'] == []
 
 
+def test_nutrition_endpoint_returns_targets_and_daily_conditions(client, profile_data):
+    client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0})
+    result = client.post('/api/nutrition/plan', json={
+        'date': '2026-10-11', 'meal': '午餐', 'conditions': '只能点外卖，预算18元',
+        'available_foods': '黄焖鸡、米饭、青菜', 'desired_foods': '黄焖鸡', 'mode': 'demo',
+    })
+    assert result.status_code == 200, result.text
+    payload = result.json()
+    assert payload['data']['daily_targets']['protein_g'] > 0
+    assert len(payload['data']['meal_options']) == 1
+    assert '黄焖鸡' in str(payload['data']['meal_options'][0]['suggestions'])
+    assert any('18' in item for item in payload['data']['meal_options'][0]['suggestions'])
+
+
+def test_nutrition_memory_preview_does_not_change_profile(client, profile_data):
+    client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0})
+    result = client.post('/api/nutrition/memory/preview', json={'text': '以后都不要安排香菜，我对花生过敏'})
+    assert result.status_code == 200
+    assert all(item['requires_confirmation'] for item in result.json())
+    assert client.get('/api/state').json()['profile_version'] == 1
+
+
+def test_nutrition_plan_can_consume_confirmed_feedback_conditions(client, profile_data):
+    client.put('/api/profile', json={'profile': profile_data, 'expected_version': 0})
+    feedback = client.post('/api/feedback/parse', json={
+        'text': '今天午餐只能点外卖，能买到米饭和青菜，想吃鸡肉',
+        'date': '2026-10-11', 'mode': 'demo',
+    }).json()
+    feedback['data'].update(meal_to_plan='午餐', meal_conditions='只能点外卖，预算18元',
+                             available_foods='米饭、青菜、鸡肉', desired_foods='鸡肉')
+    client.post(f"/api/feedback/{feedback['id']}/confirm",
+                json={'data': feedback['data'], 'expected_revision': 0})
+    response = client.post('/api/nutrition/plan', json={
+        'date': '2026-10-11', 'feedback_id': feedback['id'], 'mode': 'demo',
+    })
+    assert response.status_code == 200
+    assert '鸡肉' in str(response.json()['data']['meal_options'][0]['suggestions'])
+
+
 def test_new_current_plan_between_preview_and_write_rejects_adjustment(client, profile_data, monkeypatch):
     from fitness.agent import DemoAgent
     from fitness.models import Profile

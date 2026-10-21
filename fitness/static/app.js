@@ -392,13 +392,15 @@ if (typeof document !== "undefined") {
     profileDraft: null,
     version: 0,
     plans: [],
+    dailyPlans: [],
     feedback: [],
-    trends: null,
     plan: null,
     selectedFeedback: null,
-    mode: "demo",
+    mode: null,
     knowledgeStatus: "unknown",
     feedbackDirty: false,
+    feedbackParent: null,
+    feedbackSubmission: null,
     sources: [],
     reviewCards: [],
     reviewCounts: { total: 0, pending: 0, approved: 0, rejected: 0 },
@@ -523,9 +525,9 @@ if (typeof document !== "undefined") {
       body_fat_measured_on: null,
     },
     goals: {
-      primary: "general_health",
+      primary: null,
       secondary: [],
-      deadline_negotiable: true,
+      deadline_negotiable: null,
       target_date: null,
       target_weight_kg: null,
       target_body_fat_percent: null,
@@ -538,6 +540,14 @@ if (typeof document !== "undefined") {
       available_equipment: null,
       preferred_weekdays: null,
       current_routine: null,
+      strength_baseline: {
+        squat_1rm_kg: null,
+        bench_press_1rm_kg: null,
+        deadlift_1rm_kg: null,
+        pull_up_max_reps: null,
+        recorded_on: null,
+        notes: null,
+      },
     },
     nutrition: {
       primary_meal_source: null,
@@ -603,6 +613,7 @@ if (typeof document !== "undefined") {
           "主要目标",
           "select",
           [
+            ["", "未知 / 暂不设置"],
             ["fat_loss", "减脂"],
             ["muscle_gain", "增肌"],
             ["general_health", "保持健康"],
@@ -641,6 +652,17 @@ if (typeof document !== "undefined") {
       ],
     ],
     [
+      "力量参考（选填）",
+      [
+        ["training.strength_baseline.squat_1rm_kg", "深蹲单次最大重量 / 估算1RM（kg）", "number"],
+        ["training.strength_baseline.bench_press_1rm_kg", "卧推单次最大重量 / 估算1RM（kg）", "number"],
+        ["training.strength_baseline.deadlift_1rm_kg", "硬拉单次最大重量 / 估算1RM（kg）", "number"],
+        ["training.strength_baseline.pull_up_max_reps", "严格自重引体最大连续次数（次，做不了填0）", "number"],
+        ["training.strength_baseline.recorded_on", "成绩日期（可留空）", "date"],
+        ["training.strength_baseline.notes", "成绩说明（实测或估算、动作标准、不同日期等）", "text"],
+      ],
+    ],
+    [
       "饮食与预算",
       [
         ["nutrition.primary_meal_source", "主要饮食来源", "text"],
@@ -674,6 +696,8 @@ if (typeof document !== "undefined") {
         ["nutrition.food_allergy_details", "食物过敏说明", "text"],
         ["nutrition.food_intolerances", "食物不耐受", "text"],
         ["nutrition.other_dietary_restrictions", "其他饮食限制", "text"],
+        ["nutrition.food_preferences", "长期饮食偏好", "text"],
+        ["nutrition.disliked_foods", "长期不喜欢的食物", "text"],
       ],
     ],
     [
@@ -728,6 +752,8 @@ if (typeof document !== "undefined") {
       const card = document.createElement("section");
       card.className = "card";
       card.append(node("h2", title));
+      if (title === "力量参考（选填）") card.append(node("p",
+        "填已有成绩即可，不必专门测试极限。1RM是单次最大重量，杠铃总重含杆；估算值请在说明中注明。引体按完整、无借力的自重次数填写，辅助或负重成绩写进说明。未知留空。日常做组重量、次数和RPE可通过每日反馈记录，模型会据此校准后续安排。", "field-hint"));
       const grid = document.createElement("div");
       grid.className = "field-grid";
       defs.forEach(([path, label, type, options]) => {
@@ -767,22 +793,14 @@ if (typeof document !== "undefined") {
         if (
           [
             "personal.age_years",
-            "personal.height_cm",
-            "personal.weight_kg",
-          ].includes(path)
-        )
-          input.required = true;
-        if (
-          [
-            "personal.age_years",
             "training.available_sessions_per_week",
             "training.session_duration_minutes",
+            "training.strength_baseline.pull_up_max_reps",
           ].includes(path)
         )
           input.step = "1";
         if (path === "goals.deadline_negotiable") {
-          input.required = true;
-          input.options[0].disabled = true;
+          input.options[0].textContent = "未知 / 暂不设置";
         }
         wrap.append(input);
         grid.append(wrap);
@@ -796,6 +814,60 @@ if (typeof document !== "undefined") {
     $("profile-save-state").textContent = app.version
       ? `已保存版本 ${app.version} · 修改后请保存`
       : "尚未保存档案";
+  }
+  function appendProfileText(path, value) {
+    const input = document.querySelector('#profile-fields [data-path="' + path + '"]');
+    if (!input || !value) return;
+    const existing = input.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+    if (!existing.includes(value)) existing.push(value);
+    input.value = existing.join("，");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  function applyMemoryCandidate(candidate) {
+    if (!candidate || !candidate.value) return;
+    if (candidate.kind === "allergy") {
+      const status = document.querySelector('#profile-fields [data-path="nutrition.food_allergy_status"]');
+      if (status) {
+        status.value = "has_allergies";
+        status.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      appendProfileText("nutrition.food_allergy_details", candidate.value);
+    } else if (candidate.kind === "intolerance") {
+      appendProfileText("nutrition.food_intolerances", candidate.value);
+    } else if (candidate.kind === "disliked_food") {
+      appendProfileText("nutrition.disliked_foods", candidate.value);
+    }
+  }
+  function renderMemoryPreview(candidates) {
+    const root = $("memory-preview-result");
+    root.replaceChildren();
+    if (!candidates.length) {
+      root.append(node("p", "没有识别到明确的长期饮食信息；当天想吃什么不会自动写入长期偏好。", "field-hint"));
+      return;
+    }
+    root.append(node("p", "请逐项核对。只有勾选并应用的候选会填入档案表单，保存档案后才会持久化。", "notice-inline"));
+    const list = document.createElement("div");
+    candidates.forEach((candidate, index) => {
+      const label = document.createElement("label");
+      label.className = "memory-candidate";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.dataset.memoryIndex = String(index);
+      const kinds = { allergy: "过敏", intolerance: "不耐受", disliked_food: "长期不喜欢" };
+      label.append(input, node("span", (kinds[candidate.kind] || "饮食信息") + "：" + candidate.value));
+      list.append(label);
+    });
+    const button = node("button", "应用勾选项到档案", "button secondary");
+    button.type = "button";
+    button.addEventListener("click", () => {
+      list.querySelectorAll("input[data-memory-index]:checked").forEach((input) => {
+        applyMemoryCandidate(candidates[Number(input.dataset.memoryIndex)]);
+        input.checked = false;
+      });
+      $("profile-save-state").textContent = "有未保存修改";
+      show("已填入档案表单，请检查后保存档案。");
+    });
+    root.append(list, button);
   }
   function readProfile() {
     const profile = clone(app.profileDraft || app.profile || base());
@@ -821,7 +893,9 @@ if (typeof document !== "undefined") {
     return profile;
   }
   function go(view) {
-    if (!["overview", "profile", "plan", "feedback", "knowledge"].includes(view))
+    const sourceId = view.startsWith('feedback-') ? decodeURIComponent(view.slice(9)) : null;
+    if (sourceId) view = 'feedback';
+    if (!["overview", "profile", "plan", "daily", "feedback", "knowledge"].includes(view))
       view = "overview";
     document.querySelectorAll(".view").forEach((section) => {
       section.hidden = section.id !== `view-${view}`;
@@ -834,6 +908,13 @@ if (typeof document !== "undefined") {
         : nav.removeAttribute("aria-current");
     });
     window.location.hash = view;
+    if (sourceId) {
+      const item = app.feedback.find(row => row.id === sourceId);
+      if (item) { app.selectedFeedback = item; renderFeedbackHistory(); renderFeedbackEditor(item); }
+      else api('/api/feedback/' + encodeURIComponent(sourceId)).then(putFeedback).catch(error => show(error.message, true));
+    }
+    if (view === 'feedback') loadPersonalMemory();
+    document.dispatchEvent(new CustomEvent('fitness-view-change', {detail: {view}}));
   }
   function renderKnowledgeStats() {
     const root = $("knowledge-stats");
@@ -956,7 +1037,7 @@ if (typeof document !== "undefined") {
       : "一份适合你的计划，从你的档案开始。";
     $("hero-copy").textContent = app.profile
       ? "计划先确认，每日反馈先核对，再查看建议。"
-      : "告诉我们你的目标、可用时间与饮食偏好。";
+      : "先填写你知道的信息；暂时不确定的内容可以留空。";
     const stats = $("overview-stats");
     stats.replaceChildren();
     const values = app.profile
@@ -979,7 +1060,7 @@ if (typeof document !== "undefined") {
         ]
       : [
           ["档案状态", "尚未保存", "先填写基本情况"],
-          ["本周计划", "等待生成", "保存档案后开始"],
+          ["长期计划", "等待生成", "可从已有信息开始"],
           ["每日反馈", "0 条", "确认后进入历史"],
         ];
     values.forEach(([label, value, note]) => {
@@ -996,8 +1077,8 @@ if (typeof document !== "undefined") {
     steps.replaceChildren();
     const item = app.profile
       ? [
-          "生成本周计划",
-          app.plans.length ? "已有计划记录，可继续查看" : "根据档案生成草案",
+          "查看长期计划与训练循环",
+          "确定长期方向，再安排每一天",
           "plan",
         ]
       : ["完成我的档案", "目标、时间和饮食情况可以逐步补充", "profile"];
@@ -1065,7 +1146,10 @@ if (typeof document !== "undefined") {
         `pill ${plan.status === "confirmed" ? "" : "demo"}`,
       ),
     );
-    card.append(head, node("p", data.summary, "plan-summary"));
+    const visibleSummary = String(data.summary || "")
+      .replace(/\s*方案依据（共\d+个模块）：.*$/u, "")
+      .trim();
+    card.append(head, node("p", visibleSummary, "plan-summary"));
     card.append(
       node(
         "p",
@@ -1074,8 +1158,6 @@ if (typeof document !== "undefined") {
       ),
       renderExportActions("plan", plan.id),
     );
-    const planStatusMessage = knowledgeStatusMessage(plan.trace?.knowledge_status);
-    if (planStatusMessage) card.append(node("p", planStatusMessage, "notice-inline"));
     if (plan.trace?.provider?.status === 'fallback') card.append(node('p', '在线模型未完成，已使用本地规则生成。', 'notice-inline'));
     if (plan.status === "draft" && plan.profile_version !== app.version)
       card.append(
@@ -1114,11 +1196,18 @@ if (typeof document !== "undefined") {
       node("h3", "饮食安排"),
       node("p", data.nutrition.approach, "plan-summary"),
     );
+    if (data.nutrition.daily_targets) {
+      const target = data.nutrition.daily_targets;
+      card.append(node('p', `${target.calories_kcal} 千卡 · 蛋白质 ${target.protein_g}g · 脂肪 ${target.fat_g}g · 碳水 ${target.carbs_g}g`, 'nutrition-targets'));
+      card.append(node('p', `${target.method}；${target.assumptions.join('；')}`, 'field-hint'));
+    }
     const nutrition = document.createElement("div");
     nutrition.className = "nutrition-grid";
     data.nutrition.meal_options.forEach((meal) => {
       const section = document.createElement("section");
       section.append(node("h3", meal.meal));
+      if (meal.estimated_kcal != null)
+        section.append(node('p', `${meal.estimated_kcal} 千卡 · 蛋白质 ${meal.protein_g}g · 脂肪 ${meal.fat_g}g · 碳水 ${meal.carbs_g}g${meal.estimated_cost_cny != null ? ` · 约${meal.estimated_cost_cny}元` : ''}`, 'metadata'));
       const list = document.createElement("ul");
       meal.suggestions.forEach((x) => list.append(node("li", x)));
       section.append(list);
@@ -1128,6 +1217,25 @@ if (typeof document !== "undefined") {
       nutrition,
       node("p", data.nutrition.budget_note, "notice-inline"),
     );
+    const dayForm = document.createElement('form');
+    dayForm.className = 'card inline-form nutrition-day-form';
+    const mealSelect = document.createElement('select'); mealSelect.name = 'meal';
+    [['', '安排全天'], ['早餐', '早餐'], ['午餐', '午餐'], ['晚餐', '晚餐'], ['训练后', '训练后']].forEach(([value, label]) => {
+      const option = document.createElement('option'); option.value = value; option.textContent = label; mealSelect.append(option);
+    });
+    const mealLabel = node('label', '餐次'); mealLabel.append(mealSelect);
+    const field = (labelText, name, placeholder, maxLength) => {
+      const input = document.createElement('input'); input.name = name; input.maxLength = maxLength; input.placeholder = placeholder;
+      const label = node('label', labelText); label.append(input); return label;
+    };
+    dayForm.append(node('h3', '按今天的条件安排饮食'), mealLabel,
+      field('今天的用餐条件', 'conditions', '例如：只能点外卖，预算18元', 500),
+      field('能吃到什么', 'available_foods', '例如：鸡肉、米饭、青菜', 500),
+      field('想吃什么', 'desired_foods', '例如：今天想吃黄焖鸡', 300),
+      field('今天已吃内容', 'already_eaten', '可选：早餐吃了什么和大致份量', 500));
+    const submit = node('button', '生成饮食安排', 'button'); submit.type = 'submit'; dayForm.append(submit);
+    const dayResult = node('div'); dayResult.className = 'nutrition-day-result'; dayResult.hidden = true;
+    dayForm.append(dayResult); card.append(dayForm);
     [['作息与恢复', data.recovery_guidance], ['补剂优先级', data.supplement_guidance]].forEach(([title, rows]) => {
       if (!rows?.length) return;
       card.append(node('h3', title));
@@ -1139,7 +1247,6 @@ if (typeof document !== "undefined") {
         history.append(node('p', `${change.day_date}：${change.changes.map(c => `${c.path} ${c.old_value} → ${c.new_value}`).join('；')}`)));
       card.append(history);
     }
-    card.append(...renderPlanContextSections(data, app.sources));
     if (plan.status !== "confirmed" && plan.profile_version === app.version)
       card.append(
         action("确认这份计划", "button", async (event) => {
@@ -1202,7 +1309,7 @@ if (typeof document !== "undefined") {
     root.append(renderExportActions("feedback"));
     app.feedback.forEach((item) => {
       const el = action(
-        `${fmt(item.date)} · ${item.status === "confirmed" ? "已确认" : "草稿"}\n${item.data?.training_summary || item.raw_text}`,
+        `${fmt(item.date)} · ${item.coaching ? (item.coaching.status === 'ready' ? '模型已回应' : '原文已保存') : item.status === "confirmed" ? "已确认" : "草稿"}\n${item.data?.training_summary || item.raw_text}`,
         `history-item ${app.selectedFeedback?.id === item.id ? "selected" : ""}`,
         () => {
           if (app.feedbackDirty) {
@@ -1218,49 +1325,50 @@ if (typeof document !== "undefined") {
       root.append(el);
     });
   }
-  function renderTrends() {
-    const root = $("trend-metrics");
-    root.replaceChildren();
-    if (!app.trends) {
-      root.append(node("div", "趋势数据暂不可用。", "empty-state"));
-      return;
-    }
-    const window = app.trends.window;
-    $("trend-range").textContent =
-      `${window.start_date} 至 ${window.end_date} · ${app.trends.record_count} 条已确认反馈`;
-    [
-      "sleep_hours",
-      "weight_kg",
-      "fatigue_reports",
-      "training_completion",
-      "diet_execution",
-    ].forEach((key) => {
-      const presentation = trendMetricPresentation(key, app.trends.metrics?.[key]);
-      const card = node("article", "", `trend-metric${presentation.insufficient ? " insufficient" : ""}`);
-      card.append(
-        node("span", presentation.label),
-        node("strong", presentation.value),
-        node("small", presentation.detail),
-      );
-      if (presentation.insufficient) card.append(node("small", "数据不足"));
-      root.append(card);
-    });
-    $("trend-message").textContent =
-      "各指标只使用自身的非空样本；单条记录不会被判定为长期趋势。";
+  async function loadDailyPlans() {
+    const state = await api('/api/planning/state');
+    app.dailyPlans = state.daily_plans || [];
+    return app.dailyPlans;
   }
-  async function loadTrends() {
-    const days = Number($("trend-window").value || 7);
-    const endDate = $("feedback-date").value || today();
-    app.trends = await api(
-      `/api/history/trends?days=${encodeURIComponent(days)}&end_date=${encodeURIComponent(endDate)}`,
-    );
-    renderTrends();
+  function putFeedback(item) {
+    const index = app.feedback.findIndex(row => row.id === item.id);
+    if (index < 0) app.feedback.unshift(item); else app.feedback[index] = item;
+    app.selectedFeedback = item;
+    renderFeedbackHistory(); renderFeedbackEditor(item); renderOverview();
+  }
+  async function loadPersonalMemory() {
+    const root = $('personal-memory-content');
+    if (!root) return;
+    try { FeedbackCoachUI.renderMemory(root, await api('/api/personal-memory')); }
+    catch (error) { root.textContent = `个人记忆暂时未能加载：${error.message}`; }
+  }
+  async function understandFeedback(id, refresh = false, retryPlan = false) {
+    try {
+      const path = retryPlan ? 'retry-plan' : `understand${refresh ? '?refresh=true' : ''}`;
+      const item = await api(`/api/feedback/${encodeURIComponent(id)}/${path}`, {method: 'POST'});
+      putFeedback(item);
+      document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {
+        profile_version: app.version, feedback_saved: true, planning_update: item.coaching?.planning_update}}));
+      await Promise.allSettled([loadPersonalMemory(), loadDailyPlans()]);
+      show(item.coaching?.status === 'ready' ? '反馈已保存，模型已结合历史给出回应。' : '原文已保存，模型理解未完成，可重试。', item.coaching?.status !== 'ready');
+    } catch (error) { show(`原文已保存；${error.message}。可稍后重试模型理解。`, true); }
   }
   function renderFeedbackEditor(item) {
     app.feedbackDirty = false;
     const root = $("feedback-editor");
     root.replaceChildren();
     if (!item) return;
+    if (item.coaching) {
+      FeedbackCoachUI.render(root, item, {retry: understandFeedback,
+        retryPlan: id => understandFeedback(id, false, true),
+        followup: id => {
+          app.feedbackParent = id;
+          $('feedback-parent-note').textContent = '正在补充上一条反馈；模型会同时看到先前的回应和问题。';
+          $('feedback-text').value = '';
+          $('feedback-text').focus();
+        }});
+      return;
+    }
     const card = document.createElement("section");
     card.className = "card";
     card.append(node("span", "第二步 · 核对反馈", "pill"));
@@ -1285,6 +1393,11 @@ if (typeof document !== "undefined") {
       ["weight_kg", "体重（kg）", "number"],
       ["sleep_date", "睡眠所属日期（不确定留空）", "date"],
       ["intake_kcal", "本人提供的热量（kcal，不确定留空）", "number"],
+      ["meal_to_plan", "想规划的餐次（可留空）", "text"],
+      ["meal_conditions", "今天的用餐条件", "text"],
+      ["available_foods", "今天能吃到什么", "text"],
+      ["desired_foods", "今天想吃什么", "text"],
+      ["already_eaten", "今天已经吃过什么", "text"],
     ].forEach(([key, label, type]) => {
       const wrap = document.createElement("label");
       wrap.textContent = label;
@@ -1310,6 +1423,45 @@ if (typeof document !== "undefined") {
       grid.append(wrap);
     });
     card.append(grid);
+    const daily = app.dailyPlans.find(row => row.date === item.date);
+    const plannedExercises = daily?.data?.training?.exercises || [];
+    const savedResults = item.data?.exercise_results || [];
+    const resultRows = savedResults.length ? savedResults : plannedExercises.map(exercise => ({
+      exercise_id: exercise.exercise_id,
+    }));
+    if (resultRows.length) {
+      const heading = node('h3', '本次动作反馈');
+      card.append(heading, node('p', '填写实际完成重量和各动作的主观用力程度（RPE 1–10）；不确定的项留空。', 'field-hint'));
+      const resultGrid = document.createElement('div');
+      resultGrid.className = 'field-grid feedback-fields';
+      resultRows.forEach(result => {
+        const exercise = plannedExercises.find(row => row.exercise_id === result.exercise_id);
+        const section = document.createElement('section');
+        section.className = 'exercise-feedback';
+        section.append(node('strong', exercise?.name || result.exercise_id));
+        if (exercise) {
+          const target = [exercise.weight_kg != null ? `计划 ${exercise.weight_kg} kg` : null,
+            exercise.target_rpe != null ? `目标 RPE ${exercise.target_rpe}` : null].filter(Boolean).join(' · ');
+          if (target) section.append(node('p', target, 'metadata'));
+        }
+        const fields = document.createElement('div');
+        fields.className = 'field-grid exercise-feedback-fields';
+        [['weight_kg', '实际重量（kg）', 0, 1000], ['rpe', '实际 RPE', 1, 10]].forEach(([key, label, min, max]) => {
+          const wrap = document.createElement('label');
+          wrap.textContent = label;
+          const input = document.createElement('input');
+          input.type = 'number'; input.min = String(min); input.max = String(max);
+          input.step = key === 'rpe' ? '0.5' : 'any';
+          input.value = result[key] ?? '';
+          input.dataset.exerciseId = result.exercise_id;
+          input.dataset.exerciseField = key;
+          input.addEventListener('input', () => { app.feedbackDirty = true; });
+          wrap.append(input); fields.append(wrap);
+        });
+        section.append(fields); resultGrid.append(section);
+      });
+      card.append(resultGrid);
+    }
     (item.data.uncertainties || []).forEach((value) =>
       card.append(node("p", value, "notice-inline")),
     );
@@ -1329,6 +1481,16 @@ if (typeof document !== "undefined") {
               input.dataset.type,
             );
           });
+          const exerciseResults = new Map();
+          card.querySelectorAll('[data-exercise-id]').forEach(input => {
+            const exerciseId = input.dataset.exerciseId;
+            const result = exerciseResults.get(exerciseId) || {exercise_id: exerciseId};
+            const value = fieldValue(input.value, 'number');
+            if (value != null) result[input.dataset.exerciseField] = value;
+            exerciseResults.set(exerciseId, result);
+          });
+          data.exercise_results = [...exerciseResults.values()].filter(result =>
+            result.weight_kg != null || result.rpe != null);
           const confirmed = await api(`/api/feedback/${item.id}/confirm`, {
             method: "POST",
             body: JSON.stringify({ data, expected_revision: item.revision }),
@@ -1336,15 +1498,15 @@ if (typeof document !== "undefined") {
           app.feedback = app.feedback.map((x) =>
             x.id === confirmed.id ? confirmed : x,
           );
+          await loadDailyPlans().catch(() => {});
           app.selectedFeedback = confirmed;
           renderFeedbackHistory();
           renderFeedbackEditor(confirmed);
           renderOverview();
-          loadTrends().catch(() => {
-            app.trends = null;
-            renderTrends();
-          });
-          show("反馈已保存。");
+          document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {profile_version: app.version, feedback_saved: true, planning_update: confirmed.planning_update}}));
+          const update = confirmed.planning_update;
+          const planningFailed = update && update.status === 'failed';
+          show(planningFailed ? `反馈已保存；当天计划未更新。${update.message || ''} ${(update.questions || []).join(' ')}` : "反馈已保存。", Boolean(planningFailed));
         } catch (error) {
           show(error.message, true);
         } finally {
@@ -1385,6 +1547,36 @@ if (typeof document !== "undefined") {
           }
         }),
       );
+    if (item.status === "confirmed") {
+      const nutritionButton = action("按这次饮食条件规划", "button secondary", async (event) => {
+        if (app.feedbackDirty) {
+          show("请先确认并保存当前饮食条件，再规划餐单。", true);
+          return;
+        }
+        const target = event.currentTarget; busy(target, true);
+        try {
+          const response = await api('/api/nutrition/plan', {method:'POST', body:JSON.stringify({
+            date:item.date, feedback_id:item.id, mode:$("mode").value,
+          })});
+          const data = response.data;
+          const panel = document.createElement('section'); panel.className = 'advice-panel';
+          if (data.daily_targets) {
+            const t = data.daily_targets;
+            panel.append(node('p', `全天目标 ${t.calories_kcal} 千卡 · 蛋白质 ${t.protein_g}g · 脂肪 ${t.fat_g}g · 碳水 ${t.carbs_g}g`));
+          }
+          data.questions.forEach(question => panel.append(node('p', question, 'notice-inline')));
+          data.meal_options.forEach(meal => {
+            panel.append(node('h3', meal.meal));
+            panel.append(node('p', `${meal.estimated_kcal} 千卡 · 蛋白质 ${meal.protein_g}g · 脂肪 ${meal.fat_g}g · 碳水 ${meal.carbs_g}g`));
+            const list = document.createElement('ul'); meal.suggestions.forEach(value => list.append(node('li', value))); panel.append(list);
+          });
+          card.querySelector('.nutrition-feedback-result')?.remove(); panel.classList.add('nutrition-feedback-result');
+          card.insertBefore(panel, actions);
+        } catch (error) { show(error.message, true); }
+        finally { busy(target, false); }
+      });
+      actions.append(nutritionButton);
+    }
     card.append(actions);
     card.addEventListener("input", () => {
       app.feedbackDirty = true;
@@ -1493,7 +1685,7 @@ if (typeof document !== "undefined") {
     $("today-label").textContent = `今天是 ${payload.today || today()}`;
     $("mode-note").textContent =
       app.mode === "live"
-        ? `在线模型：${payload.model || "已配置"}。生成前仍会要求你确认草稿。`
+        ? `在线模型：${payload.model || "已配置"}。长期计划草稿需确认；反馈先保存，再由模型理解回应。`
         : "演示模式：使用本地规则生成，不调用外部模型。";
     const globalKnowledgeStatus = knowledgeStatusMessage(app.knowledgeStatus);
     if (globalKnowledgeStatus) $("mode-note").textContent += ` ${globalKnowledgeStatus}`;
@@ -1502,11 +1694,38 @@ if (typeof document !== "undefined") {
     renderPlans();
     renderFeedbackHistory();
     renderFeedbackEditor(app.selectedFeedback);
-    renderTrends();
     renderKnowledgeList();
     renderKnowledgeDetail();
+    document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {profile_version: app.version}}));
   }
   document.addEventListener("DOMContentLoaded", async () => {
+    $('plan-content').addEventListener('submit', async (event) => {
+      const form = event.target.closest('.nutrition-day-form');
+      if (!form) return;
+      event.preventDefault();
+      const submit = form.querySelector('button[type="submit"]'); busy(submit, true);
+      const output = form.querySelector('.nutrition-day-result'); output.replaceChildren();
+      try {
+        const fields = Object.fromEntries(new FormData(form).entries());
+        const result = await api('/api/nutrition/plan', {method:'POST', body:JSON.stringify({
+          ...fields, date:today(), mode:app.mode,
+        })});
+        const data = result.data;
+        if (data.daily_targets) {
+          const t = data.daily_targets;
+          output.append(node('p', `全天目标 ${t.calories_kcal} 千卡 · 蛋白质 ${t.protein_g}g · 脂肪 ${t.fat_g}g · 碳水 ${t.carbs_g}g`));
+        }
+        data.questions.forEach(question => output.append(node('p', question, 'notice-inline')));
+        data.meal_options.forEach(meal => {
+          output.append(node('h4', meal.meal));
+          output.append(node('p', `${meal.estimated_kcal} 千卡 · 蛋白质 ${meal.protein_g}g · 脂肪 ${meal.fat_g}g · 碳水 ${meal.carbs_g}g`));
+          const list = document.createElement('ul'); meal.suggestions.forEach(value => list.append(node('li', value))); output.append(list);
+        });
+        output.append(node('p', data.budget_note, 'field-hint'));
+        output.hidden = false;
+      } catch(error) { show(error.message, true); }
+      finally { busy(submit, false); }
+    });
     $('import-feedback-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       if (app.feedbackDirty) {
@@ -1534,15 +1753,36 @@ if (typeof document !== "undefined") {
               ...payload, batch_id:preview.batch_id, confirmed:true,
             })});
             root.replaceChildren(node('p', `导入${result.imported}条，重复${result.duplicates}条。`));
-            renderAll(await api('/api/state')); await loadTrends();
+            renderAll(await api('/api/state'));
             show('历史反馈已导入。');
           } catch(error) {show(error.message, true);} finally {busy(button, false);}
         }));
       } catch(error) {show(error.message, true);} finally {busy(target, false);}
     });
+    $("memory-preview-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const target = event.currentTarget.querySelector("button");
+      busy(target, true);
+      try {
+        const text = $("memory-preview-text").value.trim();
+        if (!text) throw new Error("请先输入一句饮食相关反馈。");
+        const candidates = await api("/api/nutrition/memory/preview", {
+          method: "POST",
+          body: JSON.stringify({ text }),
+        });
+        renderMemoryPreview(candidates);
+      } catch (error) {
+        show(error.message, true);
+      } finally {
+        busy(target, false);
+      }
+    });
     window.addEventListener("hashchange", () =>
       go(window.location.hash.slice(1)),
     );
+    $('personal-memory-panel').addEventListener('toggle', () => {
+      if ($('personal-memory-panel').open) loadPersonalMemory();
+    });
     $("profile-form").addEventListener("input", () => {
       $("profile-save-state").textContent = "有未保存修改";
     });
@@ -1599,6 +1839,7 @@ if (typeof document !== "undefined") {
         renderOverview();
         renderPlans();
         show("档案已保存。");
+        document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {profile_version: app.version}}));
       } catch (error) {
         show(error.message, true);
       } finally {
@@ -1636,6 +1877,21 @@ if (typeof document !== "undefined") {
       const target = $("parse-feedback");
       busy(target, true);
       try {
+        if ($('mode').value === 'live') {
+          const body = {text: $('feedback-text').value, date: $('feedback-date').value,
+            timing: $('feedback-timing').value, parent_feedback_id: app.feedbackParent};
+          const signature = JSON.stringify(body);
+          if (app.feedbackSubmission?.signature !== signature) app.feedbackSubmission = {
+            signature, key: crypto.randomUUID()};
+          const item = await api('/api/feedback/record', {method:'POST',
+            body:JSON.stringify({...body, request_key:app.feedbackSubmission.key})});
+          putFeedback(item);
+          show('原文已保存，模型正在结合以往反馈与个人记忆理解。');
+          await understandFeedback(item.id);
+          app.feedbackParent = null;
+          $('feedback-parent-note').textContent = '';
+          return;
+        }
         const item = await api("/api/feedback/parse", {
           method: "POST",
           body: JSON.stringify({
@@ -1644,6 +1900,7 @@ if (typeof document !== "undefined") {
             mode: $("mode").value,
           }),
         });
+        await loadDailyPlans().catch(() => {});
         app.feedback.unshift(item);
         app.selectedFeedback = item;
         renderFeedbackHistory();
@@ -1671,24 +1928,12 @@ if (typeof document !== "undefined") {
         renderFeedbackHistory();
         renderFeedbackEditor(app.selectedFeedback);
         renderOverview();
-        await loadTrends().catch(() => {
-          app.trends = null;
-          renderTrends();
-        });
+        await loadPersonalMemory();
         show("历史记录已刷新。");
       } catch (error) {
         show(error.message, true);
       } finally {
         busy(target, false);
-      }
-    });
-    $("trend-window").addEventListener("change", async () => {
-      try {
-        await loadTrends();
-      } catch (error) {
-        app.trends = null;
-        renderTrends();
-        show(`无法加载趋势：${error.message}`, true);
       }
     });
     ["knowledge-collection", "knowledge-status"].forEach((id) => {
@@ -1734,14 +1979,11 @@ if (typeof document !== "undefined") {
     try {
       const payload = await api("/api/state");
       app.sources = await api("/api/sources").catch(() => []);
+      await loadDailyPlans().catch(() => {});
       await loadKnowledgeReview();
       renderAll(payload);
       $("plan-date").value = payload.today;
       $("feedback-date").value = payload.today;
-      await loadTrends().catch(() => {
-        app.trends = null;
-        renderTrends();
-      });
       go(window.location.hash.slice(1) || "overview");
     } catch (error) {
       show(`无法连接本地服务：${error.message}`, true);

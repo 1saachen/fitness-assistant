@@ -19,10 +19,10 @@ class Contract(BaseModel):
 
 
 class Personal(Contract):
-    age_years: int = Field(ge=18, le=100)
+    age_years: int | None = Field(default=None, ge=18, le=100)
     sex: Short | None = None
-    height_cm: float = Field(ge=100, le=250)
-    weight_kg: float = Field(ge=25, le=350)
+    height_cm: float | None = Field(default=None, ge=100, le=250)
+    weight_kg: float | None = Field(default=None, ge=25, le=350)
     weight_measured_on: Date | None = None
     body_fat_percent: float | None = Field(default=None, gt=0, lt=75)
     body_fat_source: Short | None = None
@@ -31,12 +31,21 @@ class Personal(Contract):
 
 
 class Goals(Contract):
-    primary: Literal["fat_loss", "muscle_gain", "general_health"]
+    primary: Literal["fat_loss", "muscle_gain", "general_health"] | None = None
     secondary: list[Short] = Field(default_factory=list, max_length=10)
-    deadline_negotiable: bool = True
+    deadline_negotiable: bool | None = None
     target_date: Date | None = None
     target_weight_kg: float | None = Field(default=None, ge=25, le=350)
     target_body_fat_percent: float | None = Field(default=None, gt=0, lt=75)
+
+
+class StrengthBaseline(Contract):
+    squat_1rm_kg: float | None = Field(default=None, gt=0, le=1000)
+    bench_press_1rm_kg: float | None = Field(default=None, gt=0, le=1000)
+    deadlift_1rm_kg: float | None = Field(default=None, gt=0, le=1000)
+    pull_up_max_reps: int | None = Field(default=None, ge=0, le=200)
+    recorded_on: Date | None = None
+    notes: Text | None = None
 
 
 class Training(Contract):
@@ -47,6 +56,7 @@ class Training(Contract):
     available_equipment: list[Equipment] | None = Field(default=None, max_length=4)
     preferred_weekdays: list[int] | None = Field(default=None, max_length=6)
     current_routine: Text | None = None
+    strength_baseline: StrengthBaseline = Field(default_factory=StrengthBaseline)
 
     @model_validator(mode="after")
     def valid_weekdays(self):
@@ -55,7 +65,8 @@ class Training(Contract):
                 raise ValueError("训练日期不能重复")
             if any(day < 0 or day > 6 for day in self.preferred_weekdays):
                 raise ValueError("星期必须在 0（周一）到 6（周日）之间")
-            if len(self.preferred_weekdays) != self.available_sessions_per_week:
+            if (self.available_sessions_per_week is not None
+                    and len(self.preferred_weekdays) != self.available_sessions_per_week):
                 raise ValueError("选择的训练日数量需要与每周训练次数一致")
         return self
 
@@ -75,6 +86,8 @@ class Nutrition(Contract):
     food_allergy_details: Text | None = None
     food_intolerances: Text | None = None
     other_dietary_restrictions: Text | None = None
+    food_preferences: Text | None = None
+    disliked_foods: Text | None = None
 
 
 class Supplements(Contract):
@@ -100,8 +113,8 @@ class Profile(Contract):
     schema_version: Literal[1] = 1
     source: Short = "user_entered"
     profile_status: Literal["incomplete", "complete"] = "incomplete"
-    personal: Personal
-    goals: Goals
+    personal: Personal = Field(default_factory=Personal)
+    goals: Goals = Field(default_factory=Goals)
     training: Training = Field(default_factory=Training)
     nutrition: Nutrition = Field(default_factory=Nutrition)
     supplements: Supplements = Field(default_factory=Supplements)
@@ -111,17 +124,34 @@ class Profile(Contract):
 
 
 class Exercise(Contract):
-    exercise_id: Short
+    exercise_id: Short | None = None
     sets: int = Field(ge=1, le=5)
     reps_min: int = Field(ge=3, le=20)
     reps_max: int = Field(ge=3, le=20)
     rest_seconds: int = Field(ge=30, le=240)
+    weight_kg: float | None = Field(default=None, ge=0, le=1000)
+    target_rpe: float | None = Field(default=None, ge=5, le=10)
     name: Short = ""
+    equipment: list[Equipment] | None = Field(default=None, max_length=4)
+    notes: Text = ""
+
+    @model_validator(mode="after")
+    def ensure_identity(self):
+        if not self.exercise_id:
+            if not self.name:
+                raise ValueError("动作需要名称或已有标识")
+            import hashlib
+            import unicodedata
+            normalized = "".join(unicodedata.normalize("NFKC", self.name).casefold().split())
+            self.exercise_id = "custom_" + hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:20]
+        return self
 
     @model_validator(mode="after")
     def valid_reps(self):
         if self.reps_min > self.reps_max:
             raise ValueError("次数下限不能超过上限")
+        if self.target_rpe is not None and self.target_rpe * 2 != round(self.target_rpe * 2):
+            raise ValueError("目标RPE需以0.5为步进")
         return self
 
 
@@ -136,12 +166,30 @@ class PlanDay(Contract):
 class MealOption(Contract):
     meal: Short
     suggestions: list[Short] = Field(min_length=1, max_length=8)
+    estimated_kcal: int | None = Field(default=None, ge=0, le=5000)
+    protein_g: int | None = Field(default=None, ge=0, le=500)
+    fat_g: int | None = Field(default=None, ge=0, le=300)
+    carbs_g: int | None = Field(default=None, ge=0, le=800)
+    estimated_cost_cny: float | None = Field(default=None, ge=0, le=1000)
+    alternatives: list[Short] = Field(default_factory=list, max_length=8)
+
+
+class NutritionTargets(Contract):
+    calories_kcal: int = Field(ge=800, le=10000)
+    protein_g: int = Field(ge=20, le=500)
+    fat_g: int = Field(ge=10, le=300)
+    carbs_g: int = Field(ge=20, le=1000)
+    method: Short
+    assumptions: list[Short] = Field(default_factory=list, max_length=10)
+    confidence: Literal["low", "medium", "high"] = "low"
 
 
 class NutritionPlan(Contract):
     approach: Text
     meal_options: list[MealOption] = Field(min_length=1, max_length=5)
     budget_note: Text
+    daily_targets: NutritionTargets | None = None
+    questions: list[Short] = Field(default_factory=list, max_length=10)
 
 
 class KnowledgeVideo(Contract):
@@ -186,6 +234,7 @@ class FeedbackData(Contract):
     date: Date
     training_summary: Text | None = None
     training_completed: bool | None = None
+    exercise_results: list["ExerciseResult"] = Field(default_factory=list, max_length=20)
     food_summary: Text | None = None
     diet_followed_plan: bool | None = None
     sleep_hours: float | None = Field(default=None, ge=0, le=24)
@@ -193,7 +242,26 @@ class FeedbackData(Contract):
     fatigue: Short | None = None
     weight_kg: float | None = Field(default=None, ge=25, le=350)
     intake_kcal: float | None = Field(default=None, ge=0, le=15000)
+    meal_to_plan: Short | None = None
+    meal_conditions: Text | None = None
+    available_foods: Text | None = None
+    desired_foods: Text | None = None
+    already_eaten: Text | None = None
     uncertainties: list[Short] = Field(default_factory=list, max_length=15)
+
+
+class ExerciseResult(Contract):
+    exercise_id: Short
+    weight_kg: float | None = Field(default=None, ge=0, le=1000)
+    rpe: float | None = Field(default=None, ge=1, le=10)
+
+    @model_validator(mode="after")
+    def valid_result(self):
+        if self.weight_kg is None and self.rpe is None:
+            raise ValueError("动作反馈至少记录重量或RPE")
+        if self.rpe is not None and self.rpe * 2 != round(self.rpe * 2):
+            raise ValueError("实际RPE需以0.5为步进")
+        return self
 
 
 class AdviceExplanation(Contract):
@@ -235,3 +303,19 @@ class FeedbackConfirm(Contract):
 
 class ModeRequest(Contract):
     mode: Mode
+
+
+class NutritionPlanRequest(Contract):
+    date: Date
+    feedback_id: Short | None = None
+    meal: Short | None = None
+    conditions: Text | None = None
+    available_foods: Text | None = None
+    desired_foods: Text | None = None
+    already_eaten: Text | None = None
+    budget_amount: float | None = Field(default=None, ge=0, le=1000)
+    mode: Mode = "demo"
+
+
+class NutritionMemoryPreviewRequest(Contract):
+    text: Text

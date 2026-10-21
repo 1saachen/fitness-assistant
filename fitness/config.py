@@ -26,8 +26,17 @@ class Settings:
     max_request_bytes: int = 128_000
     max_response_bytes: int = 128_000
     max_tool_calls: int = 1
+    agent_max_calls: int = 12
+    agent_max_tools: int = 20
+    agent_max_revisions: int = 2
+    agent_timeout_seconds: float = 180
+    agent_max_output_tokens: int = 4096
 
     def __post_init__(self):
+        from .agent_contracts import RunLimits
+        RunLimits(max_calls=self.agent_max_calls, max_tools=self.agent_max_tools,
+                  max_revisions=self.agent_max_revisions, timeout_seconds=self.agent_timeout_seconds,
+                  max_output_tokens=self.agent_max_output_tokens)
         if type(self.live_enabled) is not bool:
             raise ValueError("live_enabled must be boolean")
         if not isinstance(self.api_key, str) or not self.api_key.isascii() or any(
@@ -69,5 +78,10 @@ class Settings:
             timezone=os.getenv("FITNESS_TIMEZONE", "Asia/Shanghai"),
             timeout_seconds=float(os.getenv("FITNESS_TIMEOUT_SECONDS", "60")),
             max_steps=int(os.getenv("FITNESS_MAX_STEPS", "5")),
+            agent_max_calls=int(os.getenv('FITNESS_AGENT_MAX_CALLS', '12')),
+            agent_max_tools=int(os.getenv('FITNESS_AGENT_MAX_TOOLS', '20')),
+            agent_max_revisions=int(os.getenv('FITNESS_AGENT_MAX_REVISIONS', '2')),
+            agent_timeout_seconds=float(os.getenv('FITNESS_AGENT_TIMEOUT_SECONDS', '180')),
+            agent_max_output_tokens=int(os.getenv('FITNESS_AGENT_MAX_OUTPUT_TOKENS', '4096')),
             live_enabled=os.getenv("FITNESS_LIVE_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"},
         )

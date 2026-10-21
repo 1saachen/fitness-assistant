@@ -29,6 +29,7 @@ data/examples/user-profile.json
 docs/example-profile.md
 
 # Ingestion working artifacts
+data/ingest/pilot-supplements-20260914/extract_v2.py
 data/ingest/batch-20260915/
 data/ingest/pilot-supplements-20260914/
 data/ingest/bilibili-20260916/*

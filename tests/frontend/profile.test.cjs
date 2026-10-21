@@ -9,6 +9,14 @@ test('blank fields remain unknown and zero remains a real value', () => {
   assert.equal(ui.fieldValue('', 'boolean'), null);
   assert.equal(ui.fieldValue('false', 'boolean'), false);
 });
+test('profile starts unknown and has no required-field validation', () => {
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../fitness/static/app.js'), 'utf8');
+  const profileForm = source.slice(source.indexOf('function renderProfile'), source.indexOf('function appendProfileText'));
+  assert.doesNotMatch(profileForm, /input\.required\s*=\s*true/);
+  assert.match(source, /age_years: null/);
+  assert.match(source, /primary: null/);
+  assert.match(source, /deadline_negotiable: null/);
+});
 test('editing a nested value preserves nullable fields and original object', () => {
   assert.equal(typeof ui.mergeFields, 'function');
   const profile = { personal: { weight_kg: null, body_fat_measured_on: null }, recovery: { sleep_schedule: 'variable' } };

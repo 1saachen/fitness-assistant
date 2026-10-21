@@ -145,7 +145,7 @@ def _grounded_boolean(text, field, value):
 
 
 def validate_model_feedback(candidate: dict | FeedbackData, text: str, day: date,
-                            baseline: FeedbackData) -> FeedbackData:
+                            baseline: FeedbackData, *, exercise_names: dict[str, str] | None = None) -> FeedbackData:
     """Validate a draft only. Explicit measurements need source-text evidence."""
     if not isinstance(baseline, FeedbackData) or baseline.date != day or not isinstance(text, str):
         raise SafetyError("invalid_baseline")
@@ -180,6 +180,28 @@ def validate_model_feedback(candidate: dict | FeedbackData, text: str, day: date
         value = getattr(result, key)
         if value != getattr(baseline, key) and (value is None or not _grounded_boolean(normalized, key, value)):
             raise SafetyError("ungrounded_fact")
+    original_results = [item.model_dump(mode="json") for item in baseline.exercise_results]
+    parsed_results = [item.model_dump(mode="json") for item in result.exercise_results]
+    if parsed_results != original_results:
+        if exercise_names is None:
+            raise SafetyError("ungrounded_fact")
+        for item in result.exercise_results:
+            name = exercise_names.get(item.exercise_id)
+            if not name or item.exercise_id not in exercise_names:
+                raise SafetyError("ungrounded_fact")
+            position = normalized.find(unicodedata.normalize("NFKC", name))
+            if position < 0:
+                raise SafetyError("ungrounded_fact")
+            excerpt = normalized[max(0, position - 32):position + len(name) + 96]
+            if item.weight_kg is not None:
+                amount = re.escape(f"{item.weight_kg:g}")
+                if not re.search(rf"{amount}\s*(?:kg|公斤|千克)", excerpt, re.IGNORECASE):
+                    raise SafetyError("ungrounded_fact")
+            if item.rpe is not None:
+                score = re.escape(f"{item.rpe:g}")
+                if not re.search(rf"(?:RPE\s*(?:为|是|:)?\s*{score}|主观用力(?:为|是)?\s*{score})",
+                                 excerpt, re.IGNORECASE):
+                    raise SafetyError("ungrounded_fact")
     if not set(baseline.uncertainties) <= set(result.uncertainties):
         raise SafetyError("immutable_field")
     for uncertainty in result.uncertainties:

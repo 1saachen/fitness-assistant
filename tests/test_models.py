@@ -24,6 +24,43 @@ def test_incomplete_profile_can_be_saved(profile_data):
     assert Profile.model_validate(profile_data).training.session_duration_minutes is None
 
 
+def test_profile_can_be_saved_with_all_user_fields_unknown():
+    from fitness.models import Profile
+    profile = Profile.model_validate({})
+    assert profile.personal.age_years is None
+    assert profile.personal.height_cm is None
+    assert profile.personal.weight_kg is None
+    assert profile.goals.primary is None
+    assert profile.goals.deadline_negotiable is None
+
+
+def test_strength_baseline_is_optional_and_zero_pullups_is_a_real_result():
+    from fitness.models import Profile
+    baseline = Profile().training.strength_baseline
+    assert baseline.squat_1rm_kg is None
+    assert baseline.pull_up_max_reps is None
+    profile = Profile.model_validate({'training': {'strength_baseline': {
+        'squat_1rm_kg': 100, 'bench_press_1rm_kg': 72.5, 'deadlift_1rm_kg': 130,
+        'pull_up_max_reps': 0, 'recorded_on': '2026-10-21', 'notes': '卧推为估算1RM，杠铃总重含杆'}}})
+    assert profile.training.strength_baseline.bench_press_1rm_kg == 72.5
+    assert profile.training.strength_baseline.pull_up_max_reps == 0
+
+
+@pytest.mark.parametrize('field,value', [('squat_1rm_kg', 0), ('bench_press_1rm_kg', -1),
+    ('deadlift_1rm_kg', float('nan')), ('pull_up_max_reps', -1), ('pull_up_max_reps', 2.5)])
+def test_strength_baseline_rejects_invalid_results(field, value):
+    from fitness.models import Profile
+    with pytest.raises(ValidationError):
+        Profile.model_validate({'training': {'strength_baseline': {field: value}}})
+
+
+def test_optional_weekdays_can_be_saved_without_a_weekly_session_count(profile_data):
+    from fitness.models import Profile
+    profile_data['training']['available_sessions_per_week'] = None
+    profile_data['training']['preferred_weekdays'] = [0, 3]
+    assert Profile.model_validate(profile_data).training.preferred_weekdays == [0, 3]
+
+
 def test_feedback_does_not_invent_intake():
     from fitness.models import FeedbackData
     p = FeedbackData(date="2026-09-10", food_summary="学校食堂")
@@ -32,6 +69,32 @@ def test_feedback_does_not_invent_intake():
     assert p.diet_followed_plan is None
     with pytest.raises(ValidationError):
         FeedbackData(date="2026-09-10", sleep_hours=25)
+
+
+def test_exercise_supports_weight_and_target_rpe_with_legacy_defaults():
+    from fitness.models import Exercise
+    old = Exercise(exercise_id='squat', sets=3, reps_min=5, reps_max=8, rest_seconds=120)
+    assert old.weight_kg is None and old.target_rpe is None
+    planned = Exercise(exercise_id='squat', sets=3, reps_min=5, reps_max=8,
+                       rest_seconds=120, weight_kg=60, target_rpe=7.5)
+    assert planned.weight_kg == 60 and planned.target_rpe == 7.5
+    for field, value in [('weight_kg', -1), ('target_rpe', 10.5), ('target_rpe', 7.2)]:
+        with pytest.raises(ValidationError):
+            Exercise(exercise_id='squat', sets=3, reps_min=5, reps_max=8,
+                     rest_seconds=120, **{field: value})
+
+
+def test_feedback_records_per_exercise_weight_and_rpe():
+    from fitness.models import FeedbackData
+    feedback = FeedbackData(date='2026-09-10', exercise_results=[
+        {'exercise_id': 'squat', 'weight_kg': 60, 'rpe': 8.5},
+    ])
+    assert feedback.exercise_results[0].weight_kg == 60
+    assert feedback.exercise_results[0].rpe == 8.5
+    with pytest.raises(ValidationError):
+        FeedbackData(date='2026-09-10', exercise_results=[
+            {'exercise_id': 'squat', 'weight_kg': -2, 'rpe': 8},
+        ])
 
 
 @pytest.mark.parametrize("value", [True, False, None])
@@ -90,6 +153,12 @@ def test_legacy_plan_and_advice_default_new_contexts_to_empty(legacy_plan_data):
     assert plan.strategy_context == []
     assert plan.knowledge_context == []
     assert advice.knowledge_context == []
+
+
+def test_nutrition_targets_are_optional_for_legacy_plan(legacy_plan_data):
+    from fitness.models import NutritionPlan
+    nutrition = NutritionPlan.model_validate(legacy_plan_data['nutrition'])
+    assert nutrition.daily_targets is None
 
 
 @pytest.mark.parametrize("count", [74, 100])

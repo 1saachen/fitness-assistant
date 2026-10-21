@@ -92,6 +92,22 @@ def test_feedback_chinese_sleep_measurement_is_grounded():
     assert baseline.sleep_hours is None
 
 
+def test_feedback_extracts_named_exercise_weight_and_rpe_only_when_grounded():
+    safety = safety_module()
+    day = date(2026, 10, 11)
+    baseline = FeedbackData(date=day)
+    plan = {'squat': '深蹲'}
+    result = safety.validate_model_feedback({'exercise_results': [
+        {'exercise_id': 'squat', 'weight_kg': 80, 'rpe': 8},
+    ]}, '今天深蹲80公斤，最后一组RPE 8', day, baseline, exercise_names=plan)
+    assert result.exercise_results[0].weight_kg == 80
+    assert result.exercise_results[0].rpe == 8
+    with pytest.raises(safety.SafetyError, match='ungrounded_fact'):
+        safety.validate_model_feedback({'exercise_results': [
+            {'exercise_id': 'deadlift', 'weight_kg': 80, 'rpe': 8},
+        ]}, '今天深蹲80公斤，最后一组RPE 8', day, baseline, exercise_names=plan)
+
+
 @pytest.mark.parametrize("candidate,text", [
     ({"sleep_hours": 8}, "昨晚睡了五个小时"),
     ({"weight_kg": 70}, "今天觉得轻一点"),

@@ -73,6 +73,14 @@ class LocalTools:
 
     def current_plan(self):
         day = self.feedback.date
+        from .plan_store import PlanRepository
+        snapshot = PlanRepository(self.store).snapshot(day)
+        long = snapshot['long_term']
+        if long and long['profile_version'] == self.profile_record['version']:
+            daily = next((p for p in snapshot['days']
+                          if p['date'] == day.isoformat() and p['long_term_id'] == long['id']
+                          and p['profile_version'] == self.profile_record['version']), None)
+            return {'kind': 'long_term_daily', 'long_term': long, 'daily': daily}
         return next((p for p in self.store.plans()
                      if p['status'] == 'confirmed' and p['profile_version'] == self.profile_record['version']
                      and 0 <= (day - date.fromisoformat(p['start_date'])).days < 7), None)
@@ -125,6 +133,21 @@ class LocalTools:
     def training_preview(self):
         from .safety import has_urgent_symptoms
         plan = self.current_plan()
+        if plan and plan.get('kind') == 'long_term_daily':
+            daily = plan['daily']
+            versions = [{'id': r['id'], 'revision': r['revision'], 'date': r['date']}
+                        for r in sorted(self.history, key=lambda r: (r['date'], r['created_at'], r['id']))
+                        if r['status'] == 'confirmed' and r['date'] <= self.feedback.date.isoformat()]
+            needs_refresh = (daily is None or daily['trace'].get('feedback_versions') != versions)
+            return {'kind': 'long_term_daily', 'changes': [],
+                    'long_term_id': plan['long_term']['id'],
+                    'daily_plan_id': daily['id'] if daily else None,
+                    'day_date': self.feedback.date.isoformat(),
+                    'decision': deepcopy(daily['data']['decision']) if daily else None,
+                    'training': deepcopy(daily['data']['training']) if daily else None,
+                    'needs_refresh': needs_refresh,
+                    'reason': '仅查看当天已保存的训练决定；需要调整时刷新当天计划，由训练规划模块统一执行。'
+                    if self.feedback.date == self.today else '历史当天安排仅供查看；通过当天计划入口生成和更新训练安排。'}
         if (not plan or self.feedback.date != self.today or not self.feedback.fatigue
                 or self.feedback.training_completed is True
                 or has_urgent_symptoms(self.current['raw_text'] + self.feedback.model_dump_json()

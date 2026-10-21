@@ -1,5 +1,6 @@
 """Opt-in, bounded OpenAI-compatible transport. It never executes tools."""
 
+import codecs
 import json
 import logging
 import math
@@ -94,7 +95,7 @@ def _tool_schemas(tools):
     return schemas
 
 
-def _normalize_reply(body, schemas):
+def _normalize_reply(body, schemas, max_tool_calls=1):
     root_fields = {"id", "object", "created", "model", "choices", "usage", "system_fingerprint", "service_tier"}
     if not isinstance(body, dict) or not body.keys() <= root_fields:
         raise ProviderError("invalid_response")
@@ -115,14 +116,19 @@ def _normalize_reply(body, schemas):
     calls = message.get("tool_calls") or []
     if content is not None and not isinstance(content, str):
         raise ProviderError("invalid_response")
-    if not isinstance(calls, list) or len(calls) > 1:
+    if not isinstance(calls, list) or len(calls) > max_tool_calls:
         raise ProviderError("invalid_tool_call")
     normalized = []
     for call in calls:
-        if not isinstance(call, dict) or set(call) != {"id", "type", "function"} or call["type"] != "function":
+        if (not isinstance(call, dict) or not {"id", "type", "function"} <= call.keys()
+                or not call.keys() <= {"id", "type", "function", "index"} or call["type"] != "function"):
+            raise ProviderError("invalid_tool_call")
+        if "index" in call and (type(call["index"]) is not int or not 0 <= call["index"] < max_tool_calls):
             raise ProviderError("invalid_tool_call")
         call_id, function = call["id"], call["function"]
         if not isinstance(call_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,200}", call_id):
+            raise ProviderError("invalid_tool_call")
+        if any(item["id"] == call_id for item in normalized):
             raise ProviderError("invalid_tool_call")
         if not isinstance(function, dict) or set(function) != {"name", "arguments"}:
             raise ProviderError("invalid_tool_call")
@@ -158,23 +164,37 @@ def _normalize_reply(body, schemas):
 
 class OpenAICompatibleProvider:
     def __init__(self, settings: Settings, *, transport: httpx.BaseTransport | None = None,
-                 client: httpx.Client | None = None):
+                 client: httpx.Client | None = None, max_tool_calls: int = 1):
         if transport is not None and client is not None:
             raise ValueError("choose transport or client")
+        if type(max_tool_calls) is not int or not 1 <= max_tool_calls <= 8:
+            raise ValueError("max_tool_calls must be between 1 and 8")
+        self.max_tool_calls = max_tool_calls
         self.settings = settings
         self.transport = transport
         self.client = client
         self.usage_totals = {}
 
-    def complete(self, messages, tools=None) -> ProviderReply:
+    def complete(self, messages, tools=None, *, timeout_seconds=None, max_output_tokens=None,
+                 on_text=None) -> ProviderReply:
         if not self.settings.live_enabled:
             raise ProviderError("live_disabled")
         if not self.settings.api_key:
             raise ProviderError("missing_api_key")
         if not isinstance(messages, list) or len(messages) > 100 or (tools is not None and not isinstance(tools, list)):
             raise ProviderError("invalid_request")
+        timeout = self.settings.timeout_seconds if timeout_seconds is None else timeout_seconds
+        output_tokens = 2048 if max_output_tokens is None else max_output_tokens
+        if (type(timeout) not in {int, float} or not math.isfinite(timeout) or not 0 < timeout <= 300
+                or type(output_tokens) is not int or not 256 <= output_tokens <= 16384):
+            raise ProviderError('invalid_request')
         schemas = _tool_schemas(tools)
-        payload = {"model": self.settings.model, "messages": messages, "stream": False, "max_tokens": 2048}
+        if on_text is not None and tools:
+            raise ProviderError('invalid_request')
+        payload = {"model": self.settings.model, "messages": messages,
+                   "stream": on_text is not None, "max_tokens": output_tokens}
+        if on_text is not None:
+            payload['stream_options'] = {'include_usage': True}
         if tools:
             payload.update(tools=tools, parallel_tool_calls=False)
         try:
@@ -192,18 +212,25 @@ class OpenAICompatibleProvider:
             endpoint = self.settings.base_url.rstrip("/") + "/chat/completions"
             with client.stream("POST", endpoint, content=encoded, headers={
                 "Authorization": f"Bearer {self.settings.api_key}", "Content-Type": "application/json",
-            }, timeout=self.settings.timeout_seconds, follow_redirects=False) as result:
+            }, timeout=timeout, follow_redirects=False) as result:
                 status = result.status_code
                 if not 200 <= status < 300:
                     raise ProviderError("http_error")
                 chunks = bytearray()
+                stream = _TextStream(on_text) if on_text is not None else None
                 for chunk in result.iter_bytes():
+                    if time.monotonic() - started >= timeout:
+                        raise ProviderError('timeout')
                     if len(chunks) + len(chunk) > self.settings.max_response_bytes:
                         raise ProviderError("response_too_large")
                     chunks.extend(chunk)
+                    if stream is not None:
+                        stream.feed(chunk)
+                        if stream.done:
+                            break
                 try:
-                    body = _json_loads(chunks)
-                    reply = _normalize_reply(body, schemas)
+                    body = stream.finish() if stream is not None else _json_loads(chunks)
+                    reply = _normalize_reply(body, schemas, self.max_tool_calls)
                 except (ValueError, TypeError, RecursionError, KeyError):
                     raise ProviderError("invalid_response") from None
                 counts = reply.usage
@@ -219,3 +246,71 @@ class OpenAICompatibleProvider:
                 client.close()
             logger.info("provider_request model=%s latency_ms=%d status=%s usage=%s", self.settings.model,
                         round((time.monotonic() - started) * 1000), status, counts)
+
+
+class _TextStream:
+    """Incremental SSE text-only completion; tool responses use the normal path."""
+
+    def __init__(self, emit):
+        self.emit = emit
+        self.decoder = codecs.getincrementaldecoder('utf-8')()
+        self.buffer = ''
+        self.lines = []
+        self.parts = []
+        self.usage = {}
+        self.stopped = False
+        self.done = False
+
+    def feed(self, chunk):
+        try:
+            self.buffer += self.decoder.decode(chunk)
+            while '\n' in self.buffer:
+                line, self.buffer = self.buffer.split('\n', 1)
+                line = line.removesuffix('\r')
+                if not line:
+                    self._event()
+                elif line.startswith('data:'):
+                    self.lines.append(line[5:].lstrip(' '))
+        except (ValueError, TypeError, KeyError, AttributeError, IndexError, RecursionError):
+            raise ProviderError('invalid_response') from None
+
+    def _event(self):
+        if not self.lines:
+            return
+        data, self.lines = '\n'.join(self.lines), []
+        if self.done:
+            raise ValueError('event after done')
+        if data == '[DONE]':
+            self.done = True
+            return
+        body = _json_loads(data)
+        if body.get('usage') is not None:
+            self.usage = body['usage']
+        choices = body['choices']
+        if not choices:
+            return
+        if len(choices) != 1 or choices[0].get('index') != 0:
+            raise ValueError('invalid choice')
+        choice = choices[0]
+        delta = choice['delta']
+        if delta.get('tool_calls') or delta.get('refusal') or delta.get('role', 'assistant') != 'assistant':
+            raise ValueError('not a text completion')
+        content = delta.get('content')
+        if content is not None:
+            if not isinstance(content, str) or self.stopped:
+                raise ValueError('invalid content')
+            if content:
+                self.parts.append(content)
+                self.emit(content)
+        reason = choice.get('finish_reason')
+        if reason is not None:
+            if reason != 'stop' or self.stopped:
+                raise ValueError('incomplete completion')
+            self.stopped = True
+
+    def finish(self):
+        self.decoder.decode(b'', final=True)
+        if not self.done or not self.stopped or self.buffer.strip() or self.lines:
+            raise ValueError('incomplete stream')
+        return {'choices': [{'message': {'role': 'assistant', 'content': ''.join(self.parts)},
+                             'finish_reason': 'stop'}], 'usage': self.usage}

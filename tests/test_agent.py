@@ -65,7 +65,8 @@ def test_plan_keeps_complete_strategy_and_citation_snapshots(profile_data):
     assert plan.strategy_context == list(strategies)
     assert plan.knowledge_context == list(citations)
     assert plan.source_ids == [item.id for item in citations]
-    assert all(strategy.title in plan.summary for strategy in strategies)
+    assert all(strategy.title not in plan.summary for strategy in strategies)
+    assert "共7个模块" not in plan.summary
 
 
 def test_plan_bounds_strategy_summary_without_dropping_snapshots(profile_data):
@@ -87,8 +88,7 @@ def test_plan_bounds_strategy_summary_without_dropping_snapshots(profile_data):
 
     assert plan.strategy_context == list(strategies)
     assert len(plan.summary) <= 2000
-    assert "共20个模块" in plan.summary
-    assert "…" in plan.summary
+    assert all(strategy.title not in plan.summary for strategy in strategies)
 
 
 def test_creator_claims_do_not_change_rule_based_exercise_prescriptions(profile_data):
