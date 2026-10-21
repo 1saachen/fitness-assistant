@@ -95,6 +95,36 @@ the preview makes these partial records reviewable and leaves absent fields
 unknown. Facts cannot be reconstructed from advice prose. Invalid records
 block the complete confirmation batch rather than partially importing it.
 
+## Feedback evidence and context lifetime
+
+Raw reports remain unchanged when critical facts are explicitly confirmed;
+the operation writes a feedback revision and invalidates previous model
+interpretation. Preference confirmation or retirement writes an explicit user
+statement and a new memory version. Both APIs use transactional expected
+revision/version guards. Neither operation generates a daily plan.
+
+Same-day feedback is merged only for derived trends and planning facts;
+source records and revisions remain available. Scalar and per-action attribute
+timestamps reflect the last actual change, so unrelated edits do not reorder
+old facts. Distinct sessions require distinct session IDs; without one, the
+same action on the same date is grouped together. Missing fields do not erase
+prior known values, and zero/false are preserved.
+
+Memory stores source IDs, revisions, event dates and quoted evidence. Temporary
+facts expire after at most 14 days and patterns after 21, including the event
+date; expiry suppresses context, not disk records. Changed source revisions
+suspend ordinary entries, but unresolved restrictions remain flagged and active
+until an explicit targeted release. Legacy entries without quotes are marked
+unverified. Compression preserves protected entries and cannot extend lifetimes
+or invent confirmation; immutable raw reports and older snapshots are retained.
+
+Model context uses explicit date windows and count/byte budgets. Training and
+coaching default to four recent reports over 14 days; nutrition allows up to
+21 over 14 days. Actual exercise summaries cover 21 days by default. Summaries
+expose truncation; these limits do not delete history. Historical interpretation
+excludes later dated inputs. Quote checking establishes provenance, not the
+semantic correctness of every interpretation or a causal relationship.
+
 ## Isolation and deployment
 
 The database path is local to the selected application instance. A multi-user

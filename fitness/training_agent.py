@@ -189,7 +189,11 @@ class TrainingPlannerAgent:
             + json.dumps(model.model_json_schema(), ensure_ascii=False))
         payload = task.model_dump(mode='json', exclude={'history'})
         from .feedback_memory import compact_feedback_reports
-        payload['recent_reports'] = compact_feedback_reports(task.history, limit=4, budget_bytes=16000)
+        payload['recent_reports'] = compact_feedback_reports(task.history, end_date=task.date, limit=4, budget_bytes=16000)
+        payload['history_scope'] = {'days': 14, 'end_date': str(task.date), 'report_limit': 4}
+        from .history import get_recent_feedback, summarize_exercise_history
+        payload['recent_exercise_performance'] = summarize_exercise_history(
+            get_recent_feedback(task.history, end_date=task.date, days=21)['records'], limit=3)
         if payload.get('long_term'):
             long_term = payload['long_term']
             payload['long_term'] = {key: long_term[key] for key in ('id', 'version', 'start_date') if key in long_term}
@@ -197,7 +201,9 @@ class TrainingPlannerAgent:
                 if key in {'title', 'summary', 'goals', 'assumptions', 'review_after', 'review_rules', 'recovery_guidance'}}
         cutoff = (task.date - timedelta(days=21)).isoformat()
         for key in ('confirmed_facts', 'recovery_signals'):
-            payload['state'][key] = {day: facts for day, facts in task.state.get(key, {}).items()
+            payload['state'][key] = {day: {k: v for k, v in facts.items() if k in {
+                'sleep_hours', 'weight_kg', 'fatigue', 'training_completed', 'diet_followed_plan'}}
+                for day, facts in task.state.get(key, {}).items()
                                      if cutoff <= day <= task.date.isoformat()}
         payload['state'].pop('release_events', None)
         result = runner.run(role=role, task=payload, tools=tools,

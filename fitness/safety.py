@@ -144,6 +144,177 @@ def _grounded_boolean(text, field, value):
     return has_positive if value is True else has_negative
 
 
+_RESULT_NUMBER = r"(?<![\d.])(\d+(?:\.\d+)?)(?![\d.])"
+_RESULT_WEIGHT = re.compile(_RESULT_NUMBER + r"\s*(?:kg(?![a-z])|公斤|千克)", re.IGNORECASE)
+_RESULT_RPE = re.compile(r"(?:RPE\s*(?:为|是|:)?\s*|主观用力(?:为|是)?\s*)"
+                         r"(\d+(?:\.\d+)?)(?![\d.])", re.IGNORECASE)
+_NOT_ACTUAL = re.compile(
+    r"计划|准备|打算|希望|预计|明天|后天|下次|将要|想要|想做|要做|尚未|没有做|没做|未做|没练|未练|没能|"
+    r"\b(?:tomorrow|planned|planning|intend|will|next\s+time)\b", re.IGNORECASE)
+
+
+def _result_completion(text, *, goal=False):
+    target = r"\s*(?:目标|计划目标)" if goal else r"(?!\s*(?:目标|计划目标|训练))"
+    negative = rf"(?:未完成|没有完成|没完成|未达到|没达到){target}"
+    positive = rf"(?:完成|达到){target}"
+    has_negative = bool(re.search(negative, text))
+    has_positive = bool(re.search(positive, re.sub(negative, "", text)))
+    if has_negative and has_positive:
+        return None
+    if has_negative:
+        return False
+    if has_positive:
+        return True
+    return None
+
+
+def _one_result_number(pattern, text):
+    values = {float(value) for value in pattern.findall(text)}
+    return next(iter(values)) if len(values) == 1 else None
+
+
+def _source_sets(segment):
+    """Recognize explicit set notation only; absent values stay unknown."""
+    headings = list(re.finditer(r"第\s*(\d+)\s*组", segment))
+    if headings:
+        if [int(match[1]) for match in headings] != list(range(1, len(headings) + 1)):
+            return None
+        records = []
+        for index, match in enumerate(headings):
+            end = headings[index + 1].start() if index + 1 < len(headings) else len(segment)
+            part = segment[match.end():end]
+            reps = re.findall(r"(?<![\d./])(\d+)\s*次", part)
+            if len(reps) != 1:
+                return None
+            records.append({"reps": int(reps[0]), "weight_kg": _one_result_number(_RESULT_WEIGHT, part),
+                            "rpe": _one_result_number(_RESULT_RPE, part),
+                            "completed": _result_completion(part)})
+        return records
+    sequences = re.findall(r"(?<![\d./])(\d+(?:\s*/\s*\d+)+)\s*次", segment)
+    uniform = re.findall(r"(\d+)\s*组\s*[,,:]?\s*(?:每组)?\s*(\d+)\s*次", segment)
+    if len(sequences) == 1 and not uniform:
+        if segment.count("次") != 1:
+            return None
+        reps = [int(value.strip()) for value in sequences[0].split("/")]
+    elif len(uniform) == 1 and not sequences:
+        count, number = map(int, uniform[0])
+        if count > 100:
+            return None
+        reps = [number] * count
+    elif not sequences and not uniform:
+        singles = re.findall(r"(?<![\d./])(\d+)\s*次", segment)
+        if len(singles) != 1 or re.search(r"(?:[2-9]|\d{2,})\s*组", segment):
+            return None
+        reps = [int(singles[0])]
+    else:
+        return None
+    if len(reps) > 100:
+        return None
+    weights = {float(value) for value in _RESULT_WEIGHT.findall(segment)}
+    if len(weights) > 1:
+        return None
+    common_weight = next(iter(weights)) if weights else None
+    records = [{"reps": value, "weight_kg": common_weight, "rpe": None, "completed": None}
+               for value in reps]
+    score_sequences = re.findall(r"RPE\s*(\d+(?:\.\d+)?(?:\s*/\s*\d+(?:\.\d+)?)+)",
+                                 segment, re.IGNORECASE)
+    if score_sequences:
+        scores = [float(value.strip()) for value in score_sequences[0].split("/")]
+        if len(score_sequences) != 1 or len(scores) != len(records):
+            return None
+        for record, score in zip(records, scores):
+            record["rpe"] = score
+        return records
+    scores = list(_RESULT_RPE.finditer(segment))
+    if len(scores) == 1:
+        score = scores[0]
+        qualifier = segment[max(0, score.start() - 12):score.start()]
+        if re.search(r"(?:末组|最后一组|最后1组)\s*$", qualifier):
+            records[-1]["rpe"] = float(score[1])
+        elif len(records) == 1 or re.search(r"(?:每组|各组|所有组)\s*$", qualifier):
+            for record in records:
+                record["rpe"] = float(score[1])
+    elif scores:
+        # Multiple unassociated scores cannot be assigned to sets safely.
+        return None
+    return records
+
+
+def _actual_exercise_segments(text, name, names):
+    pattern = "|".join(re.escape(value) for value in sorted(set(names), key=len, reverse=True) if value)
+    mentions = list(re.finditer(pattern, text, re.IGNORECASE)) if pattern else []
+    for index, match in enumerate(mentions):
+        if match[0].casefold() != name.casefold():
+            continue
+        end = mentions[index + 1].start() if index + 1 < len(mentions) else len(text)
+        # Include the clause prefix so "明天卧推" cannot become an actual record.
+        prefix = re.split(r"[,;。!?\n]", text[:match.start()])[-1]
+        segment = re.split(r"[。!?\n]", text[match.end():end])[0]
+        if not _NOT_ACTUAL.search(prefix + segment):
+            # Prefix words establish tense only. Their numbers and notes can
+            # belong to a previous action, so they are never fact evidence.
+            yield match[0] + segment
+
+
+def _grounded_result(item, segment):
+    if item.weight_kg is not None and _one_result_number(_RESULT_WEIGHT, segment) != item.weight_kg:
+        return False
+    if item.rpe is not None and _one_result_number(_RESULT_RPE, segment) != item.rpe:
+        return False
+    if item.form_notes is not None:
+        note = unicodedata.normalize("NFKC", item.form_notes)
+        position = segment.find(note)
+        if position < 0 or re.search(r"(?:并非|不是|没有|未曾|不算|不够)\s*$",
+                                     segment[max(0, position - 8):position]):
+            return False
+    if item.goal_completed is not None and _result_completion(segment, goal=True) is not item.goal_completed:
+        return False
+    if item.session_id is not None and item.session_id not in segment:
+        return False
+    if item.sets:
+        source = _source_sets(segment)
+        if source is None or len(source) != len(item.sets):
+            return False
+        for actual, grounded in zip(item.sets, source):
+            if actual.reps != grounded["reps"]:
+                return False
+            for key in ("weight_kg", "rpe", "completed"):
+                value = getattr(actual, key)
+                if value is not None and value != grounded[key]:
+                    return False
+    return True
+
+
+def _validate_exercise_results(items, text, exercise_names):
+    import hashlib
+
+    from .catalog import CATALOG
+
+    known = {key: unicodedata.normalize("NFKC", value) for key, value in (exercise_names or {}).items()}
+    names = [*known.values(), *(entry.name for entry in CATALOG),
+             *(unicodedata.normalize("NFKC", item.exercise_name) for item in items if item.exercise_name)]
+    seen = set()
+    for item in items:
+        name = known.get(item.exercise_id)
+        if item.exercise_name:
+            supplied_name = unicodedata.normalize("NFKC", item.exercise_name)
+            if name and supplied_name != name:
+                raise SafetyError("ungrounded_fact")
+            if not name:
+                normalized_name = "".join(supplied_name.casefold().split())
+                custom_id = "custom_" + hashlib.sha256(normalized_name.encode("utf-8")).hexdigest()[:20]
+                if custom_id != item.exercise_id:
+                    raise SafetyError("ungrounded_fact")
+                name = supplied_name
+        key = (item.exercise_id, item.session_id)
+        if not name or key in seen:
+            raise SafetyError("ungrounded_fact")
+        seen.add(key)
+        segments = list(_actual_exercise_segments(text, name, names))
+        if not any(_grounded_result(item, segment) for segment in segments):
+            raise SafetyError("ungrounded_fact")
+
+
 def validate_model_feedback(candidate: dict | FeedbackData, text: str, day: date,
                             baseline: FeedbackData, *, exercise_names: dict[str, str] | None = None) -> FeedbackData:
     """Validate a draft only. Explicit measurements need source-text evidence."""
@@ -183,25 +354,7 @@ def validate_model_feedback(candidate: dict | FeedbackData, text: str, day: date
     original_results = [item.model_dump(mode="json") for item in baseline.exercise_results]
     parsed_results = [item.model_dump(mode="json") for item in result.exercise_results]
     if parsed_results != original_results:
-        if exercise_names is None:
-            raise SafetyError("ungrounded_fact")
-        for item in result.exercise_results:
-            name = exercise_names.get(item.exercise_id)
-            if not name or item.exercise_id not in exercise_names:
-                raise SafetyError("ungrounded_fact")
-            position = normalized.find(unicodedata.normalize("NFKC", name))
-            if position < 0:
-                raise SafetyError("ungrounded_fact")
-            excerpt = normalized[max(0, position - 32):position + len(name) + 96]
-            if item.weight_kg is not None:
-                amount = re.escape(f"{item.weight_kg:g}")
-                if not re.search(rf"{amount}\s*(?:kg|公斤|千克)", excerpt, re.IGNORECASE):
-                    raise SafetyError("ungrounded_fact")
-            if item.rpe is not None:
-                score = re.escape(f"{item.rpe:g}")
-                if not re.search(rf"(?:RPE\s*(?:为|是|:)?\s*{score}|主观用力(?:为|是)?\s*{score})",
-                                 excerpt, re.IGNORECASE):
-                    raise SafetyError("ungrounded_fact")
+        _validate_exercise_results(result.exercise_results, normalized, exercise_names)
     if not set(baseline.uncertainties) <= set(result.uncertainties):
         raise SafetyError("immutable_field")
     for uncertainty in result.uncertainties:

@@ -193,7 +193,8 @@ class Store:
                 rows = db.execute(query, (limit,))
             else:
                 rows = db.execute(query)
-            return [decode(r) for r in rows]
+            from .feedback_facts import attach_fact_times
+            return attach_fact_times(db, [decode(r) for r in rows])
 
     def get_feedback(self, ident):
         with self.connection() as db:

@@ -69,3 +69,40 @@ test('feedback state events load plans without automatically regenerating today'
   assert.ok(html.includes('日终复盘'));
   assert.ok(html.includes('feedback-timing'));
 });
+
+test('unknown critical completion offers explicit confirmation and displays sets', () => {
+  const root = new Element('div'); let confirmed = null;
+  ui.render(root, {id:'f',revision:2,date:'2026-10-21',data:{exercise_results:[{
+    exercise_id:'bench_press',exercise_name:'卧推',sets:[{reps:8,weight_kg:45},{reps:7,weight_kg:45,rpe:9}]}]},
+    coaching:{status:'ready',memory_status:'updated',data:{reply:'收到',decision:{reason:'观察'}},
+      fact_status:{training_completed:{status:'needs_confirmation'},ignored_fields:['weight_kg']}}},
+    {confirmFacts:(id, revision, facts) => confirmed={id,revision,facts}}, doc);
+  assert.ok(root.textContent.includes('45'));
+  assert.ok(root.textContent.includes('第2组'));
+  assert.ok(root.textContent.includes('整次训练'));
+  assert.ok(root.textContent.includes('体重'));
+  const nodes=root.children.flatMap(function walk(x){return [x,...x.children.flatMap(walk)];});
+  nodes.find(x=>x.tagName==='button' && x.textContent==='训练已全部完成').listeners.click();
+  assert.deepEqual(confirmed,{id:'f',revision:2,facts:{training_completed:true}});
+});
+
+test('memory view explains event dates, expiry, evidence and legacy verification', () => {
+  const root=new Element('div');
+  ui.renderMemory(root,{version:2,expired_keys:['old'],entries:[{key:'x',category:'fact',text:'今天很累',
+    event_date:'2026-10-21',expires_on:'2026-11-03',verification:'legacy_unverified',sources:[],
+    evidence:[{quote:'我今天有点累'}],supersedes:['old-fatigue']}]},doc);
+  for(const phrase of ['2026-10-21','2026-11-03','我今天有点累','待核实','已过期','old-fatigue'])
+    assert.ok(root.textContent.includes(phrase),phrase);
+});
+
+test('legacy editing preserves imported sets and separate same-action sessions', () => {
+  const rows=[{exercise_id:'bench_press',session_id:'am',sets:[{reps:8,weight_kg:45}],weight_kg:45},
+    {exercise_id:'bench_press',session_id:'pm',sets:[{reps:7,weight_kg:45}],form_notes:'动作稳定'}];
+  const updated=ui.mergeExerciseEdits(rows,[{index:0,field:'weight_kg',value:null},{index:1,field:'rpe',value:9}]);
+  assert.equal(updated.length,2);
+  assert.equal(updated[0].weight_kg,null);
+  assert.equal(updated[1].session_id,'pm');
+  assert.deepEqual(updated[1].sets,[{reps:7,weight_kg:45}]);
+  assert.equal(updated[1].form_notes,'动作稳定');
+  assert.equal(updated[1].rpe,9);
+});

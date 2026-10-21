@@ -84,7 +84,9 @@ def _feedback_csv(rows: list[dict]) -> str:
     fields = [
         "feedback_id", "date", "status", "revision", "raw_text", "training_summary",
         "training_completed", "food_summary", "diet_followed_plan", "sleep_hours", "sleep_date", "fatigue", "weight_kg",
-        "intake_kcal", "uncertainties", "advice_summary", "advice_suggestions", "source_ids", "trace_json",
+        "intake_kcal", "exercise_results", "meal_to_plan", "meal_conditions", "available_foods",
+        "desired_foods", "already_eaten", "uncertainties", "advice_summary", "advice_suggestions",
+        "source_ids", "trace_json",
     ]
     output = io.StringIO(newline="")
     writer = csv.DictWriter(output, fieldnames=fields)
@@ -107,6 +109,12 @@ def _feedback_csv(rows: list[dict]) -> str:
             "fatigue": data.get("fatigue", ""),
             "weight_kg": data.get("weight_kg", ""),
             "intake_kcal": data.get("intake_kcal", ""),
+            "exercise_results": _json_cell(data.get("exercise_results") or []),
+            "meal_to_plan": data.get("meal_to_plan", ""),
+            "meal_conditions": data.get("meal_conditions", ""),
+            "available_foods": data.get("available_foods", ""),
+            "desired_foods": data.get("desired_foods", ""),
+            "already_eaten": data.get("already_eaten", ""),
             "uncertainties": _json_cell(data.get("uncertainties") or []),
             "advice_summary": advice.get("summary", ""),
             "advice_suggestions": _json_cell(advice.get("suggestions") or []),

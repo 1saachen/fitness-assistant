@@ -145,7 +145,7 @@ def test_trend_summary_reports_numeric_ranges_rates_and_missing_counts():
         "reported_count": 2,
         "rate": 2 / 3,
         "insufficient_data": False,
-        "meaning": "有疲劳描述的记录占确认反馈的比例；未描述不等于没有疲劳。",
+        "meaning": "有疲劳描述的日期占有确认反馈日期的比例；同日合并，未描述不等于没有疲劳。",
     }
 
 

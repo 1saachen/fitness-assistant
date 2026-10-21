@@ -83,7 +83,7 @@ Knowledge loading and validation are optional enrichment. If approved knowledge 
 ## Personal History
 
 - `GET /api/history/recent?days={7|14|21}&end_date=YYYY-MM-DD&issue=<optional>&metric=<optional>` returns confirmed feedback in an inclusive calendar window, newest first. Supported metric filters are `sleep_hours`, `weight_kg`, `fatigue`, `training_completed`, and `diet_followed_plan`; a metric filter only returns records with an explicit non-null value.
-- `GET /api/history/trends?days={7|14|21}&end_date=YYYY-MM-DD` returns independent sample counts and deterministic summaries for sleep, weight, fatigue reports, training completion, and explicit diet execution. Numeric fields include average/minimum/maximum/range; weight also includes chronological change when at least two samples exist. A single sample is always marked `insufficient_data`.
+- `GET /api/history/trends?days={7|14|21}&end_date=YYYY-MM-DD` merges confirmed records by date before computing independent metric samples. `record_count` counts reporting days, `raw_record_count` counts source records, and `sample_unit` is `day`. Each scalar uses its last actual field revision; missing/null/empty fields do not erase known facts. Numeric fields include average/minimum/maximum/range; weight also includes chronological change when at least two distinct dates exist. A single sampled day is marked `insufficient_data`.
 - `GET /api/history/similar/{feedback_id}?limit=3` ranks confirmed historical feedback by shared issue and explicit categorical signals. It excludes the current record and may return a previous advice summary, but never an inferred outcome.
 - Unsupported windows, metrics, or limits return `400` with `detail.code: "history_query_invalid"`.
 
@@ -143,3 +143,42 @@ call per active agent and can increase total latency and token usage while makin
 content readable sooner. SSE includes keepalives; disconnect aborts at the next
 event/phase boundary. A persistence operation already in progress may complete,
 so inspect planning history before retrying after a dropped connection.
+
+## History and memory reliability (2026-10-21)
+
+`FeedbackData.exercise_results[]` remains compatible with legacy action-level
+`weight_kg` and `rpe`. Optional fields now include `exercise_name`, `session_id`,
+`sets`, `form_notes`, and `goal_completed`. Each set requires positive strict
+integer `reps`, with optional actual `weight_kg`, `rpe` (0.5 increments), and
+strict boolean `completed`. Unknown values remain null. Model-extracted values
+must be grounded in the action's actual report; planned performance is not an
+actual result. Omitted session IDs group the same action on the same date.
+CSV stores the full list as JSON in `exercise_results`.
+
+The model tool `get_training_history` accepts `days: 7|14|21`, optional
+`exercise_id`, and `session_limit: 1..8` (default 3 per exercise). Its
+`exercise_history` includes sessions, actual total reps, known external load
+volume, volume completeness, and contributing feedback IDs/revisions. Summaries
+are byte bounded and expose truncation; full source records remain stored.
+
+`GET /api/personal-memory` adds event dates, evidence quotes, expiry,
+supersession and verification metadata. Context includes `expired_keys`,
+`future_keys`, `legacy_keys`, `stale_keys` and `superseded_keys`. New entries
+require a quote for each `(feedback_id, revision)` source. Facts default to a
+14-day lifetime and patterns to 21 days; patterns require two distinct source
+dates. Compression cannot renew those dates or manufacture confirmation.
+Changed source revisions suspend ordinary entries; unresolved restrictions
+remain active with `source_changed_recheck` until an explicit targeted release.
+
+| Endpoint | Request and result |
+| --- | --- |
+| `POST /api/feedback/{id}/facts/confirm` | `{expected_revision, training_completed?: boolean, diet_followed_plan?: boolean}`; at least one strict boolean. Saves a feedback revision and returns the feedback view, preserving raw text. Earlier coaching becomes stale and requires explicit reanalysis; does not generate a plan. |
+| `POST /api/personal-memory/{key}/confirm` | `{expected_version, action: "confirm"\|"retire"}`; only active preferences. Writes an auditable user statement plus a memory version and returns current memory context. Restrictions use their explicit release flow. |
+
+Both operations check the expected revision/version inside the write
+transaction; conflicts return 409. Feedback views expose
+`coaching.fact_status.ignored_fields` and completion fields with
+`status: confirmed|needs_confirmation|unknown` plus nullable `value`.
+An invalid optional fact is discarded individually; valid sibling fields can
+still be saved. See [history and memory behavior](history-and-memory.md) for
+calendar windows, user-visible confirmation, compatibility and limitations.

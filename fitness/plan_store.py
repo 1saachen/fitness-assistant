@@ -45,17 +45,8 @@ class PlanRepository:
                  ORDER BY r.revision DESC LIMIT 1) AS fact_updated_at
                 FROM feedback f WHERE f.status='confirmed' AND f.date<=?
                 ORDER BY f.date, f.created_at, f.id""", (str(day),))]
-        # A weight/meal edit must not turn an unchanged symptom into a new report.
-        for row in feedback:
-            timestamps, previous = {}, {}
-            for raw in db.execute('SELECT * FROM feedback_revisions WHERE feedback_id=? ORDER BY revision',
-                                  (row['id'],)):
-                revision = decode(raw)
-                for field in ('training_summary', 'fatigue'):
-                    if revision['data'].get(field) != previous.get(field):
-                        timestamps[field] = revision['created_at']
-                previous = revision['data']
-            row['field_updated_at'] = timestamps
+        from .feedback_facts import attach_fact_times
+        attach_fact_times(db, feedback)
         # Advice writes do not change input facts; feedback revisions do.
         facts = [{k: r[k] for k in ('id', 'date', 'revision', 'data', 'raw_text', 'fact_updated_at')}
                  for r in feedback]
