@@ -64,23 +64,44 @@
     if (list(data.suggestions).length) {
       const ul = make('ul'); list(data.suggestions).forEach(s => ul.append(make('li', s))); panel.append(ul);
     }
-    if (list(data.questions).length) {
-      panel.append(make('h3', '想进一步了解'));
-      list(data.questions).forEach(q => panel.append(make('p', q)));
-    }
-    if (handlers.followup) panel.append(button(list(data.questions).length ? '回答这些问题' : '补充这条反馈', () => handlers.followup(item.id)));
     const decision = data.decision || {}, update = coach.planning_update || {};
+    const questions = [...new Set([...list(data.questions), ...list(update.questions)])];
+    const reply = make(handlers.followup ? 'form' : 'section', '', 'feedback-reply');
+    if (questions.length) {
+      reply.append(make('h3', '想进一步了解'));
+      questions.forEach(q => reply.append(make('p', q)));
+    }
+    if (handlers.followup) {
+      const label = make('label', questions.length ? '回答以上问题' : '补充这条反馈');
+      const input = make('textarea'); input.rows = 3; input.maxLength = 4000; input.required = true;
+      input.value = handlers.replyDraft || '';
+      input.addEventListener('input', () => handlers.changeDraft?.(input.value));
+      label.append(input);
+      const submit = make('button', '提交补充并获取回应', 'button'); submit.type = 'submit';
+      const status = make('p', '', 'field-hint'); status.setAttribute('role', 'status');
+      reply.append(label, status, submit);
+      reply.addEventListener('submit', async event => {
+        event.preventDefault();
+        const answer = String(input.value || '').trim();
+        if (!answer || submit.disabled) return;
+        submit.disabled = true; status.textContent = '正在保存补充并获取回应…';
+        try { await handlers.followup(item.id, answer); }
+        catch (error) { status.textContent = `补充未提交成功，内容已保留。${error.message}`; }
+        finally { submit.disabled = false; }
+      });
+    }
+    if (questions.length || handlers.followup) panel.append(reply);
     const status = update.status;
     const labels = {none: '当天计划保留。', updated: `${update.date || ''} 的安排已更新。`,
       draft: `已生成 ${update.date || ''} 起的长期计划草稿，请到“长期计划”检查并确认。`,
       pending: '计划调整待执行，可点击下方按钮继续。', applying: '计划调整正在处理。若之前的处理已中断，可检查并恢复；运行中的任务不会重复执行。',
       failed: `计划调整未完成，原有计划保留。${update.message || ''}`};
     panel.append(make('h3', '后续安排'), make('p', decision.reason), make('p', labels[status] || '当天计划保留。'));
-    list(update.questions).forEach(q => panel.append(make('p', q)));
     if (status === 'failed' && handlers.retryPlan) panel.append(button('重试计划调整', () => handlers.retryPlan(item.id)));
     if (['pending','applying'].includes(status) && handlers.retryPlan) panel.append(button('检查并恢复计划调整', () => handlers.retryPlan(item.id)));
     if (status === 'draft') {
-      const link = make('a', '查看长期计划草稿', 'text-button'); link.href = '#plan'; panel.append(link);
+      const link = make('a', '查看长期计划草稿', 'text-button');
+      link.href = update.plan_id ? `#plan-${encodeURIComponent(update.plan_id)}` : '#plan'; panel.append(link);
     }
     const memoryLabels = {failed: '本次个人记忆未更新，保留之前的版本；原始反馈和本次回应仍已保存。',
       compacted: '个人记忆已整理并压缩，原始反馈和旧记忆版本继续保留。', updated: '个人记忆已整理，保留原文引用。'};

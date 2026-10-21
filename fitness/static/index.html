@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>循序 · 健身助手</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=20261021-1">
   <link rel="stylesheet" href="/static/review.css">
   <link rel="stylesheet" href="/static/export.css">
-  <script src="/static/feedback-coach.js?v=20261021-1" defer></script>
-  <script src="/static/app.js?v=20261021-5" defer></script>
-    <script src="/static/daily-plans.js?v=20261021-3" defer></script>
+  <script src="/static/feedback-coach.js?v=20261021-2" defer></script>
+  <script src="/static/app.js?v=20261021-6" defer></script>
+    <script src="/static/daily-plans.js?v=20261021-4" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -45,8 +45,7 @@
       </section>
       <section id="view-plan" class="view" aria-labelledby="plan-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">YOUR LONG-TERM DIRECTION</p><h1 id="plan-title">长期计划</h1><p class="subtitle">从已保存档案和训练反馈出发；训练频率、时长、经验、器械或运动限制未填写时，在线 Agent 会先询问你。</p></div></div>
-        <p id="planning-message" role="status" aria-live="polite" hidden></p>
-        <form id="long-term-form" class="card"><label for="long-term-conditions">补充条件或回答 Agent 的问题<textarea id="long-term-conditions" maxlength="2000" rows="3" placeholder="可以补充档案里没填的信息；也可以留空，等在线 Agent 追问。"></textarea></label><button class="button" type="submit">生成长期计划草案</button></form>
+        <form id="long-term-form" class="card"><p id="planning-message" role="status" aria-live="polite" hidden></p><div id="long-term-questions" class="planning-questions" aria-live="polite" hidden></div><label for="long-term-conditions"><span id="long-term-conditions-label">补充条件</span><textarea id="long-term-conditions" maxlength="2000" rows="3" placeholder="可以补充档案里没填的信息；也可以留空，等在线 Agent 追问。"></textarea></label><button id="long-term-submit" class="button" type="submit">生成长期计划草案</button></form>
         <div id="long-term-preview" class="card" hidden aria-label="正在生成的计划草稿"></div>
         <div id="long-term-history" class="history-selector"></div><div id="long-term-content"></div>
         <details class="card"><summary>历史周计划兼容</summary><p class="field-hint">保留原有周计划历史。请使用长期计划与当天计划安排后续训练和饮食。</p>
@@ -57,14 +56,13 @@
       <section id="view-daily" class="view" aria-labelledby="daily-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">ONE DAY AT A TIME</p><h1 id="daily-title">当天计划</h1><p class="subtitle">训练、三餐、饮水和恢复，跟随你的实际反馈调整。</p></div></div>
         <p class="field-hint">打开本页时结合已有信息安排今天。日终复盘不会重写已经结束的一天；只有模型判断需要时才调整后续安排。你也可以主动更新尚未完成的内容。</p>
-        <p id="daily-message" role="status" aria-live="polite" hidden></p>
-        <form id="daily-form" class="card"><label for="daily-date">计划日期<input id="daily-date" type="date" required></label><label for="daily-conditions">当天条件<textarea id="daily-conditions" rows="3" maxlength="2000" placeholder="例如今天很累，想休息；午餐在食堂，预算15元。"></textarea></label><button class="button" type="submit">更新当天计划</button><button class="button secondary" type="button" id="daily-today">回到今天</button></form>
+        <form id="daily-form" class="card"><p id="daily-message" role="status" aria-live="polite" hidden></p><label for="daily-date">计划日期<input id="daily-date" type="date" required></label><div id="daily-questions" class="planning-questions" aria-live="polite" hidden></div><label for="daily-conditions"><span id="daily-conditions-label">当天条件</span><textarea id="daily-conditions" rows="3" maxlength="2000" placeholder="例如今天很累，想休息；午餐在食堂，预算15元。"></textarea></label><button id="daily-submit" class="button" type="submit">更新当天计划</button><button class="button secondary" type="button" id="daily-today">回到今天</button></form>
         <div id="daily-preview" class="card" hidden aria-label="正在生成的计划草稿"></div>
         <div id="daily-history" class="history-selector"></div><div id="daily-content"></div>
       </section>
       <section id="view-feedback" class="view" aria-labelledby="feedback-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">LISTEN TO YOUR BODY</p><h1 id="feedback-title">每日反馈</h1><p class="subtitle">训练后或睡前，复盘一天的训练、饮食与感受。模型结合历史回应，逐步了解你。</p></div></div>
-        <div class="feedback-layout"><div><form id="parse-form" class="card"><div class="card-heading"><h2>今天过得怎么样？</h2><span class="pill">日终复盘</span></div><label for="feedback-date">记录日期<input id="feedback-date" type="date" required></label><label for="feedback-timing">这次反馈用于<select id="feedback-timing"><option value="review">日终复盘（保留当天计划）</option><option value="remaining">还有安排没完成，请调整今天剩余部分</option></select></label><p id="feedback-parent-note" class="field-hint"></p><label for="feedback-text">用自己的话说说<textarea id="feedback-text" rows="5" maxlength="4000" placeholder="例如：今天卧推40kg，最后一组RPE9，比上次吃力；三餐按计划吃完了，晚上有点饿，准备早点睡。" required></textarea></label><p class="field-hint">在线模式会先保存原文，再结合个人记忆回应。默认保留当天安排；长期修改先生成草稿，由你确认。</p><button class="button" type="submit" id="parse-feedback">记录反馈并获取回应</button></form><div id="feedback-editor"></div></div><aside class="card feedback-history"><div class="card-heading"><h2>反馈历史</h2><button type="button" class="text-button" id="refresh-history">刷新</button></div><div id="feedback-list"></div></aside></div>
+        <div class="feedback-layout"><div><form id="parse-form" class="card"><div class="card-heading"><h2>今天过得怎么样？</h2><span class="pill">日终复盘</span></div><label for="feedback-date">记录日期<input id="feedback-date" type="date" required></label><label for="feedback-timing">这次反馈用于<select id="feedback-timing"><option value="review">日终复盘（保留当天计划）</option><option value="remaining">还有安排没完成，请调整今天剩余部分</option></select></label><label for="feedback-text">用自己的话说说<textarea id="feedback-text" rows="5" maxlength="4000" placeholder="例如：今天卧推40kg，最后一组RPE9，比上次吃力；三餐按计划吃完了，晚上有点饿，准备早点睡。" required></textarea></label><p class="field-hint">在线模式会先保存原文，再结合个人记忆回应。默认保留当天安排；长期修改先生成草稿，由你确认。</p><button class="button" type="submit" id="parse-feedback">记录反馈并获取回应</button></form><div id="feedback-editor"></div></div><aside class="card feedback-history"><div class="card-heading"><h2>反馈历史</h2><button type="button" class="text-button" id="refresh-history">刷新</button></div><div id="feedback-list"></div></aside></div>
         <details class="card" id="personal-memory-panel"><summary>模型对我的了解 · 个人记忆</summary><p class="field-hint">从你的反馈整理，保留原文来源；模型归纳会单独标明。需要更正时直接在反馈里说明。</p><div id="personal-memory-content"></div></details>
         <details class="card"><summary>导入历史反馈</summary><form id="import-feedback-form"><label for="import-format">文件格式<select id="import-format"><option value="json">JSON</option><option value="csv">CSV</option><option value="markdown">Markdown</option></select></label><label for="import-file">选择本地文件<input id="import-file" type="file" accept=".json,.csv,.md,.markdown" required></label><p class="field-hint">先核对预览再确认，只导入明确事实，不导入文件里的建议或生成依据。</p><button class="button secondary" type="submit">预览导入</button></form><div id="import-preview"></div></details>
       </section>

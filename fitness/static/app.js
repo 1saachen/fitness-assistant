@@ -399,7 +399,7 @@ if (typeof document !== "undefined") {
     mode: null,
     knowledgeStatus: "unknown",
     feedbackDirty: false,
-    feedbackParent: null,
+    feedbackReplies: new Map(),
     feedbackSubmission: null,
     sources: [],
     reviewCards: [],
@@ -894,7 +894,9 @@ if (typeof document !== "undefined") {
   }
   function go(view) {
     const sourceId = view.startsWith('feedback-') ? decodeURIComponent(view.slice(9)) : null;
+    const longTermId = view.startsWith('plan-') ? decodeURIComponent(view.slice(5)) : null;
     if (sourceId) view = 'feedback';
+    if (longTermId) view = 'plan';
     if (!["overview", "profile", "plan", "daily", "feedback", "knowledge"].includes(view))
       view = "overview";
     document.querySelectorAll(".view").forEach((section) => {
@@ -907,14 +909,14 @@ if (typeof document !== "undefined") {
         ? nav.setAttribute("aria-current", "page")
         : nav.removeAttribute("aria-current");
     });
-    window.location.hash = view;
+    window.location.hash = longTermId ? `plan-${encodeURIComponent(longTermId)}` : view;
     if (sourceId) {
       const item = app.feedback.find(row => row.id === sourceId);
       if (item) { app.selectedFeedback = item; renderFeedbackHistory(); renderFeedbackEditor(item); }
       else api('/api/feedback/' + encodeURIComponent(sourceId)).then(putFeedback).catch(error => show(error.message, true));
     }
     if (view === 'feedback') loadPersonalMemory();
-    document.dispatchEvent(new CustomEvent('fitness-view-change', {detail: {view}}));
+    document.dispatchEvent(new CustomEvent('fitness-view-change', {detail: {view, long_term_id: longTermId}}));
   }
   function renderKnowledgeStats() {
     const root = $("knowledge-stats");
@@ -1383,11 +1385,19 @@ if (typeof document !== "undefined") {
             show('状态已确认保存。可以点击“重试模型理解”，让后续安排采用更正后的记录。');
           } catch (error) { show(error.message,true); }
         },
-        followup: id => {
-          app.feedbackParent = id;
-          $('feedback-parent-note').textContent = '正在补充上一条反馈；模型会同时看到先前的回应和问题。';
-          $('feedback-text').value = '';
-          $('feedback-text').focus();
+        replyDraft: app.feedbackReplies.get(item.id)?.text,
+        changeDraft: text => app.feedbackReplies.set(item.id, {text}),
+        followup: async (id, text) => {
+          let draft = app.feedbackReplies.get(id);
+          if (!draft?.key || draft.text !== text) {
+            draft = {text, key: crypto.randomUUID()}; app.feedbackReplies.set(id, draft);
+          }
+          const saved = await api('/api/feedback/record', {method: 'POST', body: JSON.stringify({
+            text, date: item.date, timing: item.coaching.timing,
+            parent_feedback_id: id, request_key: draft.key})});
+          app.feedbackReplies.delete(id);
+          putFeedback(saved);
+          await understandFeedback(saved.id);
         }});
       return;
     }
@@ -1899,7 +1909,7 @@ if (typeof document !== "undefined") {
       try {
         if ($('mode').value === 'live') {
           const body = {text: $('feedback-text').value, date: $('feedback-date').value,
-            timing: $('feedback-timing').value, parent_feedback_id: app.feedbackParent};
+            timing: $('feedback-timing').value, parent_feedback_id: null};
           const signature = JSON.stringify(body);
           if (app.feedbackSubmission?.signature !== signature) app.feedbackSubmission = {
             signature, key: crypto.randomUUID()};
@@ -1908,8 +1918,6 @@ if (typeof document !== "undefined") {
           putFeedback(item);
           show('原文已保存，模型正在结合以往反馈与个人记忆理解。');
           await understandFeedback(item.id);
-          app.feedbackParent = null;
-          $('feedback-parent-note').textContent = '';
           return;
         }
         const item = await api("/api/feedback/parse", {

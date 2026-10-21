@@ -11,10 +11,11 @@ class Element {
   get textContent() { return (this._text || '') + this.children.map(x => x.textContent).join(''); }
   set innerHTML(_) { throw Error('unsafe HTML'); }
   addEventListener(name, fn) { this.listeners[name] = fn; }
+  setAttribute(name, value) { this[name] = value; }
 }
 const doc = {createElement: tag => new Element(tag)};
 
-test('reflection renders natural reply, followup and future decision without a field editor', () => {
+test('reflection keeps questions and a reply form together and submits the answer', async () => {
   assert.equal(typeof ui.render, 'function');
   const root = new Element('div');
   let parent = null;
@@ -23,12 +24,38 @@ test('reflection renders natural reply, followup and future decision without a f
       data: {reply: '先恢复，不修改今天。', suggestions: ['今晚早点睡'], questions: ['哪里不舒服？'],
         memory_updates: [{key:'fatigue',category:'fact',text:'今天训练后疲劳',sources:[{feedback_id:'feedback-1',revision:1}]}],
         decision:{action:'adjust_next',reason:'下一次减轻负担'}},
-      planning_update:{status:'updated',date:'2026-10-22'}}}, {followup: id => parent = id}, doc);
+        planning_update:{status:'updated',date:'2026-10-22'}}}, {followup: (id, answer) => parent = {id, answer}}, doc);
   for (const text of ['先恢复', '今晚早点睡', '哪里不舒服', '2026-10-22', '<script>', '今天训练后疲劳']) assert.ok(root.textContent.includes(text), text);
   const nodes = root.children.flatMap(function walk(x) { return [x,...x.children.flatMap(walk)]; });
-  nodes.find(x => x.tagName === 'button' && x.textContent.includes('回答')).listeners.click();
-  assert.equal(parent, 'feedback-1');
+  const form = nodes.find(x => x.tagName === 'form');
+  assert.ok(form.textContent.includes('哪里不舒服'));
+  nodes.find(x => x.tagName === 'textarea').value = '肩部没有不适，只是疲劳';
+  await form.listeners.submit({preventDefault() {}});
+  assert.deepEqual(parent, {id: 'feedback-1', answer: '肩部没有不适，只是疲劳'});
   assert.ok(!nodes.some(x => x.tagName === 'input'));
+});
+
+test('reply failure preserves the answer and reports the error next to it', async () => {
+  const root = new Element('div');
+  ui.render(root, {id:'f',coaching:{status:'ready',data:{questions:['每组几次？']},
+    planning_update:{status:'failed',questions:['有没有动作变形？']}}},
+    {replyDraft:'8/8/7次', followup:async () => {throw Error('连接中断');}}, doc);
+  const nodes = root.children.flatMap(function walk(x) {return [x,...x.children.flatMap(walk)];});
+  const form = nodes.find(x=>x.tagName==='form'), input = nodes.find(x=>x.tagName==='textarea');
+  assert.ok(form.textContent.includes('每组几次？'));
+  assert.ok(form.textContent.includes('有没有动作变形？'));
+  await form.listeners.submit({preventDefault() {}});
+  assert.equal(input.value,'8/8/7次');
+  assert.match(form.textContent,/连接中断/);
+  assert.equal(nodes.find(x=>x.tagName==='button' && x.type==='submit').disabled,false);
+});
+
+test('draft link identifies the exact long-term plan to review', () => {
+  const root = new Element('div');
+  ui.render(root, {id:'f',coaching:{status:'ready',data:{},
+    planning_update:{status:'draft',plan_id:'new-draft',date:'2026-10-22'}}}, {}, doc);
+  const nodes = root.children.flatMap(function walk(x){return [x,...x.children.flatMap(walk)];});
+  assert.equal(nodes.find(x=>x.tagName==='a').href,'#plan-new-draft');
 });
 
 test('failure distinguishes saved original from incomplete understanding and offers retry', () => {
