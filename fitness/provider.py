@@ -217,14 +217,21 @@ class OpenAICompatibleProvider:
                 if not 200 <= status < 300:
                     raise ProviderError("http_error")
                 chunks = bytearray()
-                stream = _TextStream(on_text) if on_text is not None else None
+                stream = _TextStream(on_text, self.settings.max_response_bytes) if on_text is not None else None
+                response_limit = self.settings.max_response_bytes
+                if stream is not None:
+                    # SSE repeats JSON metadata per token; bound it separately from the text.
+                    response_limit += output_tokens * 1024
+                received_bytes = 0
                 for chunk in result.iter_bytes():
                     if time.monotonic() - started >= timeout:
                         raise ProviderError('timeout')
-                    if len(chunks) + len(chunk) > self.settings.max_response_bytes:
+                    received_bytes += len(chunk)
+                    if received_bytes > response_limit:
                         raise ProviderError("response_too_large")
-                    chunks.extend(chunk)
-                    if stream is not None:
+                    if stream is None:
+                        chunks.extend(chunk)
+                    else:
                         stream.feed(chunk)
                         if stream.done:
                             break
@@ -251,8 +258,10 @@ class OpenAICompatibleProvider:
 class _TextStream:
     """Incremental SSE text-only completion; tool responses use the normal path."""
 
-    def __init__(self, emit):
+    def __init__(self, emit, max_text_bytes):
         self.emit = emit
+        self.max_text_bytes = max_text_bytes
+        self.text_bytes = 0
         self.decoder = codecs.getincrementaldecoder('utf-8')()
         self.buffer = ''
         self.lines = []
@@ -300,6 +309,9 @@ class _TextStream:
             if not isinstance(content, str) or self.stopped:
                 raise ValueError('invalid content')
             if content:
+                self.text_bytes += len(content.encode('utf-8'))
+                if self.text_bytes > self.max_text_bytes:
+                    raise ProviderError('response_too_large')
                 self.parts.append(content)
                 self.emit(content)
         reason = choice.get('finish_reason')
