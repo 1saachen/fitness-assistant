@@ -19,7 +19,8 @@ from fitness.storage import Store
 def candidate():
     return {'summary': '先保证饮食，再评估是否需要补充。', 'budget_note': '预算未知，不估算售价。',
         'items': [{'name': '维生素D', 'current_product': None, 'priority': 'conditional',
-            'reason': '仅在饮食和日晒条件需要时评估。', 'conditions': ['核实饮食和健康信息'],
+            'reason': '仅在饮食和日晒条件需要时评估。',
+            'conditions': ['健康状况未知时先核实相关疾病和限制；用药情况未知时先核实当前用药'],
             'food_alternatives': ['先评估日常食物来源'], 'cautions': ['知识卡是创作者观点，证据有限。'],
             'source_ids': ['mvp-supplements-006']}], 'questions': []}
 
@@ -137,6 +138,46 @@ def test_consider_requires_clear_health_and_honors_personal_memory_restrictions(
     issues = validate_supplement_candidate(plan, profile, sources(),
         personal_memory={'entries': [{'category': 'restriction', 'text': '医生建议先核实补充剂'}]})
     assert any(i.code == 'health_review' for i in issues)
+
+
+def test_conditional_recommendation_must_address_unknown_or_active_medication():
+    from fitness.supplement_agent import validate_supplement_candidate
+    profile = Profile()
+    plan = candidate()
+    plan['items'][0]['conditions'] = ['用药情况未知时先核实当前用药']
+    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
+    plan['items'][0]['conditions'] = ['健康状况未知时先核实相关疾病和限制；用药情况未知时先核实当前用药']
+    assert not validate_supplement_candidate(plan, profile, sources())
+    profile.health.medications_status = 'taking'
+    profile.health.medications = '处方药'
+    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
+    plan['items'][0]['cautions'].append('服用药物时先向医生或药师确认相互作用')
+    assert not validate_supplement_candidate(plan, profile, sources())
+
+
+def test_conditional_recommendation_must_address_known_health_limitations():
+    from fitness.supplement_agent import validate_supplement_candidate
+    profile = Profile()
+    profile.health.exercise_limiting_conditions_status = 'has_conditions'
+    profile.health.exercise_limiting_conditions_details = '待评估的健康限制'
+    plan = candidate()
+    plan['items'][0]['conditions'] = ['用药情况未知时先核实当前用药']
+    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
+    plan['items'][0]['conditions'].append('存在健康限制时先向医生或药师确认补剂适用性')
+    assert not validate_supplement_candidate(plan, profile, sources())
+
+
+def test_new_conditional_recommendation_is_held_for_unresolved_personal_restriction():
+    from fitness.supplement_agent import validate_supplement_candidate
+    profile = Profile()
+    profile.health.exercise_limiting_conditions_status = 'none_known_self_reported'
+    profile.health.medications_status = 'none_known_self_reported'
+    memory = {'entries': [{'category': 'restriction', 'text': '医生建议先避免使用补剂'}]}
+    plan = candidate()
+    assert any(i.code == 'health_review' for i in validate_supplement_candidate(
+        plan, profile, sources(), personal_memory=memory))
+    plan['items'][0]['priority'] = 'needs_review'
+    assert not validate_supplement_candidate(plan, profile, sources(), personal_memory=memory)
 
 
 def service(tmp_path, profile_data, replies):

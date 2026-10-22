@@ -70,8 +70,31 @@ def validate_supplement_candidate(candidate, profile, sources, *, personal_memor
         review_only = item.current_product in current and item.priority == 'needs_review'
         if not valid_sources or (not item.source_ids and not review_only):
             issues.append(ValidationIssue(path, 'source', '产品建议必须引用提供的已批准补剂卡；已有产品缺乏来源时仅标记needs_review。'))
+        has_personal_restriction = any(
+            e.get('category') == 'restriction'
+            for e in (personal_memory or {}).get('entries', []))
+        if (item.current_product is None and has_personal_restriction
+                and item.priority in {'consider', 'conditional'}):
+            issues.append(ValidationIssue(path, 'health_review', '个人记忆中存在尚未解除的限制时，新增补剂必须标记needs_review并先核实限制。'))
         if item.priority == 'conditional' and not item.conditions:
             issues.append(ValidationIssue(path, 'conditions', '条件性建议须写明需要满足或核实的条件。'))
+        medical_text = ' '.join([*item.conditions, *item.cautions])
+        if profile.health.exercise_limiting_conditions_status == 'unknown' and not re.search(
+                r'(?:未知|未提供).{0,10}(?:健康|疾病|病史|限制)|'
+                r'(?:健康|疾病|病史|限制).{0,8}(?:未知|核实|确认)', medical_text):
+            issues.append(ValidationIssue(path, 'health_review', '健康情况未知时须明确要求核实疾病或健康限制。'))
+        if (profile.health.exercise_limiting_conditions_status == 'has_conditions'
+                or profile.health.exercise_limiting_conditions_details) and not re.search(
+                r'(?:咨询|确认).{0,8}(?:医生|药师)|(?:医生|药师).{0,8}(?:确认|咨询)', medical_text):
+            issues.append(ValidationIssue(path, 'health_review', '存在已知健康限制时须建议向医生或药师确认补剂适用性。'))
+        if profile.health.medications_status == 'unknown' and not re.search(
+                r'(?:核实|确认|了解).{0,8}(?:用药|药物)|(?:用药|药物).{0,8}(?:未知|不明|核实|确认)',
+                medical_text, re.IGNORECASE):
+            issues.append(ValidationIssue(path, 'health_review', '用药情况未知时须明确要求核实当前用药，再评估建议。'))
+        if profile.health.medications_status == 'taking' and not re.search(
+                r'(?:咨询|确认).{0,8}(?:医生|药师)|(?:医生|药师).{0,8}(?:确认|咨询)',
+                medical_text, re.IGNORECASE):
+            issues.append(ValidationIssue(path, 'health_review', '正在用药时须明确建议向医生或药师确认相互作用。'))
         if item.priority == 'consider' and not health_clear:
             issues.append(ValidationIssue(path, 'health_review', '健康、用药未知或存在限制时不能无条件推荐；写明核实条件或标记needs_review。'))
     # Check generated prose only; trusted source quotations can contain historical doses.
@@ -127,7 +150,8 @@ class SupplementPlannerAgent:
             '不臆测配方。已有信息不要重复追问；长期记忆的限制与更正继续生效，pattern不是确定事实。'
             '每项说明理由、适用条件、饮食替代、注意事项与证据局限；已有产品不意味着已确认有效或适合继续。'
             'priority：consider=可以考虑，conditional=条件满足再考虑，not_needed=目前没有必要，'
-            'needs_review=需要核实。健康或用药未知/存在问题时禁止consider，条件中明确先核实。'
+            'needs_review=需要核实。健康或用药未知/存在问题时禁止consider；conditional的conditions/cautions必须分别明确核实未知的健康限制和用药，'
+            '已知健康限制或正在用药时明确建议咨询医生或药师；personal_memory存在尚未解除的restriction时，不新增consider/conditional补剂，标记needs_review并先核实限制。'
             '结合补剂独立预算排序，不挤占正餐预算；预算或价格未知时不编造售价、支出和可负担性。'
             '不推荐品牌或购买渠道，不提供任何剂量、片数、服用处方或数字用量（包括饮食替代中的克数）。'
             '不诊断缺乏症或疾病、不自行停用处方补充剂或改变用药；必要时建议医生或药师核实。'

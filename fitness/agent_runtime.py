@@ -40,32 +40,35 @@ class AgentRuntime:
         if plan_events.get() is not None:
             phase = '补剂建议' if '补剂规划 Agent' in role else '训练安排' if '训练规划' in role else '饮食安排'
             emit_plan_event('phase', {'message': phase})
-            trace['calls'] += 1
-            try:
-                remaining = deadline - self.clock()
-                if remaining <= 0:
-                    return finish('failed', reason='run_timeout')
-                preview = self.provider.complete(messages + [{'role': 'system', 'content':
-                    '本轮先输出供用户直接阅读的中文计划草稿，稍后另行整理数据。'
-                    '本轮覆盖前文只输出JSON的格式要求：不要输出JSON、字段名或代码块，'
-                    '不要描述内部思考过程。遵守前文全部用户事实、健康限制和规划规则。'
-                    '用简洁自然的段落或列表写出实际安排、必要的假设和注意事项；'
-                    '资料不足时保守处理，存在无法安全处理的风险时明确提出问题。'
-                    '这是尚待校验的草稿，不声称已经保存或确认。'}],
-                    timeout_seconds=min(getattr(getattr(self.provider, 'settings', None),
-                        'timeout_seconds', 60), remaining),
-                    max_output_tokens=self.limits.max_output_tokens,
-                    on_text=lambda text: emit_plan_event('text', {'text': text}))
-            except ProviderError as exc:
-                return finish('failed', reason=exc.reason_code)
-            for key, value in preview.usage.items():
-                if type(value) is int and value >= 0:
-                    trace['usage'][key] = trace['usage'].get(key, 0) + value
-            messages.extend([{'role': 'assistant', 'content': preview.content},
-                {'role': 'user', 'content': '现在将刚才的可读草稿整理为前文契约要求的JSON。'
-                    '沿用草稿的安排，不另起一份不同的计划；必要时根据事实和校验结果修正。'
-                    '仅输出JSON，仍须遵守安全限制和字段契约。'}])
-            emit_plan_event('status', {'message': '可读建议已生成，正在整理和校验计划…'})
+            if '补剂规划 Agent' in role:
+                emit_plan_event('status', {'message': '正在整理和校验补剂建议…'})
+            else:
+                trace['calls'] += 1
+                try:
+                    remaining = deadline - self.clock()
+                    if remaining <= 0:
+                        return finish('failed', reason='run_timeout')
+                    preview = self.provider.complete(messages + [{'role': 'system', 'content':
+                        '本轮先输出供用户直接阅读的中文计划草稿，稍后另行整理数据。'
+                        '本轮覆盖前文只输出JSON的格式要求：不要输出JSON、字段名或代码块，'
+                        '不要描述内部思考过程。遵守前文全部用户事实、健康限制和规划规则。'
+                        '用简洁自然的段落或列表写出实际安排、必要的假设和注意事项；'
+                        '资料不足时保守处理，存在无法安全处理的风险时明确提出问题。'
+                        '这是尚待校验的草稿，不声称已经保存或确认。'}],
+                        timeout_seconds=min(getattr(getattr(self.provider, 'settings', None),
+                            'timeout_seconds', 60), remaining),
+                        max_output_tokens=self.limits.max_output_tokens,
+                        on_text=lambda text: emit_plan_event('text', {'text': text}))
+                except ProviderError as exc:
+                    return finish('failed', reason=exc.reason_code)
+                for key, value in preview.usage.items():
+                    if type(value) is int and value >= 0:
+                        trace['usage'][key] = trace['usage'].get(key, 0) + value
+                messages.extend([{'role': 'assistant', 'content': preview.content},
+                    {'role': 'user', 'content': '现在将刚才的可读草稿整理为前文契约要求的JSON。'
+                        '沿用草稿的安排，不另起一份不同的计划；必要时根据事实和校验结果修正。'
+                        '仅输出JSON，仍须遵守安全限制和字段契约。'}])
+                emit_plan_event('status', {'message': '可读建议已生成，正在整理和校验计划…'})
         while trace['calls'] < self.limits.max_calls:
             if self.clock() >= deadline:
                 return finish('failed', reason='run_timeout')
