@@ -10,6 +10,16 @@ from .agent_contracts import RunResult, ValidationIssue
 from .plan_streaming import emit_plan_event, plan_events
 from .provider import ProviderError, _json_loads, _matches_schema
 
+PLANNING_QUESTION_GUIDE = '''
+追问与完成规则：能够安全生成就返回draft_ready和完整候选，本次规划到此完成。
+缺少非关键资料时，说明保守假设并继续；不为完善档案、优化偏好或追求精确而阻断生成。
+只有已知风险或明确矛盾真正阻止安全规划，且无法通过保守安排或避开风险处理时，才返回needs_input。
+需要回答时，结合档案、当前条件、历史和个人记忆，一次集中列出当前能识别的全部必要问题，说明各问题影响的安全判断；
+不逐项挤牙膏追问，不重复询问已有明确回答，也不反复索取用户已说明暂不清楚的资料。
+成功候选中的questions仅用于有价值的可选补充，不影响执行当前计划；没有必要则留空，不在正文要求回答后才能使用。
+可选问题放在candidate.questions中，顶层questions留空；仅needs_input的顶层questions包含阻止安全规划的必要问题。
+'''
+
 
 class AgentRuntime:
     def __init__(self, provider, limits, *, clock):
@@ -147,5 +157,5 @@ class AgentRuntime:
             trace['revisions'] += 1
             messages.extend([{'role': 'assistant', 'content': reply.content},
                 {'role': 'user', 'content': json.dumps({'validation_errors': [asdict(i) for i in issues],
-                    'instruction': '修订候选并重新提交；缺少关键条件时返回 needs_input。'}, ensure_ascii=False)}])
+                    'instruction': '修订候选并重新提交；只有真正阻止安全规划且无法保守处理时才返回 needs_input。'}, ensure_ascii=False)}])
         return finish('failed', reason='call_limit')

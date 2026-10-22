@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from pydantic import Field, ValidationError
 
 from .agent_contracts import RunLimits, ValidationIssue
-from .agent_runtime import AgentRuntime
+from .agent_runtime import PLANNING_QUESTION_GUIDE, AgentRuntime
 from .knowledge import build_manifest
 from .models import Contract
 from .provider import OpenAICompatibleProvider
@@ -160,6 +160,7 @@ class SupplementPlannerAgent:
             '不输出来源正文或自造链接，程序会保存可信来源。直接提交，程序校验后可修订。'
             '只输出JSON，字段status、candidate、questions；成功status=draft_ready，candidate符合以下契约；'
             '需要输入时status=needs_input、candidate=null、questions为具体问题。'
+            + PLANNING_QUESTION_GUIDE
             + json.dumps(SupplementPlan.model_json_schema(), ensure_ascii=False))
         task = {'profile': profile.model_dump(mode='json'), **context,
                 'knowledge': {'status': tools.status, 'cards': tools.cards}}

@@ -79,6 +79,15 @@
     el.addEventListener('click', callback);
     return el;
   }
+  function optionalQuestions(doc, root, groups) {
+    const questions = [...new Set(groups.flatMap(list).filter(Boolean))];
+    if (!questions.length) return;
+    const section = node(doc, 'section', null, 'field-hint');
+    section.append(node(doc, 'h3', '可选补充'),
+      node(doc, 'p', '以下问题不影响使用当前计划；愿意补充时，可在上方条件框回答后更新计划。'));
+    questions.forEach(question => section.append(node(doc, 'p', question)));
+    root.append(section);
+  }
   function training(doc, root, step = {}) {
     root.append(node(doc, 'h3', `${step.label || '训练安排待生成'} · ${step.kind === 'rest' ? '恢复 / 休息' : '训练'}${step.estimated_minutes ? ` · 约 ${step.estimated_minutes} 分钟` : ''}`));
     list(step.exercises).forEach(exercise => {
@@ -113,7 +122,6 @@
     });
     root.append(grid);
     if (data.budget_note) root.append(node(doc, 'p', data.budget_note, 'field-hint'));
-    if (!options.questionsInForm) lines(doc, root, '需要补充的信息', data.questions, 'notice-inline');
   }
   function supplements(doc, root, data, options = {}) {
     const plan = data.supplements;
@@ -156,7 +164,6 @@
       });
       section.append(entry);
     });
-    if (!options.questionsInForm) lines(doc, section, '需要补充的补剂信息', plan.questions, 'notice-inline');
     root.append(section);
   }
   function renderLongTerm(root, record, handlers = {}, doc = document) {
@@ -170,18 +177,18 @@
     card.append(node(doc, 'h2', '训练循环'));
     if (data.summary) card.append(node(doc, 'p', data.summary, 'plan-summary'));
     lines(doc, card, '训练规划假设', data.assumptions);
-    if (!handlers.questionsInForm) lines(doc, card, '需要补充的训练信息', data.training_questions);
     if (record.trace?.training_source) card.append(node(doc, 'p', `训练来源：${record.trace.training_source === 'model' ? '在线模型' : '旧版本地规则记录'}`, 'metadata'));
     if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '旧版本地估算'}`, 'metadata'));
     card.append(node(doc, 'p', list(data.cycle).map(x => x.label).join(' → ') + ' → 循环', 'plan-summary'));
     list(data.cycle).forEach(step => { const section = node(doc, 'section'); training(doc, section, step); card.append(section); });
-    nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm});
-    supplements(doc, card, data, {questionsInForm: handlers.questionsInForm,
+    nutrition(doc, card, data.nutrition);
+    supplements(doc, card, data, {
       knowledgeStatus: record.trace?.supplement_provider?.knowledge_status});
     card.append(node(doc, 'h3', `下次复盘参考日期：${text(data.review_after)}`));
     lines(doc, card, '复盘原则', data.review_rules);
     lines(doc, card, '恢复安排', data.recovery_guidance);
     if (record.status !== 'confirmed' && handlers.confirm) card.append(button(doc, '确认并启用长期计划', () => handlers.confirm(record.id)));
+    optionalQuestions(doc, card, [data.training_questions, data.nutrition?.questions, data.supplements?.questions]);
     root.append(card);
   }
   function renderDaily(root, record, handlers = {}, doc = document) {
@@ -210,10 +217,9 @@
       form.addEventListener('submit', event => {event.preventDefault(); const statement = String(input.value || '').trim(); if (statement.length >= 5 && statement.length <= 1000) return handlers.release(record.id, restriction.area, record.revision, statement);});
       detail.append(form); card.append(detail);
     });
-    if (!handlers.questionsInForm) lines(doc, card, '需要补充的训练信息', decision.questions, 'notice-inline');
     if (decision.provider) card.append(node(doc, 'p', `训练决策来源：${typeof decision.provider === 'string' ? decision.provider : ({demo: '旧版本地规则记录', ok: '在线模型', live: '在线模型', preserved: '保留已完成记录', fallback: '旧版本地回退记录', skipped_safety: '安全暂停'}[decision.provider.status] || decision.provider.status || '未记录')}${decision.provider.reason ? ` · ${decision.provider.reason}` : ''}`, 'metadata'));
     if (record.trace?.nutrition_source) card.append(node(doc, 'p', `饮食来源：${record.trace.nutrition_source === 'model' ? '在线模型' : '旧版本地估算'}`, 'metadata'));
-    nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm, completed: data.completed_meals, complete: handlers.complete ? meal => handlers.complete(record.id, meal, record.revision) : null});
+    nutrition(doc, card, data.nutrition, {completed: data.completed_meals, complete: handlers.complete ? meal => handlers.complete(record.id, meal, record.revision) : null});
     card.append(node(doc, 'h2', '饮水与恢复'));
     if (data.water) {
       if (data.water.base_ml != null) card.append(node(doc, 'p', `基础饮水参考 ${text(data.water.base_ml)} 毫升`, 'nutrition-targets'));
@@ -221,6 +227,7 @@
     }
     lines(doc, card, '恢复安排', data.recovery_guidance);
     lines(doc, card, '长期计划复盘建议', data.review_suggestions, 'notice-inline');
+    optionalQuestions(doc, card, [decision.questions, data.nutrition?.questions]);
     root.append(card);
   }
 
@@ -259,11 +266,12 @@
     }
     function showQuestions(scope, groups = []) {
       const root = get(`${scope}-questions`); root.replaceChildren();
-      const questions = [...new Set(pendingQuestions[scope].length ? pendingQuestions[scope] : groups.flatMap(list))];
-      displayedQuestions[scope] = questions;
+      const questions = [...new Set(pendingQuestions[scope])];
+      displayedQuestions[scope] = questions.length ? questions : [...new Set(groups.flatMap(list))];
       root.hidden = !questions.length;
       if (questions.length) {
-        root.append(node(document, 'h3', '补充这些信息，让计划更适合你'));
+        root.append(node(document, 'h3', '生成前需要确认'));
+        root.append(node(document, 'p', '以下信息影响安全规划，请尽量一次回答；不确定的内容可以说明“暂不清楚”。'));
         questions.forEach(question => root.append(node(document, 'p', question)));
       }
       get(`${scope}-conditions-label`).textContent = questions.length ? '回答以上问题，也可以补充其他条件' : scope === 'daily' ? '当天条件' : '补充条件';
@@ -350,14 +358,14 @@
       showQuestions('long-term', [long?.data?.training_questions, long?.data?.nutrition?.questions, long?.data?.supplements?.questions]);
       const longHistory = get('long-term-history'); longHistory.replaceChildren();
       records.forEach(record => longHistory.append(button(document, `${record.start_date} · 版本 ${record.version} · ${record.status === 'confirmed' ? '已确认' : '草稿'}`, () => { selectedLong = record.id; render(); })));
-      renderLongTerm(get('long-term-content'), long, {questionsInForm: true, confirm: id => run(async () => {
+      renderLongTerm(get('long-term-content'), long, {confirm: id => run(async () => {
         await request(`/api/long-term-plans/${encodeURIComponent(id)}/confirm`, null);
         await refresh(!get('view-daily').hidden); message('长期计划已确认。', false, 'long-term');
       }, 'long-term')});
       const daily = list(state.daily_plans).find(x => x.date === get('daily-date').value);
       showMemory('daily', daily?.trace?.conditions_memory);
       showQuestions('daily', [daily?.data?.decision?.questions, daily?.data?.nutrition?.questions]);
-      renderDaily(get('daily-content'), daily, {questionsInForm: true, release: (id, area, expected_revision, confirmation_text) => run(async () => {
+      renderDaily(get('daily-content'), daily, {release: (id, area, expected_revision, confirmation_text) => run(async () => {
         const conditions = get('daily-conditions').value;
         await request(`/api/daily-plans/${encodeURIComponent(id)}/restrictions/release`, {area, expected_revision, confirmation_text});
         await load();

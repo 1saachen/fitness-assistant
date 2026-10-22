@@ -7,7 +7,7 @@ import time
 from pydantic import ValidationError
 
 from .agent_contracts import RunLimits, ValidationIssue
-from .agent_runtime import AgentRuntime
+from .agent_runtime import PLANNING_QUESTION_GUIDE, AgentRuntime
 from .models import NutritionPlan
 from .nutrition_agent import calculate_targets
 from .provider import OpenAICompatibleProvider
@@ -124,6 +124,7 @@ def plan_nutrition_live(profile, settings, provider=None, **context):
         '不诊断疾病、不提供治疗或药物/补剂剂量；明确疾病影响饮食时给保守建议并建议专业评估。'
         '无须查工具，直接提交候选，程序会校验。只输出JSON，字段status、candidate、questions；'
         '成功status=draft_ready，candidate符合下列契约；需追问则status=needs_input、candidate=null、questions为具体问题。'
+        + PLANNING_QUESTION_GUIDE
         + json.dumps(NutritionPlan.model_json_schema(), ensure_ascii=False))
     limits = RunLimits(max_calls=settings.agent_max_calls, max_tools=settings.agent_max_tools,
         max_revisions=settings.agent_max_revisions, timeout_seconds=settings.agent_timeout_seconds,

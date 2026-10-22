@@ -307,6 +307,8 @@ test('long-term follow-up reuses the asked date and snapshot token after an answ
     {document, Intl, Date, console, TextDecoder, fetch: async (url, options = {}) => {
       if (url === '/api/long-term-plans/stream') {
         posts.push(JSON.parse(options.body));
+        if (posts.length > 1) state.long_term_plans = [{id: 'long-new', status: 'draft',
+          data: {training_questions: ['下次可补充动作偏好？']}}];
         return posts.length === 1
           ? new Response(`event: error\ndata: ${JSON.stringify({status: 422, detail: {status: 'needs_input', message: '需要补充信息',
             questions: ['每周能训练几次？'], snapshot_token: 'a'.repeat(64), start_date: '2026-10-20'}})}\n\n`, {headers: {'content-type': 'text/event-stream'}})
@@ -332,6 +334,10 @@ test('long-term follow-up reuses the asked date and snapshot token after an answ
   assert.deepEqual(submitted, {mode: 'live', conditions: '每周3次，每次45分钟',
     expected_snapshot_token: 'a'.repeat(64), start_date: '2026-10-20'});
   assert.equal(get('long-term-questions').hidden, true);
+  assert.equal(get('long-term-submit').textContent, '生成长期计划草案');
+  assert.match(get('long-term-content').textContent, /可选补充/);
+  assert.match(get('long-term-content').textContent, /下次可补充动作偏好？/);
+  assert.match(get('long-term-content').textContent, /确认并启用长期计划/);
 });
 
 async function planningPage(state, respond = async () => daily) {
@@ -353,19 +359,40 @@ async function planningPage(state, respond = async () => daily) {
   return {get,listeners,calls,settle};
 }
 
-test('saved training nutrition and supplement questions appear together in their own plan form', async () => {
+test('saved questions are optional at the end of each plan and do not keep the form unfinished', async () => {
   const state = {today:'2026-10-20',long_term_plans:[{id:'l',version:1,status:'confirmed',
     data:{training_questions:['每周几次？'],nutrition:{questions:['有没有过敏？']},
-      supplements:{summary:'先评估',questions:['当前产品有哪些成分？']}}}],daily_plans:[daily]};
+      supplements:{summary:'先评估',questions:['当前产品有哪些成分？', '有没有过敏？']}}}],daily_plans:[daily]};
   const {get} = await planningPage(state);
-  assert.match(get('long-term-questions').textContent,/每周几次？/);
-  assert.match(get('long-term-questions').textContent,/有没有过敏？/);
-  assert.match(get('long-term-questions').textContent,/当前产品有哪些成分？/);
-  assert.match(get('daily-questions').textContent,/肩部情况如何？/);
-  assert.match(get('daily-questions').textContent,/确认过敏信息/);
-  assert.ok(!get('long-term-content').textContent.includes('每周几次？'));
-  assert.ok(!get('long-term-content').textContent.includes('当前产品有哪些成分？'));
-  assert.ok(!get('daily-content').textContent.includes('肩部情况如何？'));
+  assert.equal(get('long-term-questions').hidden, true);
+  assert.equal(get('daily-questions').hidden, true);
+  assert.equal(get('long-term-submit').textContent, '生成长期计划草案');
+  assert.equal(get('daily-submit').textContent, '更新当天计划');
+  assert.equal(get('long-term-conditions-label').textContent, '补充条件');
+  for (const scope of ['long-term', 'daily']) {
+    const card = get(`${scope}-content`).children[0];
+    const optional = card.children.at(-1);
+    assert.match(optional.textContent, /可选补充/);
+    assert.match(optional.textContent, /不影响使用当前计划/);
+    assert.doesNotMatch(get(`${scope}-content`).textContent, /需要补充的/);
+  }
+  const longText = get('long-term-content').textContent;
+  for (const question of ['每周几次？', '有没有过敏？', '当前产品有哪些成分？'])
+    assert.equal(longText.split(question).length - 1, 1);
+  assert.match(get('daily-content').textContent, /肩部情况如何？/);
+  assert.match(get('daily-content').textContent, /确认过敏信息/);
+});
+
+test('optional answers retain the displayed question context without entering a blocking follow-up', async () => {
+  const state = {today:'2026-10-20',long_term_plans:[{id:'l',status:'confirmed',
+    data:{training_questions:['通常几点训练？']}}],daily_plans:[daily]};
+  const {get, calls, settle} = await planningPage(state);
+  get('long-term-conditions').value = '18点';
+  await get('long-term-form').listeners.submit({preventDefault(){}}); await settle();
+  const body = JSON.parse(calls.find(x => x.url === '/api/long-term-plans/stream').options.body);
+  assert.deepEqual(body.answered_questions, ['通常几点训练？']);
+  assert.equal(body.expected_snapshot_token, undefined);
+  assert.equal(get('long-term-submit').textContent, '生成长期计划草案');
 });
 
 test('recovery confirmation saves the release then regenerates that day', async () => {
