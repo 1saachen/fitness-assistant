@@ -83,6 +83,37 @@ def test_readable_draft_arrives_before_extraction_and_counts_against_budget():
         plan_events.reset(token)
 
 
+def test_supplement_agent_does_not_stream_unvalidated_free_text():
+    from fitness.agent_contracts import RunLimits
+    from fitness.agent_runtime import AgentRuntime
+    from fitness.plan_streaming import plan_events
+    from fitness.provider import ProviderReply
+
+    events = []
+
+    class Provider:
+        def complete(self, messages, tools=None, **kwargs):
+            assert 'on_text' not in kwargs
+            return ProviderReply(content=json.dumps({'status': 'draft_ready', 'candidate': {}}))
+
+    class Tools:
+        def schemas(self):
+            return []
+
+        def __init__(self):
+            self.retrieved_sources = {}
+
+    token = plan_events.set(lambda event, data: events.append((event, data)))
+    try:
+        result = AgentRuntime(Provider(), RunLimits(), clock=lambda: 0).run(
+            role='你是补剂规划 Agent，只输出JSON', task={}, tools=Tools(), validate=lambda c, s: [])
+        assert result.status == 'draft_ready'
+        assert ('phase', {'message': '补剂建议'}) in events
+        assert not any(event == 'text' for event, _ in events)
+    finally:
+        plan_events.reset(token)
+
+
 def test_stream_routes_preserve_results_and_http_error_details(tmp_path, monkeypatch, profile_data):
     from fastapi.testclient import TestClient
     from planning_provider import ModelledTestProvider

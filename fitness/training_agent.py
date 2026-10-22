@@ -200,7 +200,8 @@ class TrainingPlannerAgent:
             long_term = payload['long_term']
             payload['long_term'] = {key: long_term[key] for key in ('id', 'version', 'start_date') if key in long_term}
             payload['long_term']['data'] = {key: value for key, value in long_term.get('data', {}).items()
-                if key in {'title', 'summary', 'goals', 'assumptions', 'review_after', 'review_rules', 'recovery_guidance'}}
+                if key in {'title', 'summary', 'goals', 'assumptions', 'review_after', 'review_rules',
+                           'recovery_guidance', 'supplements'}}
         cutoff = (task.date - timedelta(days=21)).isoformat()
         for key in ('confirmed_facts', 'recovery_signals'):
             payload['state'][key] = {day: {k: v for k, v in facts.items() if k in {

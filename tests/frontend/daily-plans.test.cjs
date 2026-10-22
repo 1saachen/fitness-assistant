@@ -18,6 +18,38 @@ class Element {
 }
 const doc = { createElement: tag => new Element(tag) };
 
+test('long-term supplements show priorities, current products, evidence and safe source links', () => {
+  const root = new Element();
+  const item = {name: '维生素D <script>', current_product: '我的D片', priority: 'conditional',
+    reason: '结合日晒条件评估', conditions: ['先核实健康信息'], food_alternatives: ['先调整饮食'],
+    cautions: ['创作者观点，证据有限'], source_ids: ['card-1', 'card-2']};
+  const source = {id: 'card-1', title: '维生素D与日晒', source: {creator_name: '作者',
+    video_title: '来源视频', video_url: 'https://example.com/video'}, metadata: {
+      evidence_level: 'limited', source_type: 'creator_opinion', claim: '来源主张 <script>',
+      explanation: '来源有适用限制', safety_level: '不可作个体剂量'}};
+  const record = {id: 'long', data: {supplements: {summary: '按需评估', budget_note: '预算未知',
+    items: [item], questions: ['请核实成分']}, supplement_sources: [source,
+      {...source, id: 'card-2', source: {...source.source, video_url: 'javascript:alert(1)'}}]}};
+  ui.renderLongTerm(root, record, {}, doc);
+  for (const value of ['补剂建议', '条件满足再考虑', '当前产品：我的D片', '维生素D <script>',
+    '先核实健康信息', '先调整饮食', '证据有限', '有限证据', '创作者观点', '请核实成分',
+    '来源主张 <script>', '不可作个体剂量']) assert.ok(root.textContent.includes(value), value);
+  const nodes = root.children.flatMap(function walk(x) { return [x, ...x.children.flatMap(walk)]; });
+  const links = nodes.filter(x => x.tagName === 'a');
+  assert.equal(links.length, 1);
+  assert.equal(links[0].href, 'https://example.com/video');
+  assert.equal(links[0].rel, 'noopener noreferrer');
+  ui.renderLongTerm(root, {id: 'legacy', data: {}}, {}, doc);
+  assert.ok(!root.textContent.includes('补剂建议'));
+});
+
+test('long-term supplements explain an unavailable knowledge library even with no products', () => {
+  const root = new Element();
+  ui.renderLongTerm(root, {data: {supplements: {summary: '暂不新增', items: []}},
+    trace: {supplement_provider: {knowledge_status: 'unavailable'}}}, {}, doc);
+  assert.match(root.textContent, /补剂知识库暂不可用/);
+});
+
 test('profile synchronization notifies the profile form once when the plan is saved', async () => {
   const nodes = new Map(), listeners = {}, events = [];
   const get = id => { if (!nodes.has(id)) nodes.set(id, new Element()); return nodes.get(id); };
@@ -321,15 +353,18 @@ async function planningPage(state, respond = async () => daily) {
   return {get,listeners,calls,settle};
 }
 
-test('saved training and nutrition questions appear together in their own plan form', async () => {
+test('saved training nutrition and supplement questions appear together in their own plan form', async () => {
   const state = {today:'2026-10-20',long_term_plans:[{id:'l',version:1,status:'confirmed',
-    data:{training_questions:['每周几次？'],nutrition:{questions:['有没有过敏？']}}}],daily_plans:[daily]};
+    data:{training_questions:['每周几次？'],nutrition:{questions:['有没有过敏？']},
+      supplements:{summary:'先评估',questions:['当前产品有哪些成分？']}}}],daily_plans:[daily]};
   const {get} = await planningPage(state);
   assert.match(get('long-term-questions').textContent,/每周几次？/);
   assert.match(get('long-term-questions').textContent,/有没有过敏？/);
+  assert.match(get('long-term-questions').textContent,/当前产品有哪些成分？/);
   assert.match(get('daily-questions').textContent,/肩部情况如何？/);
   assert.match(get('daily-questions').textContent,/确认过敏信息/);
   assert.ok(!get('long-term-content').textContent.includes('每周几次？'));
+  assert.ok(!get('long-term-content').textContent.includes('当前产品有哪些成分？'));
   assert.ok(!get('daily-content').textContent.includes('肩部情况如何？'));
 });
 

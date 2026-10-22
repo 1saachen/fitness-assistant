@@ -87,7 +87,8 @@ def test_live_training_and_nutrition_are_saved_together(tmp_path, profile_data):
     store = Store(tmp_path / 'isolated.sqlite3')
     store.save_profile(Profile.model_validate(profile_data).model_dump(mode='json'), 0)
     food = food_candidate()
-    provider = ScriptProvider([final(free_cycle()), final(food)])
+    provider = ScriptProvider([final(free_cycle()), final(food), final({
+        'summary': '暂不新增补剂', 'budget_note': '预算待核实', 'items': [], 'questions': []})])
     svc = DailyPlanningService(store, Settings(live_enabled=True), provider=provider)
     result = svc.create_long_term(date(2026, 10, 20), mode='live')
     assert result['data']['nutrition']['meal_options'][0]['suggestions'] == ['燕麦配豆腐炒蔬菜']
@@ -131,6 +132,7 @@ def test_daily_model_context_omits_persisted_knowledge_and_provider_trace(profil
 
     from test_training_live import day_candidate
     long_term = {'id': 'long-test', 'data': {'summary': '增肌长期目标', 'review_rules': ['两周复盘'],
+        'supplements': {'summary': '现有产品需要核对标签', 'items': []},
         'knowledge_context': ['large archive' * 2000], 'strategy_context': ['large archive' * 2000]},
         'trace': {'provider': 'unneeded past call trace' * 2000}}
     provider = ScriptProvider([final(day_candidate())])
@@ -138,6 +140,7 @@ def test_daily_model_context_omits_persisted_knowledge_and_provider_trace(profil
     assert result.status == 'draft_ready'
     sent = json.loads(provider.messages[0][1]['content'])
     assert sent['long_term']['data']['summary'] == '增肌长期目标'
+    assert sent['long_term']['data']['supplements']['summary'] == '现有产品需要核对标签'
     assert 'knowledge_context' not in sent['long_term']['data']
     assert 'trace' not in sent['long_term']
 
@@ -199,7 +202,8 @@ def test_nutrition_uses_recent_feedback_instead_of_oldest_rows(tmp_path, profile
         data = FeedbackData(date=day - timedelta(days=days_ago), weight_kg=70 + days_ago / 10).model_dump(mode='json')
         row = store.create_feedback('合成体重记录', data, 'demo', {})
         store.confirm_feedback(row['id'], data, 0)
-    provider = ScriptProvider([final(free_cycle()), final(food_candidate())])
+    provider = ScriptProvider([final(free_cycle()), final(food_candidate()), final({
+        'summary': '暂不新增补剂', 'budget_note': '预算待核实', 'items': [], 'questions': []})])
     svc = DailyPlanningService(store, Settings(live_enabled=True), provider=provider)
     svc.create_long_term(day, mode='live')
     history = json.loads(provider.messages[1][1]['content'])['history']
