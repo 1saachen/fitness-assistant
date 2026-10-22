@@ -186,6 +186,14 @@ def test_strength_baseline_round_trips_without_becoming_mandatory(client):
     assert saved['squat_1rm_kg'] is None
 
 
+@pytest.mark.parametrize('frequency', ['一周4练', '练3休1'])
+def test_training_frequency_round_trips_through_profile_api(client, frequency):
+    response = client.put('/api/profile', json={'profile': {
+        'training': {'training_frequency': frequency}}, 'expected_version': 0})
+    assert response.status_code == 200
+    assert response.json()['data']['training']['training_frequency'] == frequency
+
+
 def test_complete_confirm_correct_flow(client, profile_data):
     assert client.post("/api/plans", json={"start_date": "2026-09-14", "mode": "live"}).status_code == 409
     client.put("/api/profile", json={"profile": profile_data, "expected_version": 0})

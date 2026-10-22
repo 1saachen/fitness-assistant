@@ -534,6 +534,7 @@ if (typeof document !== "undefined") {
     training: {
       experience_years: null,
       available_sessions_per_week: null,
+      training_frequency: null,
       session_duration_minutes: null,
       gym_access: null,
       available_equipment: null,
@@ -635,7 +636,7 @@ if (typeof document !== "undefined") {
       "训练条件",
       [
         ["training.experience_years", "训练年限", "number"],
-        ["training.available_sessions_per_week", "每周训练次数", "number"],
+        ["training.training_frequency", "训练频率", "text"],
         ["training.session_duration_minutes", "每次时长（分钟）", "number"],
         ["training.gym_access", "有健身房", "boolean"],
         ["training.current_routine", "当前训练安排", "text"],
@@ -771,6 +772,9 @@ if (typeof document !== "undefined") {
       defs.forEach(([path, label, type, options]) => {
         const wrap = document.createElement("label");
         wrap.textContent = label;
+        if (path === "training.training_frequency") {
+          wrap.append(node("small", "例如：一周4练、练3休1；不确定可留空。", "field-hint"));
+        }
         let input;
         if (type === "select" || type === "boolean" || type === "equipment") {
           input = document.createElement("select");
@@ -1063,7 +1067,8 @@ if (typeof document !== "undefined") {
           ],
           [
             "每周训练",
-            `${app.profile.training.available_sessions_per_week ?? "未知"} 次`,
+            app.profile.training.training_frequency || (app.profile.training.available_sessions_per_week == null
+              ? "未知" : `每周 ${app.profile.training.available_sessions_per_week} 练`),
             "可按反馈调整",
           ],
           [

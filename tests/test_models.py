@@ -24,6 +24,14 @@ def test_incomplete_profile_can_be_saved(profile_data):
     assert Profile.model_validate(profile_data).training.session_duration_minutes is None
 
 
+@pytest.mark.parametrize("frequency", ["一周4练", "练3休1"])
+def test_training_frequency_round_trips_as_user_written_text(profile_data, frequency):
+    from fitness.models import Profile
+    profile_data["training"]["training_frequency"] = frequency
+    profile = Profile.model_validate(profile_data)
+    assert profile.model_dump(mode="json")["training"]["training_frequency"] == frequency
+
+
 def test_profile_can_be_saved_with_all_user_fields_unknown():
     from fitness.models import Profile
     profile = Profile.model_validate({})

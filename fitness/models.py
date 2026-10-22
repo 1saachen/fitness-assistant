@@ -51,6 +51,7 @@ class StrengthBaseline(Contract):
 class Training(Contract):
     experience_years: float | None = Field(default=None, ge=0, le=80)
     available_sessions_per_week: int | None = Field(default=None, ge=1, le=6)
+    training_frequency: Short | None = None
     session_duration_minutes: int | None = Field(default=None, ge=20, le=180)
     gym_access: bool | None = None
     available_equipment: list[Equipment] | None = Field(default=None, max_length=4)
@@ -61,6 +62,8 @@ class Training(Contract):
 
     @model_validator(mode="after")
     def valid_weekdays(self):
+        if self.training_frequency is not None and not self.training_frequency.strip():
+            raise ValueError("训练频率不能为空")
         if self.preferred_weekdays is not None:
             if len(set(self.preferred_weekdays)) != len(self.preferred_weekdays):
                 raise ValueError("训练日期不能重复")
