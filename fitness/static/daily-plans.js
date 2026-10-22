@@ -115,6 +115,50 @@
     if (data.budget_note) root.append(node(doc, 'p', data.budget_note, 'field-hint'));
     if (!options.questionsInForm) lines(doc, root, '需要补充的信息', data.questions, 'notice-inline');
   }
+  function supplements(doc, root, data, options = {}) {
+    const plan = data.supplements;
+    if (!plan) return;
+    const section = node(doc, 'section');
+    section.append(node(doc, 'h2', '补剂建议'));
+    section.append(node(doc, 'p', plan.summary, 'plan-summary'));
+    section.append(node(doc, 'p', plan.budget_note));
+    if (options.knowledgeStatus && options.knowledgeStatus !== 'ok') section.append(node(doc, 'p',
+      options.knowledgeStatus === 'capacity_exceeded' ? '补剂知识库超过本次处理容量，未生成新的补剂推荐。' : '补剂知识库暂不可用，未生成新的补剂推荐。', 'notice-inline'));
+    section.append(node(doc, 'p', '知识卡获批仅代表允许引用，不代表科学共识；建议需结合适用条件，不构成个体服用剂量。', 'notice-inline'));
+    const priorities = {consider: '可以考虑', conditional: '条件满足再考虑', not_needed: '目前没有必要', needs_review: '需要核实'};
+    const evidence = {experience: '经验观点', limited: '有限证据', research: '研究标签', guideline: '指南标签'};
+    const types = {creator_opinion: '创作者观点', research_summary: '研究摘要', professional_guidance: '专业指导', mixed: '混合来源'};
+    list(plan.items).forEach(item => {
+      const entry = node(doc, 'section');
+      entry.append(node(doc, 'h3', item.name));
+      entry.append(node(doc, 'p', priorities[item.priority] || '需要核实', 'pill'));
+      if (item.current_product) entry.append(node(doc, 'p', `当前产品：${item.current_product}`, 'metadata'));
+      entry.append(node(doc, 'p', item.reason));
+      lines(doc, entry, '适用与核实条件', item.conditions);
+      lines(doc, entry, '饮食替代', item.food_alternatives);
+      lines(doc, entry, '注意事项与证据局限', item.cautions);
+      if (!list(item.source_ids).length) entry.append(node(doc, 'p', '暂无已审核知识依据，需核实产品成分与适用性。', 'notice-inline'));
+      list(item.source_ids).forEach(id => {
+        const source = list(data.supplement_sources).find(row => row.id === id);
+        if (!source) { entry.append(node(doc, 'p', '来源快照未记录，需重新核实。', 'metadata')); return; }
+        const meta = source.metadata || {}, origin = source.source || {}, detail = node(doc, 'details');
+        detail.append(node(doc, 'summary', `知识依据：${source.title} · ${types[meta.source_type] || '来源类型未记录'} · ${evidence[meta.evidence_level] || '证据未记录'}`));
+        detail.append(node(doc, 'p', `来源主张：${text(meta.claim)}`));
+        if (meta.explanation) detail.append(node(doc, 'p', meta.explanation));
+        if (meta.safety_level) detail.append(node(doc, 'p', `安全边界：${meta.safety_level}`));
+        detail.append(node(doc, 'p', `${text(origin.creator_name)} · ${text(origin.video_title)} · 来源原文仅供核对，不作为服用安排。`, 'metadata'));
+        if (/^https?:\/\/[^\s]+$/i.test(origin.video_url || '')) {
+          const link = node(doc, 'a', '查看来源视频');
+          link.href = origin.video_url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          detail.append(link);
+        }
+        entry.append(detail);
+      });
+      section.append(entry);
+    });
+    if (!options.questionsInForm) lines(doc, section, '需要补充的补剂信息', plan.questions, 'notice-inline');
+    root.append(section);
+  }
   function renderLongTerm(root, record, handlers = {}, doc = document) {
     root.replaceChildren();
     if (!record) { root.append(node(doc, 'p', '保存档案后生成长期计划，确认后即可安排每一天。', 'empty-state')); return; }
@@ -132,6 +176,8 @@
     card.append(node(doc, 'p', list(data.cycle).map(x => x.label).join(' → ') + ' → 循环', 'plan-summary'));
     list(data.cycle).forEach(step => { const section = node(doc, 'section'); training(doc, section, step); card.append(section); });
     nutrition(doc, card, data.nutrition, {questionsInForm: handlers.questionsInForm});
+    supplements(doc, card, data, {questionsInForm: handlers.questionsInForm,
+      knowledgeStatus: record.trace?.supplement_provider?.knowledge_status});
     card.append(node(doc, 'h3', `下次复盘参考日期：${text(data.review_after)}`));
     lines(doc, card, '复盘原则', data.review_rules);
     lines(doc, card, '恢复安排', data.recovery_guidance);
@@ -301,7 +347,7 @@
       get('long-term-submit').disabled = state.model_configured !== true;
       get('daily-submit').disabled = state.model_configured !== true;
       showMemory('long-term', long?.trace?.conditions_memory);
-      showQuestions('long-term', [long?.data?.training_questions, long?.data?.nutrition?.questions]);
+      showQuestions('long-term', [long?.data?.training_questions, long?.data?.nutrition?.questions, long?.data?.supplements?.questions]);
       const longHistory = get('long-term-history'); longHistory.replaceChildren();
       records.forEach(record => longHistory.append(button(document, `${record.start_date} · 版本 ${record.version} · ${record.status === 'confirmed' ? '已确认' : '草稿'}`, () => { selectedLong = record.id; render(); })));
       renderLongTerm(get('long-term-content'), long, {questionsInForm: true, confirm: id => run(async () => {

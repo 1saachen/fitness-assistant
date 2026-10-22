@@ -1,0 +1,182 @@
+import json
+from copy import deepcopy
+from datetime import date
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+from test_agent_runtime import ScriptProvider, final
+from test_model_led_planning import food_candidate, free_cycle
+
+from fitness.agent_contracts import PlanningRunError
+from fitness.config import Settings
+from fitness.daily_planning import DailyPlanningService
+from fitness.models import Profile
+from fitness.provider import ProviderError
+from fitness.storage import Store
+
+
+def candidate():
+    return {'summary': '先保证饮食，再评估是否需要补充。', 'budget_note': '预算未知，不估算售价。',
+        'items': [{'name': '维生素D', 'current_product': None, 'priority': 'conditional',
+            'reason': '仅在饮食和日晒条件需要时评估。', 'conditions': ['核实饮食和健康信息'],
+            'food_alternatives': ['先评估日常食物来源'], 'cautions': ['知识卡是创作者观点，证据有限。'],
+            'source_ids': ['mvp-supplements-006']}], 'questions': []}
+
+
+def knowledge():
+    return SimpleNamespace(knowledge_root=Path(__file__).resolve().parents[1] / 'data' / 'knowledge')
+
+
+def sources():
+    from fitness.knowledge import build_manifest
+    return {r['id']: r for r in build_manifest(knowledge().knowledge_root) if r['collection'] == 'supplements'}
+
+
+def test_agent_receives_only_approved_supplements_with_evidence_and_context():
+    from fitness.supplement_agent import SupplementPlannerAgent
+    provider = ScriptProvider([final(candidate())])
+    profile = Profile()
+    profile.supplements.budget.amount = 200
+    result = SupplementPlannerAgent(Settings(live_enabled=True), provider).plan_live(profile, knowledge(),
+        nutrition=food_candidate(), training_cycle=free_cycle()['cycle'], conditions='希望控制预算',
+        personal_memory={'entries': [{'text': '夜班作息'}]}, history=[])
+    assert result.status == 'draft_ready'
+    payload = json.loads(provider.messages[0][1]['content'])
+    cards = payload['knowledge']['cards']
+    assert len(cards) == 36
+    assert all(c['metadata']['review_status'] == 'approved' and c['collection'] == 'supplements' for c in cards)
+    assert all(c['source']['video_url'] and c['metadata']['evidence_level'] for c in cards)
+    assert payload['profile']['supplements']['budget']['amount'] == 200
+    assert payload['nutrition'] == food_candidate()
+    assert payload['personal_memory']['entries'][0]['text'] == '夜班作息'
+    assert [s['id'] for s in result.trace['source_snapshots']] == ['mvp-supplements-006']
+
+
+@pytest.mark.parametrize('dose', ['每天补充维生素D 2000 IU', '鱼油每天2克', '镁每日二百毫克',
+                                  '每日服用一粒', '每日2次', 'vitamin D 20 mcg', '鱼油２克', '补充铁10\u200bmg'])
+def test_validator_rejects_doses_for_any_supplement(dose):
+    from fitness.supplement_agent import validate_supplement_candidate
+    plan = candidate()
+    plan['items'][0]['reason'] = dose
+    assert any(i.code == 'unsafe_content' for i in validate_supplement_candidate(plan, Profile(), sources()))
+
+
+def test_validator_checks_references_current_products_and_health():
+    from fitness.supplement_agent import validate_supplement_candidate
+    profile = Profile()
+    profile.supplements.current_products = ['我的复合片']
+    plan = candidate()
+    assert any(i.code == 'current_products' for i in validate_supplement_candidate(plan, profile, sources()))
+    item = plan['items'][0]
+    item.update(name='我的复合片', current_product='我的复合片', priority='needs_review', source_ids=[])
+    assert not validate_supplement_candidate(plan, profile, sources())
+    item['source_ids'] = ['evidence-pilot-magnesium-20260919']  # pending card
+    assert any(i.code == 'source' for i in validate_supplement_candidate(plan, profile, sources()))
+    item.update(source_ids=['mvp-supplements-006'], priority='consider')
+    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
+
+
+def test_no_library_allows_no_new_product_and_preserves_unrecognized_current_product():
+    from fitness.supplement_agent import SupplementPlannerAgent
+    profile = Profile()
+    profile.supplements.current_products = ['某品牌复合片']
+    plan = candidate()
+    plan['items'][0].update(name='某品牌复合片', current_product='某品牌复合片',
+                            priority='needs_review', source_ids=[])
+    result = SupplementPlannerAgent(Settings(live_enabled=True), ScriptProvider([final(plan)])).plan_live(profile, None)
+    assert result.status == 'draft_ready'
+    assert result.trace['knowledge_status'] == 'unavailable'
+    assert result.trace['source_snapshots'] == []
+
+
+def test_uncited_new_recommendations_and_empty_conditions_are_rejected():
+    from fitness.supplement_agent import validate_supplement_candidate
+    plan = candidate()
+    plan['items'][0].update(source_ids=[], conditions=[])
+    assert {i.code for i in validate_supplement_candidate(plan, Profile(), {})} >= {'source', 'conditions'}
+
+
+def test_runtime_repairs_fabricated_source():
+    from fitness.supplement_agent import SupplementPlannerAgent
+    bad = deepcopy(candidate())
+    bad['items'][0]['source_ids'] = ['invented']
+    result = SupplementPlannerAgent(Settings(live_enabled=True),
+        ScriptProvider([final(bad), final(candidate())])).plan_live(Profile(), knowledge())
+    assert result.status == 'draft_ready'
+    assert result.trace['revisions'] == 1
+
+
+@pytest.mark.parametrize('claim', ['你缺乏维生素D，必须补充', '你的疲劳证明缺铁',
+                                   'You have vitamin D deficiency'])
+def test_validator_rejects_personal_deficiency_diagnosis(claim):
+    from fitness.supplement_agent import validate_supplement_candidate
+    plan = candidate()
+    plan['items'][0]['reason'] = claim
+    assert any(i.code == 'unsafe_content' for i in validate_supplement_candidate(plan, Profile(), sources()))
+
+
+def test_existing_label_can_include_strength_without_turning_into_dosing_instruction():
+    from fitness.supplement_agent import validate_supplement_candidate
+    profile = Profile()
+    profile.supplements.current_products = ['某品牌鱼油1000mg']
+    plan = candidate()
+    plan['items'][0].update(name='某品牌鱼油1000mg', current_product='某品牌鱼油1000mg',
+                            priority='needs_review', source_ids=[])
+    assert not validate_supplement_candidate(plan, profile, {})
+
+
+def test_consider_requires_clear_health_and_honors_personal_memory_restrictions():
+    from fitness.supplement_agent import validate_supplement_candidate
+    profile = Profile()
+    profile.health.exercise_limiting_conditions_status = 'none_known_self_reported'
+    profile.health.medications_status = 'none_known_self_reported'
+    plan = candidate()
+    plan['items'][0]['priority'] = 'consider'
+    assert not validate_supplement_candidate(plan, profile, sources())
+    issues = validate_supplement_candidate(plan, profile, sources(),
+        personal_memory={'entries': [{'category': 'restriction', 'text': '医生建议先核实补充剂'}]})
+    assert any(i.code == 'health_review' for i in issues)
+
+
+def service(tmp_path, profile_data, replies):
+    store = Store(tmp_path / 'isolated.sqlite3')
+    store.save_profile(Profile.model_validate(profile_data).model_dump(mode='json'), 0)
+    planner = DailyPlanningService(store, Settings(live_enabled=True), provider=ScriptProvider(replies))
+    planner.supplements.knowledge = knowledge()
+    return planner
+
+
+def test_long_term_saves_supplements_and_trusted_source_snapshot(tmp_path, profile_data):
+    planner = service(tmp_path, profile_data, [final(free_cycle()), final(food_candidate()), final(candidate())])
+    saved = planner.create_long_term(date(2026, 10, 22), mode='live')
+    assert saved['data']['supplements'] == candidate()
+    assert saved['data']['supplement_sources'][0]['id'] == 'mvp-supplements-006'
+    assert saved['trace']['supplement_provider']['status'] == 'ok'
+    assert planner.confirm_long_term(saved['id'])['data']['supplements'] == candidate()
+
+
+@pytest.mark.parametrize('reply', [ProviderError('timeout'), final(status='needs_input', questions=['产品成分是什么？'])])
+def test_supplement_failure_does_not_save_partial_plan(tmp_path, profile_data, reply):
+    planner = service(tmp_path, profile_data, [final(free_cycle()), final(food_candidate()), reply])
+    old = planner.create_long_term(date(2026, 10, 21))
+    with pytest.raises(PlanningRunError):
+        planner.create_long_term(date(2026, 10, 22), mode='live')
+    assert [p['id'] for p in planner.repo.long_terms()] == [old['id']]
+
+
+def test_profile_change_during_supplement_run_prevents_stale_save(tmp_path, profile_data):
+    from fitness.storage import Conflict
+    planner = service(tmp_path, profile_data, [final(free_cycle()), final(food_candidate()), final(candidate())])
+    original = planner.supplements.provider.complete
+
+    def complete(messages, *args, **kwargs):
+        if '你是补剂规划 Agent' in messages[0]['content']:
+            row = planner.store.profile()
+            planner.store.save_profile(row['data'], row['version'])
+        return original(messages, *args, **kwargs)
+
+    planner.supplements.provider.complete = complete
+    with pytest.raises(Conflict):
+        planner.create_long_term(date(2026, 10, 22), mode='live')
+    assert planner.repo.long_terms() == []

@@ -92,6 +92,8 @@ class DailyPlanningService:
         self.repo = PlanRepository(store)
         self.training = TrainingPlannerAgent(settings, provider)
         self.nutrition = NutritionPlannerAgent(settings, provider)
+        from .supplement_agent import SupplementPlannerAgent
+        self.supplements = SupplementPlannerAgent(settings, provider, knowledge)
 
     def create_long_term(self, start_date, labels=None, mode='demo', conditions=None, expected_snapshot_token=None,
                          feedback_action_id=None, *, answered_questions=None):
@@ -131,6 +133,14 @@ class DailyPlanningService:
             nutrition = nutrition_run.candidate
         else:
             nutrition = self.nutrition.plan(profile).model_dump(mode='json')
+        supplement_run = None
+        if mode == 'live':
+            self._check_expected(self.repo.snapshot(start_date), snapshot['token'])
+            supplement_run = self.supplements.plan_live(profile,
+                nutrition=nutrition, training_cycle=cycle, conditions=conditions or '',
+                history=compact_feedback_reports(snapshot['feedback'], end_date=start_date),
+                personal_memory=snapshot['personal_memory'])
+            self._require_ready(supplement_run, snapshot, conditions_memory)
         context = self.knowledge.for_plan(profile) if self.knowledge else None
         from .planning import context_persistence_status, persistent_context_snapshots
         strategies, citations = persistent_context_snapshots(context) if context else ([], [])
@@ -148,6 +158,9 @@ class DailyPlanningService:
         if run:
             data.update(summary=run.candidate['summary'], assumptions=run.candidate['assumptions'],
                         training_questions=run.candidate['questions'])
+        if supplement_run:
+            data.update(supplements=supplement_run.candidate,
+                        supplement_sources=supplement_run.trace['source_snapshots'])
         from .plan_streaming import emit_plan_event
         emit_plan_event('status', {'message': '计划已校验，正在保存…'})
         return self.repo.create_long(start_date, data,
@@ -155,6 +168,7 @@ class DailyPlanningService:
              'training_source': 'model' if run else 'deterministic_local',
              'nutrition_source': 'model' if nutrition_run else 'deterministic_local',
              'nutrition_provider': nutrition_run.trace if nutrition_run else {'status': 'demo'},
+             'supplement_provider': supplement_run.trace if supplement_run else {'status': 'not_generated'},
              'provider': run.trace if run else {'status': 'demo'},
              'mode': mode, 'feedback_action_id': feedback_action_id,
              'conditions_memory': conditions_memory,

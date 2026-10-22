@@ -41,6 +41,9 @@ class MemoryProvider:
         self.profile_updates = profile_updates or []
 
     def complete(self, messages, tools=None, **kwargs):
+        if '你是补剂规划 Agent' in messages[0]['content']:
+            from planning_provider import supplement_reply
+            return supplement_reply(messages)
         task = json.loads(messages[1]['content'])
         self.calls.append(task)
         if self.fail:

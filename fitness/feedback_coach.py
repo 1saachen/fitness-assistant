@@ -208,7 +208,8 @@ class FeedbackCoach:
         data = row['data']
         return {'id': row['id'], 'start_date': row['start_date'], 'title': data['title'],
                 'summary': data.get('summary'), 'cycle': data['cycle'],
-                'nutrition_targets': data['nutrition'].get('daily_targets')}
+                'nutrition_targets': data['nutrition'].get('daily_targets'),
+                'supplements': data.get('supplements')}
 
     def validate(self, candidate, row, sources):
         try:

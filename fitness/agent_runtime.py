@@ -38,7 +38,7 @@ class AgentRuntime:
         schemas = tools.schemas()
         allowed = {t['function']['name']: t['function']['parameters'] for t in schemas}
         if plan_events.get() is not None:
-            phase = '训练安排' if '训练规划' in role else '饮食安排'
+            phase = '补剂建议' if '补剂规划 Agent' in role else '训练安排' if '训练规划' in role else '饮食安排'
             emit_plan_event('phase', {'message': phase})
             trace['calls'] += 1
             try:

@@ -4,12 +4,23 @@ import json
 from test_agent_runtime import ScriptProvider, final
 
 
+def supplement_reply(messages):
+    context = json.loads(messages[1]['content'])
+    return final({'summary': '模拟模型评估，暂不新增补剂。', 'budget_note': '预算待核实', 'questions': [],
+        'items': [{'name': name, 'current_product': name, 'priority': 'needs_review',
+            'reason': '请核实产品成分', 'conditions': [], 'food_alternatives': [],
+            'cautions': ['未确认适用性'], 'source_ids': []}
+            for name in context['profile']['supplements']['current_products'] or []]})
+
+
 class PlanningScriptProvider(ScriptProvider):
     def __init__(self, replies):
         super().__init__(replies)
         self.nutrition_messages = []
 
     def complete(self, messages, tools=None, **kwargs):
+        if '你是补剂规划 Agent' in messages[0]['content']:
+            return supplement_reply(messages)
         if '你是持续陪伴用户的训练和饮食教练' in messages[0]['content']:
             return final({'reply': '已记录本次补充。', 'suggestions': [], 'questions': [],
                 'memory_updates': [], 'retire_keys': [], 'restriction_resolutions': {},
@@ -33,6 +44,8 @@ class ModelledTestProvider:
         from test_training_live_service import cycle_candidate
 
         role = messages[0]['content']
+        if '你是补剂规划 Agent' in role:
+            return supplement_reply(messages)
         if '你是训练规划 Agent' in role:
             task = json.loads(messages[1]['content'])
             if task['kind'] == 'cycle':
