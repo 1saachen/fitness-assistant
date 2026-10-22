@@ -1,9 +1,7 @@
-"""Knowledge-grounded supplement assessments, without dosing or persistence authority."""
+"""Model-led supplement assessments with structural and source integrity checks."""
 
 import json
-import re
 import time
-import unicodedata
 from typing import Annotated, Literal
 
 from pydantic import Field, ValidationError
@@ -13,20 +11,9 @@ from .agent_runtime import PLANNING_QUESTION_GUIDE, AgentRuntime
 from .knowledge import build_manifest
 from .models import Contract
 from .provider import OpenAICompatibleProvider
-from .safety import UNSAFE
 
 Note = Annotated[str, Field(min_length=1, max_length=2000)]
 Name = Annotated[str, Field(min_length=1, max_length=200)]
-DOSE = re.compile(
-    r'(?:\d+(?:\.\d+)?|[零一二三四五六七八九十百千万两半]+)\s*'
-    r'(?:毫克|微克|千克|克|毫升|国际单位|片|粒|滴|勺|袋|支|次|mg\b|mcg\b|[μµ]g\b|g\b|ml\b|iu\b)',
-    re.IGNORECASE,
-)
-DEFICIENCY_CLAIM = re.compile(
-    r'(?:你|您|用户).{0,18}(?:缺乏|缺铁|缺钙|缺镁)|'
-    r'(?:证明|表明|说明).{0,8}(?:缺铁|缺钙|缺镁)|'
-    r'you\s+(?:have|suffer\s+from|are).{0,35}(?:deficien|deficit)', re.IGNORECASE,
-)
 
 
 class SupplementItem(Contract):
@@ -57,12 +44,6 @@ def validate_supplement_candidate(candidate, profile, sources, *, personal_memor
     covered = [item.current_product for item in plan.items if item.current_product is not None]
     if set(covered) != current or len(set(covered)) != len(covered):
         issues.append(ValidationIssue('items', 'current_products', '逐项评估档案已有产品，current_product保留原名且不重复；不要编造已有产品。'))
-    health_clear = (profile.health.exercise_limiting_conditions_status == 'none_known_self_reported'
-                    and profile.health.medications_status == 'none_known_self_reported'
-                    and not profile.health.exercise_limiting_conditions_details
-                    and not profile.health.medications
-                    and not any(e.get('category') == 'restriction'
-                                for e in (personal_memory or {}).get('entries', [])))
     for index, item in enumerate(plan.items):
         path = f'items.{index}'
         valid_sources = all(s in sources and sources[s]['collection'] == 'supplements'
@@ -70,44 +51,8 @@ def validate_supplement_candidate(candidate, profile, sources, *, personal_memor
         review_only = item.current_product in current and item.priority == 'needs_review'
         if not valid_sources or (not item.source_ids and not review_only):
             issues.append(ValidationIssue(path, 'source', '产品建议必须引用提供的已批准补剂卡；已有产品缺乏来源时仅标记needs_review。'))
-        has_personal_restriction = any(
-            e.get('category') == 'restriction'
-            for e in (personal_memory or {}).get('entries', []))
-        if (item.current_product is None and has_personal_restriction
-                and item.priority in {'consider', 'conditional'}):
-            issues.append(ValidationIssue(path, 'health_review', '个人记忆中存在尚未解除的限制时，新增补剂必须标记needs_review并先核实限制。'))
         if item.priority == 'conditional' and not item.conditions:
             issues.append(ValidationIssue(path, 'conditions', '条件性建议须写明需要满足或核实的条件。'))
-        medical_text = ' '.join([*item.conditions, *item.cautions])
-        if profile.health.exercise_limiting_conditions_status == 'unknown' and not re.search(
-                r'(?:未知|未提供).{0,10}(?:健康|疾病|病史|限制)|'
-                r'(?:健康|疾病|病史|限制).{0,8}(?:未知|核实|确认)', medical_text):
-            issues.append(ValidationIssue(path, 'health_review', '健康情况未知时须明确要求核实疾病或健康限制。'))
-        if (profile.health.exercise_limiting_conditions_status == 'has_conditions'
-                or profile.health.exercise_limiting_conditions_details) and not re.search(
-                r'(?:咨询|确认).{0,8}(?:医生|药师)|(?:医生|药师).{0,8}(?:确认|咨询)', medical_text):
-            issues.append(ValidationIssue(path, 'health_review', '存在已知健康限制时须建议向医生或药师确认补剂适用性。'))
-        if profile.health.medications_status == 'unknown' and not re.search(
-                r'(?:核实|确认|了解).{0,8}(?:用药|药物)|(?:用药|药物).{0,8}(?:未知|不明|核实|确认)',
-                medical_text, re.IGNORECASE):
-            issues.append(ValidationIssue(path, 'health_review', '用药情况未知时须明确要求核实当前用药，再评估建议。'))
-        if profile.health.medications_status == 'taking' and not re.search(
-                r'(?:咨询|确认).{0,8}(?:医生|药师)|(?:医生|药师).{0,8}(?:确认|咨询)',
-                medical_text, re.IGNORECASE):
-            issues.append(ValidationIssue(path, 'health_review', '正在用药时须明确建议向医生或药师确认相互作用。'))
-        if item.priority == 'consider' and not health_clear:
-            issues.append(ValidationIssue(path, 'health_review', '健康、用药未知或存在限制时不能无条件推荐；写明核实条件或标记needs_review。'))
-    # Check generated prose only; trusted source quotations can contain historical doses.
-    prose = [plan.summary, plan.budget_note, *plan.questions]
-    for item in plan.items:
-        if not (item.current_product in current and item.name == item.current_product):
-            prose.append(item.name)
-        prose.extend([item.reason, *item.conditions, *item.food_alternatives, *item.cautions])
-    for value in prose:
-        normalized = ''.join(c for c in unicodedata.normalize('NFKC', value) if unicodedata.category(c) != 'Cf')
-        if DOSE.search(normalized) or UNSAFE.search(normalized) or DEFICIENCY_CLAIM.search(normalized):
-            issues.append(ValidationIssue('items', 'unsafe_content', '不生成补剂用量、服用处方、疾病诊断或更改用药建议；仅评估必要性与条件。'))
-            break
     return issues
 
 

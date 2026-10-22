@@ -90,6 +90,21 @@ def test_provider_failure_is_explicit_without_saved_plan(live_api, reason, code)
     assert client.get('/api/planning/state').json()['long_term_plans'] == []
 
 
+def test_invalid_output_reports_stage_and_actionable_validation_without_candidate(live_api, monkeypatch):
+    from fitness.agent_contracts import PlanningRunError, RunResult
+    client, agent, _, _ = live_api
+    def fail(*args, **kwargs):
+        raise PlanningRunError(RunResult('failed-run', 'failed', reason_code='output_invalid', trace={
+            'stage': 'supplements', 'validation': [[{'path': 'summary', 'code': 'unsafe_content',
+                'message': '请删除数字用量。'}]], 'private_candidate': 'never expose'}), 'snapshot')
+    monkeypatch.setattr(agent, 'create_long_term', fail)
+    detail = client.post('/api/long-term-plans', json={'mode': 'live'}).json()['detail']
+    assert detail['stage'] == 'supplements'
+    assert '补剂建议' in detail['message'] and '请删除数字用量' in detail['message']
+    assert detail['validation_errors'][0]['path'] == 'summary'
+    assert 'never expose' not in json.dumps(detail)
+
+
 def test_feedback_confirmation_does_not_replan_today(live_api):
     client, agent, provider, store = live_api
     long = agent.create_long_term(date(2026, 10, 20))

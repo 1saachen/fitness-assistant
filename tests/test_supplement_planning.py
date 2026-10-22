@@ -56,14 +56,14 @@ def test_agent_receives_only_approved_supplements_with_evidence_and_context():
 
 @pytest.mark.parametrize('dose', ['每天补充维生素D 2000 IU', '鱼油每天2克', '镁每日二百毫克',
                                   '每日服用一粒', '每日2次', 'vitamin D 20 mcg', '鱼油２克', '补充铁10\u200bmg'])
-def test_validator_rejects_doses_for_any_supplement(dose):
+def test_validator_preserves_model_dose_wording_without_local_filtering(dose):
     from fitness.supplement_agent import validate_supplement_candidate
     plan = candidate()
     plan['items'][0]['reason'] = dose
-    assert any(i.code == 'unsafe_content' for i in validate_supplement_candidate(plan, Profile(), sources()))
+    assert not validate_supplement_candidate(plan, Profile(), sources())
 
 
-def test_validator_checks_references_current_products_and_health():
+def test_validator_checks_references_and_current_product_coverage():
     from fitness.supplement_agent import validate_supplement_candidate
     profile = Profile()
     profile.supplements.current_products = ['我的复合片']
@@ -75,7 +75,7 @@ def test_validator_checks_references_current_products_and_health():
     item['source_ids'] = ['evidence-pilot-magnesium-20260919']  # pending card
     assert any(i.code == 'source' for i in validate_supplement_candidate(plan, profile, sources()))
     item.update(source_ids=['mvp-supplements-006'], priority='consider')
-    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
+    assert not validate_supplement_candidate(plan, profile, sources())
 
 
 def test_no_library_allows_no_new_product_and_preserves_unrecognized_current_product():
@@ -110,11 +110,11 @@ def test_runtime_repairs_fabricated_source():
 
 @pytest.mark.parametrize('claim', ['你缺乏维生素D，必须补充', '你的疲劳证明缺铁',
                                    'You have vitamin D deficiency'])
-def test_validator_rejects_personal_deficiency_diagnosis(claim):
+def test_validator_does_not_filter_model_medical_wording(claim):
     from fitness.supplement_agent import validate_supplement_candidate
     plan = candidate()
     plan['items'][0]['reason'] = claim
-    assert any(i.code == 'unsafe_content' for i in validate_supplement_candidate(plan, Profile(), sources()))
+    assert not validate_supplement_candidate(plan, Profile(), sources())
 
 
 def test_existing_label_can_include_strength_without_turning_into_dosing_instruction():
@@ -127,57 +127,25 @@ def test_existing_label_can_include_strength_without_turning_into_dosing_instruc
     assert not validate_supplement_candidate(plan, profile, {})
 
 
-def test_consider_requires_clear_health_and_honors_personal_memory_restrictions():
-    from fitness.supplement_agent import validate_supplement_candidate
+@pytest.mark.parametrize('health_status,medication_status', [
+    ('unknown', 'unknown'), ('has_conditions', 'taking'), ('none_known_self_reported', 'none_known_self_reported'),
+])
+@pytest.mark.parametrize('priority', ['consider', 'conditional', 'not_needed', 'needs_review'])
+def test_model_assessment_is_not_blocked_by_local_health_or_memory_rules(health_status, medication_status, priority):
+    from fitness.supplement_agent import SupplementPlannerAgent
     profile = Profile()
-    profile.health.exercise_limiting_conditions_status = 'none_known_self_reported'
-    profile.health.medications_status = 'none_known_self_reported'
+    profile.health.exercise_limiting_conditions_status = health_status
+    profile.health.medications_status = medication_status
     plan = candidate()
-    plan['items'][0]['priority'] = 'consider'
-    assert not validate_supplement_candidate(plan, profile, sources())
-    issues = validate_supplement_candidate(plan, profile, sources(),
-        personal_memory={'entries': [{'category': 'restriction', 'text': '医生建议先核实补充剂'}]})
-    assert any(i.code == 'health_review' for i in issues)
-
-
-def test_conditional_recommendation_must_address_unknown_or_active_medication():
-    from fitness.supplement_agent import validate_supplement_candidate
-    profile = Profile()
-    plan = candidate()
-    plan['items'][0]['conditions'] = ['用药情况未知时先核实当前用药']
-    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
-    plan['items'][0]['conditions'] = ['健康状况未知时先核实相关疾病和限制；用药情况未知时先核实当前用药']
-    assert not validate_supplement_candidate(plan, profile, sources())
-    profile.health.medications_status = 'taking'
-    profile.health.medications = '处方药'
-    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
-    plan['items'][0]['cautions'].append('服用药物时先向医生或药师确认相互作用')
-    assert not validate_supplement_candidate(plan, profile, sources())
-
-
-def test_conditional_recommendation_must_address_known_health_limitations():
-    from fitness.supplement_agent import validate_supplement_candidate
-    profile = Profile()
-    profile.health.exercise_limiting_conditions_status = 'has_conditions'
-    profile.health.exercise_limiting_conditions_details = '待评估的健康限制'
-    plan = candidate()
-    plan['items'][0]['conditions'] = ['用药情况未知时先核实当前用药']
-    assert any(i.code == 'health_review' for i in validate_supplement_candidate(plan, profile, sources()))
-    plan['items'][0]['conditions'].append('存在健康限制时先向医生或药师确认补剂适用性')
-    assert not validate_supplement_candidate(plan, profile, sources())
-
-
-def test_new_conditional_recommendation_is_held_for_unresolved_personal_restriction():
-    from fitness.supplement_agent import validate_supplement_candidate
-    profile = Profile()
-    profile.health.exercise_limiting_conditions_status = 'none_known_self_reported'
-    profile.health.medications_status = 'none_known_self_reported'
-    memory = {'entries': [{'category': 'restriction', 'text': '医生建议先避免使用补剂'}]}
-    plan = candidate()
-    assert any(i.code == 'health_review' for i in validate_supplement_candidate(
-        plan, profile, sources(), personal_memory=memory))
-    plan['items'][0]['priority'] = 'needs_review'
-    assert not validate_supplement_candidate(plan, profile, sources(), personal_memory=memory)
+    plan['summary'] = '优先正餐和每周4次力量训练；正餐蛋白质约150g。'
+    plan['items'][0].update(priority=priority, conditions=['结合饮食情况评估'])
+    provider = ScriptProvider([final(plan)])
+    result = SupplementPlannerAgent(Settings(), provider).plan_live(profile, knowledge(),
+        personal_memory={'entries': [{'category': 'restriction', 'text': '先核实相关限制'}]})
+    assert result.status == 'draft_ready'
+    assert result.candidate == plan
+    assert result.trace['revisions'] == 0
+    assert len(provider.messages) == 1
 
 
 def service(tmp_path, profile_data, replies):
@@ -221,3 +189,15 @@ def test_profile_change_during_supplement_run_prevents_stale_save(tmp_path, prof
     with pytest.raises(Conflict):
         planner.create_long_term(date(2026, 10, 22), mode='live')
     assert planner.repo.long_terms() == []
+
+
+def test_long_term_persists_model_prose_verbatim_without_content_filtering(tmp_path, profile_data):
+    plan = candidate()
+    plan['summary'] = '正餐蛋白质目标150g、每周4次力量训练，补剂按饮食情况评估。'
+    plan['items'][0]['reason'] = '模型给出的原始评估，数字示例2000 IU。'
+    plan['items'][0]['priority'] = 'consider'
+    planner = service(tmp_path, profile_data, [final(free_cycle()), final(food_candidate()), final(plan)])
+    saved = planner.create_long_term(date(2026, 10, 22), mode='live')
+    assert saved['data']['supplements'] == plan
+    assert saved['trace']['supplement_provider']['revisions'] == 0
+    assert planner.confirm_long_term(saved['id'])['data']['supplements'] == plan

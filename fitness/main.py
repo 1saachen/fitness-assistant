@@ -95,6 +95,18 @@ def planning_error_detail(exc, start_date=None):
             'message': '需要补充信息，请在条件中回答后重新生成。' if result.status == 'needs_input'
                 else f"本次模型规划未完成（{result.reason_code or result.status}），原有计划尚未按本次条件更新。",
             'retryable': retryable, 'snapshot_token': exc.snapshot_token}
+    stage = result.trace.get('stage')
+    if stage:
+        detail['stage'] = stage
+    if result.reason_code == 'output_invalid':
+        validations = result.trace.get('validation') or []
+        errors = validations[-1][:8] if validations else []
+        detail['validation_errors'] = errors
+        label = {'training': '训练安排', 'nutrition': '饮食安排', 'supplements': '补剂建议'}.get(stage, '模型输出')
+        reasons = list(dict.fromkeys(error['message'] for error in errors))[:2]
+        detail['message'] = (f'{label}未通过校验（output_invalid）'
+            + (f"：{'；'.join(reasons)}" if reasons else '。')
+            + ' 原有计划尚未按本次条件更新。')
     if getattr(exc, 'conditions_memory', None):
         detail['conditions_memory'] = exc.conditions_memory
         detail['message'] += ' ' + exc.conditions_memory['message']

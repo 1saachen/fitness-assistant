@@ -124,6 +124,19 @@ def test_revision_budget_is_bounded():
     assert result.reason_code == 'output_invalid' and result.trace['calls'] == 2
 
 
+def test_failed_run_records_stage_and_logs_only_validation_codes(caplog):
+    from fitness.agent_contracts import ValidationIssue
+    private_text = 'private-user-fact-never-log'
+    with caplog.at_level('WARNING', logger='fitness.agent_runtime'):
+        result = runtime(ScriptProvider([final({'summary': private_text})]), max_revisions=0).run(
+            role='你是补剂规划 Agent', task={'private': private_text}, tools=Tools(),
+            validate=lambda c, s: [ValidationIssue('summary', 'unsafe_content', private_text)])
+    assert result.trace['stage'] == 'supplements'
+    assert 'supplements' in caplog.text and result.run_id in caplog.text
+    assert 'summary:unsafe_content' in caplog.text
+    assert private_text not in caplog.text
+
+
 def test_deadline_rejects_a_late_success():
     from fitness.agent_contracts import RunLimits
     from fitness.agent_runtime import AgentRuntime

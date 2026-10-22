@@ -1,6 +1,7 @@
 """Reusable read-tool / candidate / repair loop without persistence authority."""
 
 import json
+import logging
 from dataclasses import asdict
 from uuid import uuid4
 
@@ -9,6 +10,9 @@ from pydantic import ValidationError
 from .agent_contracts import RunResult, ValidationIssue
 from .plan_streaming import emit_plan_event, plan_events
 from .provider import ProviderError, _json_loads, _matches_schema
+
+logger = logging.getLogger(__name__)
+
 
 PLANNING_QUESTION_GUIDE = '''
 追问与完成规则：能够安全生成就返回draft_ready和完整候选，本次规划到此完成。
@@ -28,8 +32,10 @@ class AgentRuntime:
     def run(self, *, role, task, tools, validate):
         started = self.clock()
         deadline = started + self.limits.timeout_seconds
+        stage = ('supplements' if '补剂规划 Agent' in role else
+                 'training' if '训练规划' in role else 'nutrition' if '饮食规划' in role else 'planning')
         trace = {'status': 'running', 'calls': 0, 'usage': {}, 'tool_calls': [],
-                 'revisions': 0, 'validation': [], 'model': getattr(
+                 'stage': stage, 'revisions': 0, 'validation': [], 'model': getattr(
                      getattr(self.provider, 'settings', None), 'model', None)}
         run_id = str(uuid4())
 
@@ -39,6 +45,10 @@ class AgentRuntime:
             trace['run_id'] = run_id
             if reason:
                 trace['reason'] = reason
+            if status == 'failed':
+                errors = trace['validation'][-1] if trace['validation'] else []
+                logger.warning('planning_failed stage=%s run_id=%s reason=%s validation=%s',
+                    stage, run_id, reason, ','.join(f"{e['path']}:{e['code']}" for e in errors))
             return RunResult(run_id, status, candidate, questions or [], reason, trace)
 
         role += (f'\n本次最多{self.limits.max_tools}次工具调用、{self.limits.max_calls}轮模型响应。'
