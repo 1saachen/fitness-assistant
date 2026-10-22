@@ -11,7 +11,7 @@ test('blank fields remain unknown and zero remains a real value', () => {
 });
 test('profile starts unknown and has no required-field validation', () => {
   const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../fitness/static/app.js'), 'utf8');
-  const profileForm = source.slice(source.indexOf('function renderProfile'), source.indexOf('function appendProfileText'));
+  const profileForm = source.slice(source.indexOf('function renderProfile'), source.indexOf('function readProfile'));
   assert.doesNotMatch(profileForm, /input\.required\s*=\s*true/);
   assert.match(source, /age_years: null/);
   assert.match(source, /primary: null/);

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/review.css">
   <link rel="stylesheet" href="/static/export.css">
   <script src="/static/feedback-coach.js?v=20261022-2" defer></script>
-  <script src="/static/app.js?v=20261022-2" defer></script>
+  <script src="/static/app.js?v=20261022-3" defer></script>
     <script src="/static/daily-plans.js?v=20261022-2" defer></script>
 </head>
 <body>
@@ -41,7 +41,6 @@
       <section id="view-profile" class="view" aria-labelledby="profile-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">KNOW YOURSELF</p><h1 id="profile-title">我的档案</h1><p class="subtitle">按真实情况填写。暂时不确定的内容可以留空。</p></div><button id="import-profile" class="button secondary" type="button">导入本地示例</button></div>
         <form id="profile-form"><div id="profile-fields"></div><div class="form-footer"><span id="profile-save-state">尚未保存档案</span><button class="button" id="save-profile" type="submit">保存档案</button></div></form>
-        <section class="card" aria-labelledby="memory-title"><div class="card-heading"><div><h2 id="memory-title">从反馈识别长期饮食信息</h2><p class="field-hint">这里只生成待确认候选，不会自动修改档案。应用候选后仍需点击“保存档案”。</p></div></div><form id="memory-preview-form"><label for="memory-preview-text">用户原话<textarea id="memory-preview-text" rows="3" maxlength="2000" placeholder="例如：以后不要安排花生，我对虾不耐受。"></textarea></label><button class="button secondary" type="submit">识别待确认信息</button></form><div id="memory-preview-result"></div></section>
       </section>
       <section id="view-plan" class="view" aria-labelledby="plan-title" hidden>
         <div class="page-heading"><div><p class="eyebrow">YOUR LONG-TERM DIRECTION</p><h1 id="plan-title">长期计划</h1><p class="subtitle">从已保存档案和训练反馈出发；训练频率、时长、经验、器械或运动限制未填写时，在线 Agent 会先询问你。</p></div></div>

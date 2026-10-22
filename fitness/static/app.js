@@ -831,60 +831,6 @@ if (typeof document !== "undefined") {
       ? `已保存版本 ${app.version} · 修改后请保存`
       : "尚未保存档案";
   }
-  function appendProfileText(path, value) {
-    const input = document.querySelector('#profile-fields [data-path="' + path + '"]');
-    if (!input || !value) return;
-    const existing = input.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
-    if (!existing.includes(value)) existing.push(value);
-    input.value = existing.join("，");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-  function applyMemoryCandidate(candidate) {
-    if (!candidate || !candidate.value) return;
-    if (candidate.kind === "allergy") {
-      const status = document.querySelector('#profile-fields [data-path="nutrition.food_allergy_status"]');
-      if (status) {
-        status.value = "has_allergies";
-        status.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-      appendProfileText("nutrition.food_allergy_details", candidate.value);
-    } else if (candidate.kind === "intolerance") {
-      appendProfileText("nutrition.food_intolerances", candidate.value);
-    } else if (candidate.kind === "disliked_food") {
-      appendProfileText("nutrition.disliked_foods", candidate.value);
-    }
-  }
-  function renderMemoryPreview(candidates) {
-    const root = $("memory-preview-result");
-    root.replaceChildren();
-    if (!candidates.length) {
-      root.append(node("p", "没有识别到明确的长期饮食信息；当天想吃什么不会自动写入长期偏好。", "field-hint"));
-      return;
-    }
-    root.append(node("p", "请逐项核对。只有勾选并应用的候选会填入档案表单，保存档案后才会持久化。", "notice-inline"));
-    const list = document.createElement("div");
-    candidates.forEach((candidate, index) => {
-      const label = document.createElement("label");
-      label.className = "memory-candidate";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.dataset.memoryIndex = String(index);
-      const kinds = { allergy: "过敏", intolerance: "不耐受", disliked_food: "长期不喜欢" };
-      label.append(input, node("span", (kinds[candidate.kind] || "饮食信息") + "：" + candidate.value));
-      list.append(label);
-    });
-    const button = node("button", "应用勾选项到档案", "button secondary");
-    button.type = "button";
-    button.addEventListener("click", () => {
-      list.querySelectorAll("input[data-memory-index]:checked").forEach((input) => {
-        applyMemoryCandidate(candidates[Number(input.dataset.memoryIndex)]);
-        input.checked = false;
-      });
-      $("profile-save-state").textContent = "有未保存修改";
-      show("已填入档案表单，请检查后保存档案。");
-    });
-    root.append(list, button);
-  }
   function readProfile() {
     const profile = clone(app.profileDraft || app.profile || base());
     document
@@ -1729,7 +1675,6 @@ if (typeof document !== "undefined") {
     const configured = payload.model_configured === true;
     $("model-status").textContent = configured ? `模型：${payload.model}` : '模型 API 待配置';
     for (const id of ['long-term-submit', 'daily-submit', 'generate-plan']) $(id).disabled = !configured;
-    $('memory-preview-form').querySelector('button[type="submit"]').disabled = !configured;
     $("import-profile").disabled = !payload.example_available;
     $("today-label").textContent = `今天是 ${payload.today || today()}`;
     $("mode-note").textContent =
@@ -1823,24 +1768,6 @@ if (typeof document !== "undefined") {
           } catch(error) {show(error.message, true);} finally {busy(button, false);}
         }));
       } catch(error) {show(error.message, true);} finally {busy(target, false);}
-    });
-    $("memory-preview-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const target = event.currentTarget.querySelector("button");
-      busy(target, true);
-      try {
-        const text = $("memory-preview-text").value.trim();
-        if (!text) throw new Error("请先输入一句饮食相关反馈。");
-        const candidates = await api("/api/nutrition/memory/preview", {
-          method: "POST",
-          body: JSON.stringify({ text }),
-        });
-        renderMemoryPreview(candidates);
-      } catch (error) {
-        show(error.message, true);
-      } finally {
-        busy(target, false);
-      }
     });
     window.addEventListener("hashchange", () =>
       go(window.location.hash.slice(1)),
