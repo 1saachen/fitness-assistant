@@ -13,6 +13,11 @@ def safety_module():
     return safety
 
 
+def test_medication_details_keep_guardrail_even_with_conflicting_negative_status():
+    profile = Profile(health={'medications_status': 'none_known_self_reported', 'medications': '正在服用降压药'})
+    assert any('用药' in message for message in safety_module().health_guardrails(profile))
+
+
 def baseline_advice():
     return AdviceData(summary="本次反馈仅供短期观察。", suggestions=["优先保证规律睡眠"], source_ids=["source-1"])
 

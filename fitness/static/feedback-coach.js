@@ -107,6 +107,14 @@
       unchanged: '模型判断本次没有需要新增或修改的个人记忆。',
       compacted: '个人记忆已整理并压缩，原始反馈和旧记忆版本继续保留。', updated: '个人记忆已整理，保留原文引用。'};
     panel.append(make('p', memoryLabels[coach.memory_status] || '本次无需新增记忆。', 'field-hint'));
+    const profileSync = coach.profile_sync || {};
+    if (list(profileSync.updated_fields).length) panel.append(make('p',
+      '个人档案已同步：' + coach.profile_sync.updated_fields.join('、') + '。', 'field-hint'));
+    if (list(profileSync.conflict_fields).length) panel.append(make('p',
+      '与现有档案不一致，暂未覆盖，请核对：' + coach.profile_sync.conflict_fields.join('、') + '。', 'field-hint'));
+    const planAnswer = ['long_term_conditions', 'daily_conditions'].includes(item.trace?.source_context?.kind);
+    if (planAnswer && coach.profile_sync_pending && handlers.syncProfile)
+      panel.append(button('重新核对并同步个人档案', () => handlers.syncProfile(item.id)));
     if (coach.memory_status === 'failed' && handlers.retry) panel.append(button('重新理解并整理记忆', () => handlers.retry(item.id, true)));
     if (list(data.memory_updates).length) {
       const detail = make('details'), summary = make('summary', coach.memory_status === 'failed' ? '查看未保存的记忆候选' : '查看本次记忆整理'); detail.append(summary);

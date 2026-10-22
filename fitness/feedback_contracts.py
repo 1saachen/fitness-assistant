@@ -34,6 +34,27 @@ class MemoryDocument(Contract):
     entries: list[MemoryEntry] = Field(default_factory=list, max_length=300)
 
 
+class ProfileFieldUpdate(Contract):
+    path: Literal[
+        'nutrition.primary_meal_source',
+        'nutrition.food_budget.amount',
+        'nutrition.food_budget.period',
+        'nutrition.food_allergy_status',
+        'nutrition.food_allergy_details',
+        'nutrition.food_intolerances',
+        'nutrition.other_dietary_restrictions',
+        'nutrition.food_preferences',
+        'nutrition.disliked_foods',
+        'health.exercise_limiting_conditions_status',
+        'health.exercise_limiting_conditions_details',
+        'health.medications_status',
+        'health.medications',
+        'training.usual_training_time',
+    ]
+    value: str | int | float | None
+    quote: str = Field(min_length=1, max_length=4000)
+
+
 class PlanDecision(Contract):
     action: Literal['keep', 'adjust_next', 'propose_long_term', 'adjust_remaining']
     reason: str = Field(min_length=1, max_length=2000)
@@ -51,6 +72,7 @@ class FeedbackUnderstanding(Contract):
     suggestions: list[str] = Field(default_factory=list, max_length=10)
     questions: list[str] = Field(default_factory=list, max_length=8)
     memory_updates: list[MemoryEntry] = Field(default_factory=list, max_length=30)
+    profile_updates: list[ProfileFieldUpdate] = Field(default_factory=list, max_length=20)
     retire_keys: list[str] = Field(default_factory=list, max_length=30)
     restriction_resolutions: dict[str, str] = Field(default_factory=dict)
     decision: PlanDecision

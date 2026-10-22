@@ -539,6 +539,7 @@ if (typeof document !== "undefined") {
       available_equipment: null,
       preferred_weekdays: null,
       current_routine: null,
+      usual_training_time: null,
       strength_baseline: {
         squat_1rm_kg: null,
         bench_press_1rm_kg: null,
@@ -575,6 +576,7 @@ if (typeof document !== "undefined") {
     health: {
       exercise_limiting_conditions_status: "unknown",
       exercise_limiting_conditions_details: null,
+      medications_status: "unknown",
       medications: null,
     },
     recovery: { usual_sleep_hours: null, sleep_schedule: null },
@@ -637,6 +639,7 @@ if (typeof document !== "undefined") {
         ["training.session_duration_minutes", "每次时长（分钟）", "number"],
         ["training.gym_access", "有健身房", "boolean"],
         ["training.current_routine", "当前训练安排", "text"],
+        ["training.usual_training_time", "通常训练时间", "text"],
         [
           "training.available_equipment",
           "可用器械（Ctrl/Command 多选，未选为未知）",
@@ -731,6 +734,16 @@ if (typeof document !== "undefined") {
           ],
         ],
         ["health.exercise_limiting_conditions_details", "问题说明", "text"],
+        [
+          "health.medications_status",
+          "用药状态",
+          "select",
+          [
+            ["unknown", "未知"],
+            ["none_known_self_reported", "未服用药物"],
+            ["taking", "正在用药"],
+          ],
+        ],
         ["health.medications", "用药情况", "text"],
       ],
     ],
@@ -1354,15 +1367,19 @@ if (typeof document !== "undefined") {
     }); }
     catch (error) { root.textContent = `个人记忆暂时未能加载：${error.message}`; }
   }
-  async function understandFeedback(id, refresh = false, retryPlan = false) {
+  async function understandFeedback(id, refresh = false, retryPlan = false, syncProfile = false) {
     try {
-      const path = retryPlan ? 'retry-plan' : `understand${refresh ? '?refresh=true' : ''}`;
+      const path = syncProfile ? 'sync-profile' : retryPlan ? 'retry-plan' : `understand${refresh ? '?refresh=true' : ''}`;
       const item = await api(`/api/feedback/${encodeURIComponent(id)}/${path}`, {method: 'POST'});
       putFeedback(item);
+      if (item.coaching?.profile_sync?.updated_fields?.length) await refreshSyncedProfile();
       document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {
         profile_version: app.version, feedback_saved: true, planning_update: item.coaching?.planning_update}}));
       await Promise.allSettled([loadPersonalMemory(), loadDailyPlans()]);
-      show(item.coaching?.status === 'ready' ? '反馈已保存，模型已结合历史给出回应。' : '原文已保存，模型理解未完成，可重试。', item.coaching?.status !== 'ready');
+      show(syncProfile && item.coaching?.status !== 'ready' ? '档案核对未完成，原文已保留，可稍后重试。'
+        : syncProfile ? '原计划补充已重新核对，个人档案同步结果已更新。'
+        : item.coaching?.status === 'ready' ? '反馈已保存，模型已结合历史给出回应。' : '原文已保存，模型理解未完成，可重试。',
+      item.coaching?.status !== 'ready');
     } catch (error) { show(`原文已保存；${error.message}。可稍后重试模型理解。`, true); }
   }
   function renderFeedbackEditor(item) {
@@ -1373,6 +1390,7 @@ if (typeof document !== "undefined") {
     if (item.coaching) {
       FeedbackCoachUI.render(root, item, {retry: understandFeedback,
         retryPlan: id => understandFeedback(id, false, true),
+        syncProfile: id => understandFeedback(id, false, false, true),
         confirmFacts: async (id, revision, facts) => {
           try {
             const saved = await api(`/api/feedback/${encodeURIComponent(id)}/facts/confirm`, {
@@ -1724,6 +1742,22 @@ if (typeof document !== "undefined") {
     renderKnowledgeDetail();
     document.dispatchEvent(new CustomEvent('fitness-state-change', {detail: {profile_version: app.version, model_configured: configured}}));
   }
+  async function refreshSyncedProfile() {
+    const formState = $('profile-save-state');
+    const dirty = formState.textContent.includes('未保存') || app.profileDraft;
+    const editingVersion = app.version;
+    const state = await api('/api/state');
+    if (state.profile_version <= app.version) return;
+    if (dirty || formState.textContent.includes('未保存') || app.profileDraft || app.version !== editingVersion) {
+      formState.textContent = '档案已由补充回答更新，未保存修改已保留；请刷新核对新档案后再保存。';
+      return;
+    }
+    app.profile = state.profile; app.version = state.profile_version;
+    renderProfile(); renderOverview(); renderPlans();
+  }
+  document.addEventListener('fitness-profile-synced', () => {
+    refreshSyncedProfile().catch(error => show(`档案已保存，但页面刷新失败：${error.message}`, true));
+  });
   document.addEventListener("DOMContentLoaded", async () => {
     $('plan-content').addEventListener('submit', async (event) => {
       const form = event.target.closest('.nutrition-day-form');

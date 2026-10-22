@@ -15,6 +15,33 @@ class Element {
 }
 const doc = {createElement: tag => new Element(tag)};
 
+test('reflection displays saved profile updates and conflicts', () => {
+  const root = new Element('div');
+  ui.render(root, {id: 'f', coaching: {status: 'ready', data: {reply: '已保存'},
+    profile_sync: {updated_fields: ['通常训练时间'], conflict_fields: ['饮食预算']}}}, {}, doc);
+  assert.match(root.textContent, /个人档案已同步.*通常训练时间/);
+  assert.match(root.textContent, /暂未覆盖.*饮食预算/);
+});
+
+test('legacy plan answers offer one profile review action until checked', () => {
+  const root = new Element('div'); let reviewed = null;
+  const item = {id: 'old-answer', trace: {source_context: {kind: 'long_term_conditions'}},
+    coaching: {status: 'ready', profile_sync_pending: true, memory_status: 'unchanged', data: {reply: '收到',
+      decision: {action: 'keep', reason: '继续'}, questions: [], suggestions: []}, profile_sync: {}}};
+  ui.render(root, item, {syncProfile: id => { reviewed = id; }}, doc);
+  const buttons = root.children.flatMap(function walk(x) { return [x,...x.children.flatMap(walk)]; })
+    .filter(x => x.tagName === 'button');
+  const action = buttons.find(x => x.textContent.includes('同步个人档案'));
+  assert.ok(action);
+  action.listeners.click();
+  assert.equal(reviewed, 'old-answer');
+
+  item.coaching.profile_sync_pending = false;
+  item.coaching.profile_sync = {checked: true, updated_fields: [], conflict_fields: []};
+  ui.render(root, item, {syncProfile: () => {}}, doc);
+  assert.ok(!root.textContent.includes('同步个人档案'));
+});
+
 test('reflection keeps questions and a reply form together and submits the answer', async () => {
   assert.equal(typeof ui.render, 'function');
   const root = new Element('div');
@@ -91,6 +118,7 @@ test('feedback state events load plans without automatically regenerating today'
   assert.ok(source.includes('feedback_saved'));
   const app = fs.readFileSync('fitness/static/app.js','utf8');
   assert.ok(app.includes('/api/feedback/record'));
+  assert.ok(app.includes('sync-profile'));
   assert.ok(app.includes('understand'));
   const html = fs.readFileSync('fitness/static/index.html','utf8');
   assert.ok(html.includes('日终复盘'));

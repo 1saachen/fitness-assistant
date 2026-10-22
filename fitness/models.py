@@ -56,6 +56,7 @@ class Training(Contract):
     available_equipment: list[Equipment] | None = Field(default=None, max_length=4)
     preferred_weekdays: list[int] | None = Field(default=None, max_length=6)
     current_routine: Text | None = None
+    usual_training_time: Short | None = None
     strength_baseline: StrengthBaseline = Field(default_factory=StrengthBaseline)
 
     @model_validator(mode="after")
@@ -101,6 +102,7 @@ class Health(Contract):
         "none_known_self_reported", "unknown", "has_conditions"
     ] = "unknown"
     exercise_limiting_conditions_details: Text | None = None
+    medications_status: Literal["none_known_self_reported", "unknown", "taking"] = "unknown"
     medications: Text | None = None
 
 

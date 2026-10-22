@@ -452,6 +452,15 @@ def understand_feedback(ident: str, refresh: bool = False):
         err(exc)
 
 
+@app.post('/api/feedback/{ident}/sync-profile')
+def sync_feedback_profile(ident: str):
+    require_model()
+    try:
+        return feedback_coach().sync_profile(ident)
+    except (Conflict, NotFound) as exc:
+        err(exc)
+
+
 @app.post('/api/feedback/{ident}/retry-plan')
 def retry_feedback_plan(ident: str):
     require_model()

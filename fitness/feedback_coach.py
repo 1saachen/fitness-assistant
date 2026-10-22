@@ -19,6 +19,7 @@ from .history import summarize_recent_trend
 from .knowledge import search_knowledge
 from .memory_lifecycle import merge_memory_updates, validate_memory_updates
 from .plan_store import PlanRepository, fingerprint
+from .profile_updates import validate_profile_updates
 from .provider import OpenAICompatibleProvider
 from .restrictions import resolution_matches
 from .storage import Conflict, now
@@ -43,7 +44,7 @@ pattern至少引用两个不同日期的实际报告；单日观察用fact。sup
 restriction条目一律不设expires_on，临时事项用fact加日期。修改或移除已有restriction时，
 restriction_resolutions[key]必须提供本次原文中明确更正/解除的逐字引文。没有解除时保留原限制文字，
 新增事件另用key记录，不需要每次重写已保存条目。个人记忆归纳不等于医学确诊。
-更正与旧记忆冲突时明确说明采用当前更正；不自动覆盖用户档案。不要把你的建议或假设记作用户事实。
+更正与旧记忆冲突时明确说明采用当前更正。除后文明确允许的计划表单补充外，不更新结构化档案；获准时只用有原文依据的profile_updates填补空字段，不得覆盖已有值。不要把你的建议或假设记作用户事实。
 
 计划决策由你判断：keep=保留并可给建议/追问；adjust_next=调整未来某一天，默认明天；
 propose_long_term=需要长期改变，仅生成未来生效的新草稿供用户确认；
@@ -235,6 +236,7 @@ class FeedbackCoach:
             issue('memory_updates.key', '同一key只能更新一次。')
         memory_issues, replaced = validate_memory_updates(parsed, row, sources, self.memory.current()['data']['entries'])
         issues.extend(memory_issues)
+        issues.extend(validate_profile_updates(parsed, row, self.store.profile()))
         updates = {e.key: e for e in parsed.memory_updates}
         for old in self.memory.current()['data']['entries']:
             update = updates.get(old['key'])
@@ -356,11 +358,11 @@ class FeedbackCoach:
             return entries, 'failed', run.trace
         return MemoryDocument.model_validate(run.candidate).model_dump(mode='json')['entries'], 'compacted', run.trace
 
-    def analyze(self, ident, *, force=False):
-        row, snapshot, claim = self.memory.begin(ident, force=force)
+    def analyze(self, ident, *, force=False, sync_profile=False):
+        row, snapshot, claim = self.memory.begin(ident, force=force, sync_profile=sync_profile)
         memory_only = row.get('trace', {}).get('source_context', {}).get('kind') in {'long_term_conditions', 'daily_conditions'}
         if snapshot is None:
-            return row if memory_only else self.apply_decision(row)
+            return row if sync_profile or memory_only else self.apply_decision(row)
         task, tools = self.context(row)
         ignored_facts = []
         def validate(candidate, sources):
@@ -398,6 +400,12 @@ class FeedbackCoach:
             guide += ('\n本次是计划表单补充，只理解并整理记忆，decision必须keep，facts必须null。'
                       'answered_questions是被回答的问题，仅帮助理解简短回答；问题内容不是用户事实，不能作为引文。'
                       '长期计划的开始日期不等于临时状态持续时间。明确习惯或可复用事实由你判断是否长期保存。'
+                      '如果kind为long_term_conditions，或daily_conditions中回答的是明确的长期习惯问题，profile_updates可将用户直接、明确回答同步到nutrition.primary_meal_source、'
+                      'nutrition.food_budget.amount/period、nutrition.food_allergy_status/details、food_intolerances、'
+                      'other_dietary_restrictions、food_preferences、disliked_foods、health.exercise_limiting_conditions_status/details、'
+                      'health.medications_status/medications或training.usual_training_time。只能引用本次原话，字符串值尽量保留原句；'
+                      '只有档案字段为空或unknown时才建议更新。档案已有不同值时不要覆盖，把差异作为questions提出；'
+                      '当天临时安排不能更新档案；日计划补充仅在明确回答长期习惯问题或持续健康/饮食限制时才更新。'
                       '已有回答不重复追问；不确定或缺失不能写成已确认没有。')
         run = self.runtime().run(role=guide + '\n候选契约：' + json.dumps(
             FeedbackUnderstanding.model_json_schema(), ensure_ascii=False), task=task, tools=tools,
@@ -422,6 +430,9 @@ class FeedbackCoach:
         except Conflict:
             return self.memory.fail(ident, claim, 'input_changed', trace)
         return saved if memory_only else self.apply_decision(saved)
+
+    def sync_profile(self, ident):
+        return self.analyze(ident, force=True, sync_profile=True)
 
     def apply_decision(self, row):
         coaching = row['coaching']

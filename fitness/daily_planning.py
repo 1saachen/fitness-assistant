@@ -352,6 +352,7 @@ class DailyPlanningService:
             review.append('近期多次反馈疲劳，建议复盘训练量和恢复安排。')
         nutrition_review_result = nutrition_review(snapshot['feedback'], day, profile.goals.primary,
             health_clear=(profile.health.exercise_limiting_conditions_status == 'none_known_self_reported'
+                          and profile.health.medications_status != 'taking'
                           and not profile.health.medications))
         if nutrition_review_result['recommendation']:
             review.extend(nutrition_review_result['evidence'])

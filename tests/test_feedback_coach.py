@@ -7,7 +7,7 @@ from test_agent_runtime import ScriptProvider, final
 from fitness.config import Settings
 from fitness.models import Profile
 from fitness.provider import ProviderError, ProviderReply
-from fitness.storage import Conflict, Store
+from fitness.storage import Conflict, Store, encode
 
 DAY = date(2026, 10, 21)
 
@@ -219,6 +219,56 @@ def test_api_records_then_understands_and_reload_keeps_response(coach, monkeypat
     assert understood.json()['coaching']['status'] == 'ready'
     assert client.get('/api/state').json()['feedback'][0]['coaching']['data']['reply']
     assert client.get('/api/personal-memory').json()['version'] == 1
+
+
+def test_api_rechecks_legacy_plan_answer_once_for_profile_sync(coach, monkeypatch):
+    from fastapi.testclient import TestClient
+    from test_api import main
+
+    service, provider, store = coach
+    profile = Profile().model_dump(mode='json')
+    profile['training']['usual_training_time'] = None
+    store.save_profile(profile, 0)
+    row = service.memory.record('通常18点训练', DAY, source_context={
+        'kind': 'long_term_conditions', 'answered_questions': ['你通常几点训练？']})
+    with store.connection() as db:
+        db.execute('UPDATE feedback_coaching SET status=?, data=? WHERE feedback_id=?',
+            ('ready', encode({'understanding': candidate(row), 'feedback_revision': 1,
+                              'memory_status': 'unchanged', 'planning_update': {'status': 'none'}}),
+             row['id']))
+    result = candidate(row, profile_updates=[{
+        'path': 'training.usual_training_time', 'value': '18点', 'quote': '18点'}])
+    provider.replies = iter([final(result)])
+    monkeypatch.setattr(main, 'store', store)
+    monkeypatch.setattr(main, 'feedback_coach', lambda: service)
+    client = TestClient(main.app)
+
+    first = client.post(f"/api/feedback/{row['id']}/sync-profile")
+    repeated = client.post(f"/api/feedback/{row['id']}/sync-profile")
+
+    assert first.status_code == repeated.status_code == 200
+    assert first.json()['coaching']['profile_sync']['updated_fields'] == ['通常训练时间']
+    assert repeated.json()['coaching']['profile_sync_pending'] is False
+    assert store.profile()['data']['training']['usual_training_time'] == '18点'
+    assert len(provider.messages) == 1
+
+
+def test_profile_sync_request_cannot_execute_an_unrelated_feedback_plan_action(coach):
+    service, _, store = coach
+    row = service.record('明天降低训练强度', DAY)
+    decision = {'action': 'adjust_next', 'reason': '用户要求降低强度', 'conditions': '降低训练强度',
+                'target_date': str(date(2026, 10, 22))}
+    snapshot_token = service.memory.snapshot()['token']
+    with store.connection() as db:
+        db.execute('UPDATE feedback_coaching SET status=?, data=? WHERE feedback_id=?',
+            ('ready', encode({'understanding': {'decision': decision}, 'feedback_revision': 1,
+                              'memory_status': 'unchanged', 'planning_input_token': snapshot_token,
+                              'planning_update': {'status': 'pending'}}), row['id']))
+
+    result = service.sync_profile(row['id'])
+
+    assert service.planner.calls == []
+    assert result['coaching']['planning_update']['status'] == 'pending'
 
 
 def test_memory_and_raw_narrative_are_available_to_future_training_and_food_models(coach, profile_data):

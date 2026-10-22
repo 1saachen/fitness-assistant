@@ -28,15 +28,35 @@ def remember_conditions(service, snapshot, day, text, kind, answered_questions=N
     if coaching.get('error') == 'input_changed':
         raise Conflict('补充原文已保存，但资料在理解期间有变化，请刷新后重试。')
     refreshed = service.repo.snapshot(day)
+    profile_sync = coaching.get('profile_sync') or {}
     def other_inputs(value):
         return [value['profile'], value['long_term'], value['days'],
                 [r for r in value['feedback'] if r['id'] != row['id']]]
-    if fingerprint(other_inputs(snapshot)) != fingerprint(other_inputs(refreshed)):
+    previous_inputs, current_inputs = other_inputs(snapshot), other_inputs(refreshed)
+    if (profile_sync.get('updated_fields')
+            and profile_sync.get('before_version') == snapshot['profile']['version']
+            and profile_sync.get('version') == refreshed['profile']['version']):
+        current_inputs[0] = snapshot['profile']
+    if fingerprint(previous_inputs) != fingerprint(current_inputs):
         raise Conflict('补充原文已保存，但档案、反馈或计划已有变化，请刷新后重试。')
+    profile_updated = profile_sync.get('updated_fields', [])
+    profile_conflicts = profile_sync.get('conflict_fields', [])
     status = coaching.get('memory_status') if coaching['status'] == 'ready' else 'failed'
     messages = {'failed': '补充原文已保存，但个人记忆未更新；可在原文记录中重试理解。',
                 'unchanged': '补充原文已保存，模型判断本次无需新增或修改个人记忆。'}
+    message_parts = []
+    if profile_updated:
+        message_parts.append('个人档案已同步：' + '、'.join(profile_updated) + '。')
+    if profile_conflicts:
+        message_parts.append('与现有档案不一致，暂未覆盖，请核对后再修改：' + '、'.join(profile_conflicts) + '。')
+    if status == 'updated':
+        message_parts.append('个人记忆已整理，长期信息会继续用于后续计划。')
+    elif not profile_updated:
+        message_parts.append(messages.get(status, '补充原文已保存，个人记忆已整理。'))
     notice = {'feedback_id': row['id'], 'status': status,
-              'message': messages.get(status, '补充原文已保存，个人记忆已整理；长期信息会持续用于后续计划。')}
+              'profile_sync_checked': profile_sync.get('checked') is True,
+              'profile_version': profile_sync.get('version'),
+              'profile_updated_fields': profile_updated, 'profile_conflict_fields': profile_conflicts,
+              'message': ''.join(message_parts)}
     emit_plan_event('memory', notice)
     return refreshed, notice

@@ -185,6 +185,7 @@
     if (!get('daily-form')) return;
     let state = {long_term_plans: [], daily_plans: []}, selectedLong = null, profileVersion, pending = Promise.resolve();
     const followups = new Map();
+    const notifiedProfileVersions = new Set();
     const displayedQuestions = {'long-term': [], daily: []};
     const pendingQuestions = {'long-term': [], daily: []};
     const followupKey = (url, body) => `${url}:${body?.date || body?.start_date || ''}:${body?.mode || ''}`;
@@ -198,8 +199,15 @@
       const root = get(`${scope}-memory`); root.replaceChildren(); root.hidden = !notice;
       if (!notice) return;
       root.append(node(document, 'span', notice.message + ' '));
+      if (list(notice.profile_updated_fields).length && notice.profile_version
+          && !notifiedProfileVersions.has(notice.profile_version)) {
+        notifiedProfileVersions.add(notice.profile_version);
+        document.dispatchEvent(new CustomEvent('fitness-profile-synced', {detail: {profile_version: notice.profile_version}}));
+      }
       if (notice.feedback_id) {
-        const link = node(document, 'a', notice.status === 'failed' ? '查看原文并重试' : '查看原文与记忆');
+        const label = notice.status === 'failed' ? '查看原文并重试'
+          : notice.profile_sync_checked === true ? '查看原文与记忆' : '查看原文与档案同步状态';
+        const link = node(document, 'a', label);
         link.href = `#feedback-${encodeURIComponent(notice.feedback_id)}`; root.append(link);
       }
     }

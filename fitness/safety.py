@@ -385,7 +385,7 @@ def health_guardrails(profile, feedback=None, raw_text: str = "") -> list[str]:
     details = health.get("exercise_limiting_conditions_details")
     if health.get("exercise_limiting_conditions_status") == "has_conditions" or details:
         warnings.append("存在疾病、损伤或运动限制时，先咨询医疗专业人员评估适合的活动与限制。")
-    if health.get("medications"):
+    if health.get("medications_status") == "taking" or health.get("medications"):
         warnings.append("正在用药时，请向医生或药师确认运动与补剂相互作用，不自行调整用药。")
     text = str(profile).lower() + str(_mapping(feedback)).lower() + raw_text.lower()
     if any(word in text for word in ("怀孕", "孕期", "妊娠", "pregnan", "产后", "postpartum")):

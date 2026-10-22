@@ -5,7 +5,7 @@
 **实现：** 复用现有原文记录、教练校验、记忆版本与并发保护；新增长期 fact 保留属性，以及独立的规划补充入口编排。
 
 1. 先添加失败测试，覆盖长期保留和完整的长期回答→当天规划数据流。
-2. 修改 feedback_contracts、memory_lifecycle、feedback_coach，支持长期 fact 及仅记忆模式；扩展 feedback_memory 的原文来源元数据。
+2. 修改 feedback_contracts、memory_lifecycle、feedback_coach，支持长期 fact 及仅记忆模式；扩展 feedback_memory 的原文来源元数据；只对证据明确且当前档案为空的长期回答同步白名单档案字段，保留冲突值并校验档案版本。
 3. 添加 planning_memory 编排，在 daily_planning 接入，刷新并校验快照，保存状态与原文；贯通请求模型和主 Agent。
-4. 修改表单传递问题与幂等标识，显示记忆状态与原文入口，更新资源版本。
+4. 修改表单传递问题与幂等标识，显示记忆状态与原文入口；为旧计划补充记录提供一次可重试、幂等的档案核对入口，更新资源版本。
 5. 运行目标测试、前后端回归、Ruff、diff 检查，并检查最终差异。保持用户已有 .gitignore 改动。

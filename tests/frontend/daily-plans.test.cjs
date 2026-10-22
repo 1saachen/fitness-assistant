@@ -18,6 +18,48 @@ class Element {
 }
 const doc = { createElement: tag => new Element(tag) };
 
+test('profile synchronization notifies the profile form once when the plan is saved', async () => {
+  const nodes = new Map(), listeners = {}, events = [];
+  const get = id => { if (!nodes.has(id)) nodes.set(id, new Element()); return nodes.get(id); };
+  get('view-daily').hidden = true;
+  get('long-term-conditions').value = '通常18点训练';
+  const notice = {feedback_id: 'answer', status: 'updated', profile_sync_checked: true, profile_version: 4,
+    profile_updated_fields: ['通常训练时间'], message: '个人档案已同步：通常训练时间。'};
+  const state = {today: '2026-10-22', profile_version: 3, model_configured: true, long_term_plans: [], daily_plans: []};
+  const document = {createElement: tag => new Element(tag), getElementById: get, querySelectorAll: () => [],
+    dispatchEvent: event => events.push(event), addEventListener: (name, fn) => { listeners[name] = fn; }};
+  class CustomEvent { constructor(type, options) { this.type = type; this.detail = options.detail; } }
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../fitness/static/daily-plans.js'), 'utf8'),
+    {document, CustomEvent, Intl, Date, TextDecoder, fetch: async url => {
+      if (url === '/api/long-term-plans/stream') {
+        const plan = {id: 'new', trace: {conditions_memory: notice}};
+        state.long_term_plans = [plan]; state.profile_version = 4;
+        return new Response(['event: memory', `data: ${JSON.stringify(notice)}`, '',
+          'event: result', `data: ${JSON.stringify(plan)}`, '', ''].join('\n'),
+          {headers: {'content-type': 'text/event-stream'}});
+      }
+      return {ok: true, json: async () => state};
+    }});
+  const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
+  listeners.DOMContentLoaded(); await settle();
+  get('long-term-form').listeners.submit({preventDefault() {}}); await settle();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].type, 'fitness-profile-synced');
+  assert.equal(events[0].detail.profile_version, 4);
+});
+
+test('legacy plan memory links directly to profile review', async () => {
+  const state = {today: '2026-10-22', profile_version: 3, model_configured: true,
+    long_term_plans: [{id: 'legacy', status: 'confirmed', start_date: '2026-10-21', profile_version: 3,
+      data: {title: '旧计划', cycle: [], nutrition: {}},
+      trace: {conditions_memory: {feedback_id: 'old-answer', status: 'updated', message: '补充原文已保存'}}}],
+    daily_plans: []};
+  const {get} = await planningPage(state);
+  assert.match(get('long-term-memory').textContent, /查看原文与档案同步状态/);
+  const link = get('long-term-memory').children.find(x => x.tagName === 'a');
+  assert.equal(link.href, '#feedback-old-answer');
+});
+
 test('stream reader displays split UTF-8 text before the final plan arrives', async () => {
   const encoder = new TextEncoder(), events = [];
   const first = encoder.encode('event: text\r\ndata: {"text":"今天练腿 <script>"}\r\n\r\n');

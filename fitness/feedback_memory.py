@@ -7,6 +7,7 @@ from uuid import uuid4
 from .memory_lifecycle import dated_entry
 from .models import FeedbackData
 from .plan_store import fingerprint
+from .profile_updates import apply_profile_updates
 from .storage import Conflict, NotFound, decode, encode, now
 
 PROTECTED = {'preference', 'restriction', 'question'}
@@ -197,6 +198,11 @@ class FeedbackMemory:
                 'data': data.get('understanding'), 'planning_update': data.get('planning_update', {'status': 'none'}),
                 'memory_status': data.get('memory_status', 'pending'), 'error': data.get('error')}}
             row['coaching']['planning_input_token'] = data.get('planning_input_token')
+            profile_sync = data.get('profile_sync') or {}
+            row['coaching']['profile_sync'] = profile_sync
+            row['coaching']['profile_sync_pending'] = (
+                row.get('trace', {}).get('source_context', {}).get('kind')
+                in {'long_term_conditions', 'daily_conditions'} and not profile_sync.get('checked'))
             ignored = coaching['trace'].get('ignored_optional_facts', [])
             ignored_fields = []
             for item in ignored:
@@ -249,13 +255,15 @@ class FeedbackMemory:
         memory = self.current(db)
         return {'token': fingerprint([inputs, memory['version']]), 'memory': memory}
 
-    def begin(self, ident, *, force=False):
+    def begin(self, ident, *, force=False, sync_profile=False):
         with self.store.connection() as db:
             db.execute('BEGIN IMMEDIATE')
             row = self.view(self.store_row(db, ident), db)
             if 'coaching' not in row:
                 raise Conflict('这条历史反馈请使用原有编辑流程，或新增一条补充反馈。')
             coaching = row['coaching']
+            if sync_profile and not coaching.get('profile_sync_pending'):
+                return row, None, None
             if coaching['status'] == 'ready' and not force:
                 return row, None, None
             if coaching['status'] == 'processing' and datetime.fromisoformat(coaching['updated_at']) > (
@@ -282,6 +290,13 @@ class FeedbackMemory:
             current = decode(db.execute('SELECT * FROM feedback_coaching WHERE feedback_id=?', (row['id'],)).fetchone())
             if (self.snapshot(db)['token'] != snapshot['token'] or current['trace'].get('claim') != claim):
                 raise Conflict('输入已经变化，请重新理解反馈。')
+            profile = decode(db.execute('SELECT * FROM profiles ORDER BY version DESC LIMIT 1').fetchone())
+            before_version = profile['version'] if profile else 0
+            profile, updated_fields, conflict_fields = apply_profile_updates(
+                db, profile, understanding.get('profile_updates', []))
+            profile_sync = {'checked': True, 'before_version': before_version,
+                'version': profile['version'] if profile else 0,
+                'updated_fields': updated_fields, 'conflict_fields': conflict_fields}
             memory_version = snapshot['memory']['version']
             if memory_status != 'failed' and entries != snapshot['memory']['data']['entries']:
                 memory_version += 1
@@ -312,6 +327,7 @@ class FeedbackMemory:
                                    (encode({'entries': entries}), memory_version))
                     row = {**row, 'revision': revision}
             result = {'understanding': understanding, 'feedback_revision': row['revision'],
+                      'profile_sync': profile_sync,
                       'memory_status': memory_status, 'memory_version': memory_version,
                       'planning_update': {'status': 'pending'} if understanding['decision']['action'] != 'keep'
                           else {'status': 'none'}}
