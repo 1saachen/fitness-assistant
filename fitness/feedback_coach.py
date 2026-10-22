@@ -23,6 +23,7 @@ from .profile_updates import validate_profile_updates
 from .provider import OpenAICompatibleProvider
 from .restrictions import resolution_matches
 from .storage import Conflict, now
+from .supplement_agent import SUPPLEMENT_POLICY
 
 COACH_GUIDE = '''你是持续陪伴用户的训练和饮食教练。反馈是对一天的复盘，核心工作是理解和回应，
 而不是要求用户填表或机械提取字段。用自然中文解释你的判断，结合原话、以往反馈、个人记忆与计划。
@@ -396,7 +397,10 @@ class FeedbackCoach:
                         candidate['facts'] = None
                 issues = self.validate(candidate, row, sources)
             return issues
-        guide = COACH_GUIDE
+        guide = COACH_GUIDE + SUPPLEMENT_POLICY + (
+            '\n针对补剂：只有用户明确询问某种补剂时，才用search_coaching_knowledge按该补剂名称查询知识卡；'
+            '默认补剂建议不扫描知识库，不因一般疲劳或睡眠问题就查卡扩大推荐清单。'
+            '未查到对应卡时如实说明，不用其他补剂的间接提及充当依据。')
         if memory_only:
             guide += ('\n本次是计划表单补充，只理解并整理记忆，decision必须keep，facts必须null。'
                       'answered_questions是被回答的问题，仅帮助理解简短回答；问题内容不是用户事实，不能作为引文。'

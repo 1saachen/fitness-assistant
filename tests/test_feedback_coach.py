@@ -75,6 +75,18 @@ def test_narrative_memory_and_keep_decision_without_required_numeric_fields(coac
     assert len(provider.messages) == 1
 
 
+def test_feedback_coach_uses_the_same_supplement_policy(coach):
+    from fitness.supplement_agent import SUPPLEMENT_POLICY
+    service, provider, _ = coach
+    row = service.record('我平时蛋白质已经吃够了，还需要蛋白粉吗？', DAY)
+    provider.replies = iter([final(candidate(row, memory_updates=[]))])
+    assert service.analyze(row['id'])['coaching']['status'] == 'ready'
+    guide = provider.messages[0][0]['content']
+    assert SUPPLEMENT_POLICY in guide
+    assert '只有用户明确询问某种补剂时' in guide
+    assert 'search_coaching_knowledge' in guide
+
+
 def test_review_cannot_rewrite_today_even_when_model_requests_it(coach):
     service, provider, _ = coach
     row = service.record('今天练完了', DAY)

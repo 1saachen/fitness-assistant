@@ -50,6 +50,15 @@ test('long-term supplements explain an unavailable knowledge library even with n
   assert.match(root.textContent, /补剂知识库暂不可用/);
 });
 
+test('default supplement recommendations without card lookup do not show a library failure', () => {
+  const root = new Element();
+  ui.renderLongTerm(root, {data: {supplements: {summary: '结合力量目标考虑肌酸',
+    items: [{name: '肌酸', priority: 'consider', reason: '支持力量训练目标', source_ids: []}]}},
+    trace: {supplement_provider: {knowledge_status: 'not_requested'}}}, {}, doc);
+  assert.match(root.textContent, /肌酸/);
+  assert.doesNotMatch(root.textContent, /知识库暂不可用|未生成新的补剂推荐|暂无已审核知识依据/);
+});
+
 test('profile synchronization notifies the profile form once when the plan is saved', async () => {
   const nodes = new Map(), listeners = {}, events = [];
   const get = id => { if (!nodes.has(id)) nodes.set(id, new Element()); return nodes.get(id); };

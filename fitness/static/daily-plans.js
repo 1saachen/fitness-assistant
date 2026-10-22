@@ -130,8 +130,8 @@
     section.append(node(doc, 'h2', '补剂建议'));
     section.append(node(doc, 'p', plan.summary, 'plan-summary'));
     section.append(node(doc, 'p', plan.budget_note));
-    if (options.knowledgeStatus && options.knowledgeStatus !== 'ok') section.append(node(doc, 'p',
-      options.knowledgeStatus === 'capacity_exceeded' ? '补剂知识库超过本次处理容量，未生成新的补剂推荐。' : '补剂知识库暂不可用，未生成新的补剂推荐。', 'notice-inline'));
+    if (['unavailable', 'capacity_exceeded'].includes(options.knowledgeStatus)) section.append(node(doc, 'p',
+      options.knowledgeStatus === 'capacity_exceeded' ? '补剂知识卡检索超过处理容量，本次没有引用相关卡片。' : '补剂知识库暂不可用，本次没有引用相关卡片。', 'notice-inline'));
     section.append(node(doc, 'p', '知识卡获批仅代表允许引用，不代表科学共识；建议需结合适用条件，不构成个体服用剂量。', 'notice-inline'));
     const priorities = {consider: '可以考虑', conditional: '条件满足再考虑', not_needed: '目前没有必要', needs_review: '需要核实'};
     const evidence = {experience: '经验观点', limited: '有限证据', research: '研究标签', guideline: '指南标签'};
@@ -145,7 +145,6 @@
       lines(doc, entry, '适用与核实条件', item.conditions);
       lines(doc, entry, '饮食替代', item.food_alternatives);
       lines(doc, entry, '注意事项与证据局限', item.cautions);
-      if (!list(item.source_ids).length) entry.append(node(doc, 'p', '暂无已审核知识依据，需核实产品成分与适用性。', 'notice-inline'));
       list(item.source_ids).forEach(id => {
         const source = list(data.supplement_sources).find(row => row.id === id);
         if (!source) { entry.append(node(doc, 'p', '来源快照未记录，需重新核实。', 'metadata')); return; }
